@@ -436,7 +436,7 @@ export const userProfileService = {
 				.from("user_profiles")
 				.select("*")
 				.eq("user_id", userId)
-				.single();
+				.maybeSingle();
 
 			if (error) throw error;
 			return data;
@@ -469,7 +469,7 @@ export const userPreferencesService = {
 				.from("user_preferences")
 				.select("*")
 				.eq("user_id", userId)
-				.single();
+				.maybeSingle();
 
 			if (error) throw error;
 			return data;
