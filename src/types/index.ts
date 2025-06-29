@@ -52,12 +52,23 @@ export interface RecipeInstruction {
 
 export interface ShoppingListItem {
 	id: string;
-	user_id: string;
+	shopping_list_id: string;
 	name: string;
 	quantity: number;
 	unit: string;
 	category: string;
 	is_purchased: boolean;
+	notes?: string;
+	recipe_id?: string;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface ShoppingList {
+	id: string;
+	user_id: string;
+	name: string;
+	description?: string;
 	created_at: string;
 	updated_at: string;
 }

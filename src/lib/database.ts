@@ -4,6 +4,8 @@ import type {
 	Recipe,
 	RecipeIngredient,
 	RecipeInstruction,
+	ShoppingList,
+	ShoppingListItem,
 } from "../types";
 
 // Ingredient operations
@@ -191,5 +193,143 @@ export const bookmarkService = {
 			.eq("recipe_id", recipeId);
 
 		if (error) throw error;
+	},
+};
+
+// Shopping List operations
+export const shoppingListService = {
+	async getAllLists(userId: string): Promise<ShoppingList[]> {
+		const { data, error } = await supabase
+			.from("shopping_lists")
+			.select("*")
+			.eq("user_id", userId)
+			.order("created_at", { ascending: false });
+
+		if (error) throw error;
+		return data || [];
+	},
+
+	async createList(
+		list: Omit<ShoppingList, "id" | "created_at" | "updated_at">,
+	): Promise<ShoppingList> {
+		const { data, error } = await supabase
+			.from("shopping_lists")
+			.insert([list])
+			.select()
+			.single();
+
+		if (error) throw error;
+		return data;
+	},
+
+	async updateList(id: string, updates: Partial<ShoppingList>): Promise<ShoppingList> {
+		const { data, error } = await supabase
+			.from("shopping_lists")
+			.update(updates)
+			.eq("id", id)
+			.select()
+			.single();
+
+		if (error) throw error;
+		return data;
+	},
+
+	async deleteList(id: string): Promise<void> {
+		const { error } = await supabase.from("shopping_lists").delete().eq("id", id);
+
+		if (error) throw error;
+	},
+
+	async getListItems(listId: string): Promise<ShoppingListItem[]> {
+		const { data, error } = await supabase
+			.from("shopping_list_items")
+			.select("*")
+			.eq("shopping_list_id", listId)
+			.order("created_at", { ascending: false });
+
+		if (error) throw error;
+		return data || [];
+	},
+
+	async createItem(
+		item: Omit<ShoppingListItem, "id" | "created_at" | "updated_at">,
+	): Promise<ShoppingListItem> {
+		const { data, error } = await supabase
+			.from("shopping_list_items")
+			.insert([item])
+			.select()
+			.single();
+
+		if (error) throw error;
+		return data;
+	},
+
+	async updateItem(id: string, updates: Partial<ShoppingListItem>): Promise<ShoppingListItem> {
+		const { data, error } = await supabase
+			.from("shopping_list_items")
+			.update(updates)
+			.eq("id", id)
+			.select()
+			.single();
+
+		if (error) throw error;
+		return data;
+	},
+
+	async deleteItem(id: string): Promise<void> {
+		const { error } = await supabase.from("shopping_list_items").delete().eq("id", id);
+
+		if (error) throw error;
+	},
+
+	async togglePurchased(id: string, isPurchased: boolean): Promise<ShoppingListItem> {
+		const { data, error } = await supabase
+			.from("shopping_list_items")
+			.update({ is_purchased: isPurchased })
+			.eq("id", id)
+			.select()
+			.single();
+
+		if (error) throw error;
+		return data;
+	},
+
+	async createFromRecipe(
+		listId: string,
+		recipeId: string,
+		userIngredients: Ingredient[],
+	): Promise<ShoppingListItem[]> {
+		// Get recipe ingredients
+		const recipeIngredients = await recipeService.getIngredients(recipeId);
+		
+		// Filter out ingredients the user already has
+		const neededIngredients = recipeIngredients.filter(recipeIng => {
+			return !userIngredients.some(userIng => 
+				userIng.name.toLowerCase().includes(recipeIng.ingredient_name.toLowerCase()) ||
+				recipeIng.ingredient_name.toLowerCase().includes(userIng.name.toLowerCase())
+			);
+		});
+
+		// Create shopping list items
+		const items = neededIngredients.map(ingredient => ({
+			shopping_list_id: listId,
+			name: ingredient.ingredient_name,
+			quantity: ingredient.quantity,
+			unit: ingredient.unit,
+			category: "Other", // Could be improved with ingredient categorization
+			is_purchased: false,
+			notes: ingredient.notes || "",
+			recipe_id: recipeId,
+		}));
+
+		if (items.length === 0) return [];
+
+		const { data, error } = await supabase
+			.from("shopping_list_items")
+			.insert(items)
+			.select();
+
+		if (error) throw error;
+		return data || [];
 	},
 };
