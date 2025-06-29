@@ -33,11 +33,13 @@ export function Dashboard() {
 		canCookRecipes: 0,
 		lowStockItems: 0,
 		expiringLeftovers: 0,
+		totalLeftovers: 0,
 	});
 	const [expiringSoonItems, setExpiringSoonItems] = useState<Ingredient[]>([]);
 	const [lowStockItems, setLowStockItems] = useState<Ingredient[]>([]);
 	const [canCookRecipes, setCanCookRecipes] = useState<Recipe[]>([]);
 	const [expiringLeftovers, setExpiringLeftovers] = useState<Leftover[]>([]);
+	const [allLeftovers, setAllLeftovers] = useState<Leftover[]>([]);
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
@@ -53,10 +55,11 @@ export function Dashboard() {
 			setLoading(true);
 
 			// Load ingredients, recipes, and leftovers
-			const [ingredients, recipes, leftovers] = await Promise.all([
+			const [ingredients, recipes, expiringLeftoversData, allLeftoversData] = await Promise.all([
 				ingredientService.getAll(user.id),
 				recipeService.getAll(),
 				leftoverService.getExpiringSoon(user.id, 3), // 3 days for leftovers
+				leftoverService.getAll(user.id), // All leftovers for total count
 			]);
 
 			// Get expiring items
@@ -74,13 +77,15 @@ export function Dashboard() {
 				expiringSoon: expiring.length,
 				canCookRecipes: canCook.length,
 				lowStockItems: lowStock.length,
-				expiringLeftovers: leftovers.length,
+				expiringLeftovers: expiringLeftoversData.length,
+				totalLeftovers: allLeftoversData.length,
 			});
 
 			setExpiringSoonItems(expiring.slice(0, 5)); // Show top 5
 			setLowStockItems(lowStock.slice(0, 5)); // Show top 5
 			setCanCookRecipes(canCook.slice(0, 3)); // Show top 3
-			setExpiringLeftovers(leftovers.slice(0, 3)); // Show top 3
+			setExpiringLeftovers(expiringLeftoversData.slice(0, 3)); // Show top 3
+			setAllLeftovers(allLeftoversData);
 		} catch (error) {
 			console.error("Error loading dashboard data:", error);
 		} finally {
@@ -186,7 +191,7 @@ export function Dashboard() {
 			)}
 
 			{/* Quick Stats */}
-			<div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 lg:gap-6">
+			<div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5 lg:gap-6">
 				<Card>
 					<CardContent className="p-4 sm:p-6">
 						<div className="flex items-center">
@@ -235,6 +240,24 @@ export function Dashboard() {
 								</p>
 								<p className="text-lg sm:text-2xl font-bold text-secondary-900">
 									{stats.availableRecipes}
+								</p>
+							</div>
+						</div>
+					</CardContent>
+				</Card>
+
+				<Card>
+					<CardContent className="p-4 sm:p-6">
+						<div className="flex items-center">
+							<div className="flex-shrink-0">
+								<Utensils className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+							</div>
+							<div className="ml-3 sm:ml-4 min-w-0 flex-1">
+								<p className="text-xs sm:text-sm font-medium text-secondary-600 truncate">
+									Leftovers
+								</p>
+								<p className="text-lg sm:text-2xl font-bold text-secondary-900">
+									{stats.totalLeftovers}
 								</p>
 							</div>
 						</div>
