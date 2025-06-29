@@ -72,6 +72,49 @@ export const ingredientService = {
 		if (error) throw error;
 		return data || [];
 	},
+
+	async addOrUpdateFromShopping(
+		userId: string,
+		itemName: string,
+		quantity: number,
+		unit: string,
+		category: string = "Other"
+	): Promise<Ingredient> {
+		// First, check if an ingredient with similar name already exists
+		const { data: existingIngredients, error: searchError } = await supabase
+			.from("ingredients")
+			.select("*")
+			.eq("user_id", userId)
+			.ilike("name", `%${itemName}%`);
+
+		if (searchError) throw searchError;
+
+		// Find exact or close match
+		const existingIngredient = existingIngredients?.find(ing => 
+			ing.name.toLowerCase() === itemName.toLowerCase() ||
+			ing.name.toLowerCase().includes(itemName.toLowerCase()) ||
+			itemName.toLowerCase().includes(ing.name.toLowerCase())
+		);
+
+		if (existingIngredient) {
+			// Update existing ingredient quantity
+			const newQuantity = existingIngredient.quantity + quantity;
+			return await this.update(existingIngredient.id, {
+				quantity: newQuantity,
+				unit: unit || existingIngredient.unit, // Keep existing unit if new one is empty
+			});
+		} else {
+			// Create new ingredient
+			return await this.create({
+				user_id: userId,
+				name: itemName,
+				quantity: quantity,
+				unit: unit,
+				category: category,
+				notes: "Added from shopping list",
+			});
+		}
+	},
 };
 
 // Recipe operations

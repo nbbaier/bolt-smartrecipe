@@ -202,7 +202,25 @@ export function Shopping() {
 
 	const togglePurchased = async (itemId: string, isPurchased: boolean) => {
 		try {
-			await shoppingListService.togglePurchased(itemId, !isPurchased);
+			const updatedItem = await shoppingListService.togglePurchased(itemId, !isPurchased);
+			
+			// If item was just marked as purchased, add it to pantry
+			if (!isPurchased && user) {
+				try {
+					await ingredientService.addOrUpdateFromShopping(
+						user.id,
+						updatedItem.name,
+						updatedItem.quantity,
+						updatedItem.unit,
+						updatedItem.category
+					);
+					console.log(`Added ${updatedItem.name} to pantry`);
+				} catch (pantryError) {
+					console.error("Error adding to pantry:", pantryError);
+					// Don't throw error here - shopping list update was successful
+				}
+			}
+			
 			await loadListItems();
 		} catch (error) {
 			console.error("Error toggling purchase status:", error);
