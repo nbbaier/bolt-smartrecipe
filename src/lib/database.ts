@@ -299,8 +299,11 @@ export const shoppingListService = {
 		recipeId: string,
 		userIngredients: Ingredient[],
 	): Promise<ShoppingListItem[]> {
+		console.log('Creating items from recipe:', recipeId, 'for list:', listId);
+		
 		// Get recipe ingredients
 		const recipeIngredients = await recipeService.getIngredients(recipeId);
+		console.log('Recipe ingredients found:', recipeIngredients.length);
 		
 		// Filter out ingredients the user already has
 		const neededIngredients = recipeIngredients.filter(recipeIng => {
@@ -309,6 +312,7 @@ export const shoppingListService = {
 				recipeIng.ingredient_name.toLowerCase().includes(userIng.name.toLowerCase())
 			);
 		});
+		console.log('Needed ingredients after filtering:', neededIngredients.length);
 
 		// Create shopping list items
 		const items = neededIngredients.map(ingredient => ({
@@ -316,20 +320,30 @@ export const shoppingListService = {
 			name: ingredient.ingredient_name,
 			quantity: ingredient.quantity,
 			unit: ingredient.unit,
-			category: "Other", // Could be improved with ingredient categorization
+			category: "Other",
 			is_purchased: false,
 			notes: ingredient.notes || "",
 			recipe_id: recipeId,
 		}));
 
-		if (items.length === 0) return [];
+		if (items.length === 0) {
+			console.log('No new ingredients needed - user already has everything!');
+			return [];
+		}
+
+		console.log('Inserting items:', items);
 
 		const { data, error } = await supabase
 			.from("shopping_list_items")
 			.insert(items)
 			.select();
 
-		if (error) throw error;
+		if (error) {
+			console.error('Database error inserting shopping items:', error);
+			throw error;
+		}
+		
+		console.log('Successfully inserted shopping items:', data?.length);
 		return data || [];
 	},
 };

@@ -213,11 +213,13 @@ export function Shopping() {
 		if (!selectedList) return;
 
 		try {
+			console.log('Adding from recipe:', recipeId, 'to list:', selectedList.id);
 			await shoppingListService.createFromRecipe(selectedList.id, recipeId, userIngredients);
 			await loadListItems();
 			setShowRecipeModal(false);
 		} catch (error) {
 			console.error("Error adding from recipe:", error);
+			alert("Failed to add recipe ingredients. Please try again.");
 		}
 	};
 
@@ -732,7 +734,10 @@ export function Shopping() {
 													</div>
 												</div>
 												<Button
-													onClick={() => addFromRecipe(recipe.id)}
+													onClick={async () => {
+														console.log('Button clicked for recipe:', recipe.title);
+														await addFromRecipe(recipe.id);
+													}}
 													size="sm"
 													className="flex-shrink-0"
 												>
