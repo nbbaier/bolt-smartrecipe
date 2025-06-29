@@ -19,6 +19,10 @@ import {
 	Trash2,
 	AlertTriangle,
 	Filter,
+	Camera,
+	Upload,
+	Sparkles,
+	X,
 } from "lucide-react";
 import type { Ingredient } from "../types";
 
@@ -53,9 +57,14 @@ export function Pantry() {
 	const [searchTerm, setSearchTerm] = useState("");
 	const [selectedCategory, setSelectedCategory] = useState<string>("All");
 	const [showAddForm, setShowAddForm] = useState(false);
+	const [showPhotoUpload, setShowPhotoUpload] = useState(false);
 	const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(
 		null,
 	);
+	const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+	const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+	const [mockRecognizedIngredients, setMockRecognizedIngredients] = useState("");
+	const [processingImage, setProcessingImage] = useState(false);
 	const [formData, setFormData] = useState({
 		name: "",
 		quantity: "",
@@ -137,6 +146,85 @@ export function Pantry() {
 		setEditingIngredient(null);
 	};
 
+	const resetPhotoUpload = () => {
+		setSelectedImageFile(null);
+		setImagePreviewUrl(null);
+		setMockRecognizedIngredients("");
+		setShowPhotoUpload(false);
+		setProcessingImage(false);
+	};
+
+	const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (file) {
+			setSelectedImageFile(file);
+			const previewUrl = URL.createObjectURL(file);
+			setImagePreviewUrl(previewUrl);
+			setMockRecognizedIngredients(""); // Reset recognized ingredients
+		}
+	};
+
+	const simulateAIRecognition = () => {
+		setProcessingImage(true);
+		
+		// Simulate AI processing delay
+		setTimeout(() => {
+			const mockIngredients = [
+				"Apples",
+				"Bananas", 
+				"Milk",
+				"Bread",
+				"Eggs",
+				"Tomatoes",
+				"Cheese",
+				"Chicken Breast"
+			];
+			
+			// Randomly select 3-6 ingredients to simulate realistic recognition
+			const numIngredients = Math.floor(Math.random() * 4) + 3;
+			const selectedIngredients = mockIngredients
+				.sort(() => 0.5 - Math.random())
+				.slice(0, numIngredients);
+			
+			setMockRecognizedIngredients(selectedIngredients.join(", "));
+			setProcessingImage(false);
+		}, 2000);
+	};
+
+	const addIngredientsFromPhoto = async () => {
+		if (!user || !mockRecognizedIngredients.trim()) return;
+
+		try {
+			const ingredientNames = mockRecognizedIngredients
+				.split(",")
+				.map(name => name.trim())
+				.filter(name => name.length > 0);
+
+			for (const name of ingredientNames) {
+				const ingredientData = {
+					user_id: user.id,
+					name: name,
+					quantity: 1,
+					unit: "pieces",
+					category: "Other",
+					expiration_date: null,
+					notes: "Added from photo",
+				};
+
+				await ingredientService.create(ingredientData);
+			}
+
+			await loadIngredients();
+			resetPhotoUpload();
+			
+			// Show success message
+			alert(`Successfully added ${ingredientNames.length} ingredients from photo!`);
+		} catch (error) {
+			console.error("Error adding ingredients from photo:", error);
+			alert("Failed to add ingredients. Please try again.");
+		}
+	};
+
 	const startEdit = (ingredient: Ingredient) => {
 		setEditingIngredient(ingredient);
 		setFormData({
@@ -148,6 +236,17 @@ export function Pantry() {
 			notes: ingredient.notes || "",
 		});
 		setShowAddForm(true);
+		setShowPhotoUpload(false); // Hide photo upload when editing
+	};
+
+	const handleShowAddForm = () => {
+		setShowAddForm(true);
+		setShowPhotoUpload(false);
+	};
+
+	const handleShowPhotoUpload = () => {
+		setShowPhotoUpload(true);
+		setShowAddForm(false);
 	};
 
 	const isExpiringSoon = (expirationDate: string | null) => {
@@ -202,13 +301,23 @@ export function Pantry() {
 						Track your ingredients and expiration dates
 					</p>
 				</div>
-				<Button
-					onClick={() => setShowAddForm(true)}
-					className="flex items-center justify-center space-x-2 text-sm sm:text-base"
-				>
-					<Plus className="h-4 w-4" />
-					<span>Add Ingredient</span>
-				</Button>
+				<div className="flex flex-col sm:flex-row gap-2">
+					<Button
+						onClick={handleShowPhotoUpload}
+						variant="outline"
+						className="flex items-center justify-center space-x-2 text-sm sm:text-base"
+					>
+						<Camera className="h-4 w-4" />
+						<span>Add from Photo</span>
+					</Button>
+					<Button
+						onClick={handleShowAddForm}
+						className="flex items-center justify-center space-x-2 text-sm sm:text-base"
+					>
+						<Plus className="h-4 w-4" />
+						<span>Add Ingredient</span>
+					</Button>
+				</div>
 			</div>
 
 			{/* Search and Filter */}
@@ -238,6 +347,120 @@ export function Pantry() {
 					</select>
 				</div>
 			</div>
+
+			{/* Photo Upload Form */}
+			{showPhotoUpload && (
+				<Card>
+					<CardHeader className="pb-3 sm:pb-6">
+						<div className="flex items-center justify-between">
+							<div>
+								<CardTitle className="text-lg sm:text-xl flex items-center space-x-2">
+									<Camera className="h-5 w-5" />
+									<span>Add Ingredients from Photo</span>
+								</CardTitle>
+								<CardDescription>
+									Upload a photo of your ingredients and let AI identify them
+								</CardDescription>
+							</div>
+							<Button variant="ghost" size="icon" onClick={resetPhotoUpload}>
+								<X className="h-4 w-4" />
+							</Button>
+						</div>
+					</CardHeader>
+					<CardContent className="space-y-6">
+						{/* File Upload */}
+						<div className="space-y-4">
+							<div className="flex items-center justify-center w-full">
+								<label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-secondary-300 rounded-lg cursor-pointer bg-secondary-50 hover:bg-secondary-100 transition-colors">
+									<div className="flex flex-col items-center justify-center pt-5 pb-6">
+										<Upload className="w-8 h-8 mb-2 text-secondary-500" />
+										<p className="mb-2 text-sm text-secondary-500">
+											<span className="font-semibold">Click to upload</span> or drag and drop
+										</p>
+										<p className="text-xs text-secondary-500">PNG, JPG, JPEG (MAX. 10MB)</p>
+									</div>
+									<input
+										type="file"
+										className="hidden"
+										accept="image/*"
+										onChange={handleImageUpload}
+									/>
+								</label>
+							</div>
+						</div>
+
+						{/* Image Preview */}
+						{imagePreviewUrl && (
+							<div className="space-y-4">
+								<div className="relative">
+									<img
+										src={imagePreviewUrl}
+										alt="Uploaded ingredient photo"
+										className="w-full max-h-64 object-contain rounded-lg border border-secondary-200"
+									/>
+								</div>
+								
+								{/* AI Recognition Button */}
+								{!mockRecognizedIngredients && (
+									<Button
+										onClick={simulateAIRecognition}
+										disabled={processingImage}
+										className="w-full flex items-center justify-center space-x-2"
+									>
+										<Sparkles className="h-4 w-4" />
+										<span>{processingImage ? "Analyzing Image..." : "Simulate AI Recognition"}</span>
+									</Button>
+								)}
+
+								{/* Processing Indicator */}
+								{processingImage && (
+									<div className="flex items-center justify-center space-x-2 text-sm text-secondary-600">
+										<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+										<span>AI is analyzing your photo...</span>
+									</div>
+								)}
+							</div>
+						)}
+
+						{/* Recognized Ingredients */}
+						{mockRecognizedIngredients && (
+							<div className="space-y-4">
+								<div>
+									<label className="block text-sm font-medium text-secondary-700 mb-2">
+										Recognized Ingredients (editable)
+									</label>
+									<textarea
+										value={mockRecognizedIngredients}
+										onChange={(e) => setMockRecognizedIngredients(e.target.value)}
+										placeholder="Edit the recognized ingredients..."
+										className="w-full h-24 rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 resize-none"
+									/>
+									<p className="text-xs text-secondary-500 mt-1">
+										Separate ingredients with commas. You can edit, add, or remove items.
+									</p>
+								</div>
+
+								{/* Action Buttons */}
+								<div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+									<Button
+										onClick={addIngredientsFromPhoto}
+										className="flex items-center justify-center space-x-2"
+									>
+										<Plus className="h-4 w-4" />
+										<span>Add to Pantry</span>
+									</Button>
+									<Button
+										variant="outline"
+										onClick={resetPhotoUpload}
+									>
+										Cancel
+									</Button>
+								</div>
+							</div>
+						)}
+					</CardContent>
+				</Card>
+			)}
 
 			{/* Add/Edit Form */}
 			{showAddForm && (
@@ -356,9 +579,15 @@ export function Pantry() {
 								: "Start building your pantry by adding your first ingredient"}
 						</p>
 						{!searchTerm && selectedCategory === "All" && (
-							<Button onClick={() => setShowAddForm(true)} className="text-sm sm:text-base">
-								Add Your First Ingredient
-							</Button>
+							<div className="flex flex-col sm:flex-row gap-2 justify-center">
+								<Button onClick={handleShowPhotoUpload} variant="outline" className="text-sm sm:text-base">
+									<Camera className="h-4 w-4 mr-2" />
+									Add from Photo
+								</Button>
+								<Button onClick={handleShowAddForm} className="text-sm sm:text-base">
+									Add Your First Ingredient
+								</Button>
+							</div>
 						)}
 					</CardContent>
 				</Card>
