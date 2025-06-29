@@ -80,6 +80,8 @@ export const ingredientService = {
 		unit: string,
 		category: string = "Other"
 	): Promise<Ingredient> {
+		console.log('addOrUpdateFromShopping called with:', { userId, itemName, quantity, unit, category });
+		
 		// First, check if an ingredient with similar name already exists
 		const { data: existingIngredients, error: searchError } = await supabase
 			.from("ingredients")
@@ -88,6 +90,8 @@ export const ingredientService = {
 			.ilike("name", `%${itemName}%`);
 
 		if (searchError) throw searchError;
+		
+		console.log('Existing ingredients found:', existingIngredients?.length || 0);
 
 		// Find exact or close match
 		const existingIngredient = existingIngredients?.find(ing => 
@@ -97,13 +101,17 @@ export const ingredientService = {
 		);
 
 		if (existingIngredient) {
+			console.log('Found existing ingredient:', existingIngredient.name);
 			// Update existing ingredient quantity
-			const newQuantity = existingIngredient.quantity + quantity;
+			const newQuantity = (existingIngredient.quantity || 0) + quantity;
+			console.log('Updating quantity from', existingIngredient.quantity, 'to', newQuantity);
+			
 			return await this.update(existingIngredient.id, {
 				quantity: newQuantity,
 				unit: unit || existingIngredient.unit, // Keep existing unit if new one is empty
 			});
 		} else {
+			console.log('Creating new ingredient:', itemName);
 			// Create new ingredient
 			return await this.create({
 				user_id: userId,
@@ -396,6 +404,29 @@ export const shoppingListService = {
 		return data || [];
 	},
 };
+	async addToPantryFromShopping(
+		userId: string,
+		itemName: string,
+		quantity: number,
+		unit: string,
+		category: string = "Other"
+	): Promise<void> {
+		console.log('Adding to pantry from shopping:', { itemName, quantity, unit, category });
+		
+		try {
+			await ingredientService.addOrUpdateFromShopping(
+				userId,
+				itemName,
+				quantity,
+				unit,
+				category
+			);
+			console.log('Successfully added to pantry:', itemName);
+		} catch (error) {
+			console.error('Failed to add to pantry:', error);
+			// Don't throw error - shopping list update should still succeed
+		}
+	},
 
 // User Profile operations
 export const userProfileService = {

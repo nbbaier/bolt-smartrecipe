@@ -202,28 +202,38 @@ export function Shopping() {
 
 	const togglePurchased = async (itemId: string, isPurchased: boolean) => {
 		try {
+			console.log('Toggling purchase status:', { itemId, isPurchased, newStatus: !isPurchased });
+			
+			// Find the item being toggled
+			const item = listItems.find(item => item.id === itemId);
+			if (!item) {
+				console.error('Item not found:', itemId);
+				return;
+			}
+			
+			console.log('Found item:', item);
+			
 			const updatedItem = await shoppingListService.togglePurchased(itemId, !isPurchased);
+			console.log('Updated item:', updatedItem);
 			
 			// If item was just marked as purchased, add it to pantry
-			if (!isPurchased && user) {
-				try {
-					await ingredientService.addOrUpdateFromShopping(
-						user.id,
-						updatedItem.name,
-						updatedItem.quantity,
-						updatedItem.unit,
-						updatedItem.category
-					);
-					console.log(`Added ${updatedItem.name} to pantry`);
-				} catch (pantryError) {
-					console.error("Error adding to pantry:", pantryError);
-					// Don't throw error here - shopping list update was successful
-				}
+			if (!isPurchased && user) { // Item was just marked as purchased
+				console.log('Item marked as purchased, adding to pantry...');
+				await shoppingListService.addToPantryFromShopping(
+					user.id,
+					updatedItem.name,
+					updatedItem.quantity,
+					updatedItem.unit,
+					updatedItem.category
+				);
+			} else {
+				console.log('Item unmarked as purchased or no user');
 			}
 			
 			await loadListItems();
 		} catch (error) {
 			console.error("Error toggling purchase status:", error);
+			alert("Failed to update item. Please try again.");
 		}
 	};
 
@@ -591,6 +601,17 @@ export function Shopping() {
 						</Card>
 					) : (
 						<div className="space-y-3">
+							{/* Debug Info */}
+							{process.env.NODE_ENV === 'development' && (
+								<Card className="bg-blue-50 border-blue-200">
+									<CardContent className="p-3">
+										<p className="text-xs text-blue-700">
+											Debug: {listItems.length} total items, {listItems.filter(i => i.is_purchased).length} purchased
+										</p>
+									</CardContent>
+								</Card>
+							)}
+							
 							{/* Unpurchased Items */}
 							<div className="grid grid-cols-1 gap-2 sm:gap-3">
 								{filteredItems
