@@ -291,28 +291,9 @@ export function AIChat() {
 
 	return (
 		<div className="flex flex-col h-[calc(100vh-200px)] max-w-4xl mx-auto">
-			{/* Chat Header */}
-			<div className="flex items-center space-x-3 p-4 border-b border-border bg-gradient-to-r from-emerald-50 to-emerald-100/50 rounded-t-lg">
-				<div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg">
-					<Bot className="h-5 w-5 text-white" />
-				</div>
-				<div>
-					<h2 className="font-semibold text-gray-900">AI Cooking Assistant</h2>
-					<p className="text-sm text-gray-600">
-						{isTyping ? "Thinking..." : "Ready to help with recipes and cooking tips"}
-					</p>
-				</div>
-				<div className="ml-auto">
-					<Badge variant="secondary" className="bg-emerald-100 text-emerald-700">
-						<Sparkles className="h-3 w-3 mr-1" />
-						AI Powered
-					</Badge>
-				</div>
-			</div>
-
 			{/* Quick Prompts - Show when no messages or just welcome */}
 			{messages.length <= 1 && (
-				<div className="p-4 border-b border-border bg-gray-50">
+				<div className="p-4 border-b border-border bg-gray-50 rounded-t-lg">
 					<p className="text-sm text-gray-600 mb-3">Try asking me about:</p>
 					<div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
 						{QUICK_PROMPTS.map((prompt, index) => (
