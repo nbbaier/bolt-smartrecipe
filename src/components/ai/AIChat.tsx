@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
-import { ingredientService, recipeService } from "../../lib/database";
+import { ingredientService, recipeService, userPreferencesService } from "../../lib/database";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { ScrollArea } from "../ui/scroll-area";
@@ -18,6 +18,7 @@ import {
 	Utensils,
 } from "lucide-react";
 import type { Ingredient, Recipe } from "../../types";
+import type { UserPreferences } from "../../types";
 
 interface Message {
 	id: string;
@@ -68,6 +69,7 @@ export function AIChat() {
 	const [isTyping, setIsTyping] = useState(false);
 	const [userIngredients, setUserIngredients] = useState<Ingredient[]>([]);
 	const [availableRecipes, setAvailableRecipes] = useState<Recipe[]>([]);
+	const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
 	const scrollAreaRef = useRef<HTMLDivElement>(null);
 	const inputRef = useRef<HTMLInputElement>(null);
 
@@ -105,168 +107,133 @@ export function AIChat() {
 		if (!user) return;
 
 		try {
-			const [ingredients, recipes] = await Promise.all([
+			const [ingredients, recipes, preferences] = await Promise.all([
 				ingredientService.getAll(user.id),
 				recipeService.getAll(),
+				userPreferencesService.getPreferences(user.id),
 			]);
 			setUserIngredients(ingredients);
 			setAvailableRecipes(recipes);
+			setUserPreferences(preferences);
 		} catch (error) {
 			console.error("Error loading user data:", error);
 		}
 	};
 
 	const generateAIResponse = async (userMessage: string): Promise<Message> => {
-		// Simulate AI processing delay
-		await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
+		try {
+			// Prepare the conversation history for the API
+			const conversationMessages = messages
+				.filter(msg => msg.type !== "ai" || !msg.suggestions) // Exclude system messages with suggestions
+				.map(msg => ({
+					role: msg.type === "user" ? "user" as const : "assistant" as const,
+					content: msg.content
+				}));
 
-		const lowerMessage = userMessage.toLowerCase();
-		let response = "";
-		let suggestions: string[] = [];
-		let recipes: Recipe[] = [];
+			// Add the current user message
+			conversationMessages.push({
+				role: "user" as const,
+				content: userMessage
+			});
 
-		// Recipe suggestions based on pantry
-		if (lowerMessage.includes("cook") || lowerMessage.includes("recipe") || lowerMessage.includes("make")) {
+			// Prepare user context
 			const ingredientNames = userIngredients.map(ing => ing.name);
-			const canCookRecipes = await recipeService.getCanCook(ingredientNames);
+			const userContext = {
+				userIngredients: ingredientNames,
+				userPreferences: userPreferences ? {
+					dietary_restrictions: userPreferences.dietary_restrictions,
+					allergies: userPreferences.allergies,
+					cooking_skill_level: userPreferences.cooking_skill_level,
+				} : undefined,
+			};
+
+			// Call the edge function
+			const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
+				method: 'POST',
+				headers: {
+					'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					messages: conversationMessages,
+					...userContext,
+				}),
+			});
+
+			if (!response.ok) {
+				throw new Error(`API request failed: ${response.status}`);
+			}
+
+			const data = await response.json();
 			
-			if (canCookRecipes.length > 0) {
-				response = `Great! Based on your current pantry, I found ${canCookRecipes.length} recipes you can make right now. Here are some delicious options:`;
-				recipes = canCookRecipes.slice(0, 3);
+			if (data.error) {
+				throw new Error(data.error);
+			}
+
+			// Parse the AI response and generate suggestions
+			const aiContent = data.message;
+			let suggestions: string[] = [];
+			let recipes: Recipe[] = [];
+
+			// Generate contextual suggestions based on the response
+			if (aiContent.toLowerCase().includes('recipe') || aiContent.toLowerCase().includes('cook')) {
 				suggestions = [
 					"Show me more recipes",
 					"What about vegetarian options?",
 					"I want something quick",
-					"Suggest ingredients to buy",
+					"Help me plan meals for the week",
+				];
+			} else if (aiContent.toLowerCase().includes('ingredient') || aiContent.toLowerCase().includes('pantry')) {
+				suggestions = [
+					"What can I cook with these ingredients?",
+					"How should I store these ingredients?",
+					"What's a good substitute for this ingredient?",
+					"Help me use up leftovers",
 				];
 			} else {
-				response = `I'd love to help you cook! It looks like you might need to add some ingredients to your pantry first. Would you like me to suggest some essential ingredients to get started?`;
-				suggestions = [
-					"Suggest essential ingredients",
-					"Show me simple recipes",
-					"Help me plan a grocery trip",
-				];
-			}
-		}
-		// Expiring ingredients
-		else if (lowerMessage.includes("expir") || lowerMessage.includes("spoil") || lowerMessage.includes("old")) {
-			const expiringItems = await ingredientService.getExpiringSoon(user!.id, 7);
-			
-			if (expiringItems.length > 0) {
-				const itemsList = expiringItems.slice(0, 3).map(item => item.name).join(", ");
-				response = `You have ${expiringItems.length} items expiring soon: ${itemsList}${expiringItems.length > 3 ? ", and more" : ""}. Let me suggest some recipes to use them up!`;
-				
-				// Find recipes that use expiring ingredients
-				const ingredientNames = userIngredients.map(ing => ing.name);
-				const canCookRecipes = await recipeService.getCanCook(ingredientNames);
-				recipes = canCookRecipes.slice(0, 2);
-				
-				suggestions = [
-					"Show recipes using these ingredients",
-					"How to store them longer?",
-					"What else is expiring?",
-				];
-			} else {
-				response = `Good news! Nothing in your pantry is expiring soon. Your ingredients are fresh and ready to use!`;
 				suggestions = [
 					"What can I cook tonight?",
-					"Suggest new recipes to try",
+					"Suggest a recipe for dinner",
 					"Help me meal prep",
+					"What's expiring in my pantry?",
 				];
 			}
-		}
-		// Healthy meal suggestions
-		else if (lowerMessage.includes("healthy") || lowerMessage.includes("nutrition") || lowerMessage.includes("diet")) {
-			const healthyRecipes = availableRecipes.filter(recipe => 
-				recipe.description.toLowerCase().includes("healthy") ||
-				recipe.description.toLowerCase().includes("fresh") ||
-				recipe.title.toLowerCase().includes("salad") ||
-				recipe.cuisine_type === "Mediterranean"
-			);
-			
-			response = `Here are some healthy meal ideas that focus on fresh ingredients and balanced nutrition:`;
-			recipes = healthyRecipes.slice(0, 3);
-			suggestions = [
-				"Show vegetarian options",
-				"Low-carb meal ideas",
-				"High-protein recipes",
-				"Mediterranean cuisine",
-			];
-		}
-		// Quick recipes
-		else if (lowerMessage.includes("quick") || lowerMessage.includes("fast") || lowerMessage.includes("15") || lowerMessage.includes("30")) {
-			const quickRecipes = availableRecipes.filter(recipe => 
-				(recipe.prep_time + recipe.cook_time) <= 30
-			);
-			
-			response = `Perfect for a busy day! Here are some quick recipes that take 30 minutes or less:`;
-			recipes = quickRecipes.slice(0, 3);
-			suggestions = [
-				"Even faster options",
-				"One-pot meals",
-				"No-cook recipes",
-				"Meal prep ideas",
-			];
-		}
-		// Comfort food
-		else if (lowerMessage.includes("comfort") || lowerMessage.includes("cozy") || lowerMessage.includes("warm")) {
-			const comfortRecipes = availableRecipes.filter(recipe => 
-				recipe.description.toLowerCase().includes("hearty") ||
-				recipe.description.toLowerCase().includes("comfort") ||
-				recipe.cuisine_type === "American" ||
-				recipe.title.toLowerCase().includes("soup")
-			);
-			
-			response = `Nothing beats comfort food! Here are some cozy, heartwarming recipes to make you feel at home:`;
-			recipes = comfortRecipes.slice(0, 3);
-			suggestions = [
-				"Soup recipes",
-				"Pasta dishes",
-				"Baked goods",
-				"Winter warmers",
-			];
-		}
-		// Meal planning
-		else if (lowerMessage.includes("plan") || lowerMessage.includes("prep") || lowerMessage.includes("week")) {
-			response = `Meal planning is a great way to save time and reduce food waste! Here's how I can help you plan your week:
 
-• **Monday-Wednesday**: Start with fresh ingredients
-• **Thursday-Friday**: Use up items that expire soon  
-• **Weekend**: Try new recipes or batch cook
+			// If the response mentions specific recipes or ingredients, try to find matching recipes
+			if (aiContent.toLowerCase().includes('recipe') && userIngredients.length > 0) {
+				const ingredientNames = userIngredients.map(ing => ing.name);
+				const canCookRecipes = await recipeService.getCanCook(ingredientNames);
+				recipes = canCookRecipes.slice(0, 2); // Show up to 2 recipes
+			}
 
-Would you like me to suggest a specific meal plan based on your pantry?`;
-			suggestions = [
-				"Create a 7-day meal plan",
-				"Batch cooking ideas",
-				"Shopping list for the week",
-				"Prep-ahead recipes",
-			];
-		}
-		// Default response
-		else {
-			const responses = [
-				`I'm here to help with all your cooking needs! I can suggest recipes based on your pantry, help you plan meals, or answer cooking questions.`,
-				`Let me help you discover delicious recipes! I can find dishes you can make with your current ingredients or suggest new ones to try.`,
-				`Cooking should be fun and stress-free! Tell me what you're in the mood for, and I'll help you find the perfect recipe.`,
-			];
-			response = responses[Math.floor(Math.random() * responses.length)];
-			suggestions = [
-				"What can I cook with my ingredients?",
-				"Suggest a recipe for dinner",
-				"Help me use up leftovers",
-				"Plan meals for this week",
-			];
-		}
+			return {
+				id: Date.now().toString(),
+				type: "ai",
+				content: aiContent,
+				timestamp: new Date(),
+				suggestions,
+				recipes,
+			};
 
-		return {
-			id: Date.now().toString(),
-			type: "ai",
-			content: response,
-			timestamp: new Date(),
-			suggestions,
-			recipes,
-		};
+		} catch (error) {
+			console.error("Error calling AI API:", error);
+			
+			// Fallback to simulated response if API fails
+			return {
+				id: Date.now().toString(),
+				type: "ai",
+				content: "I'm sorry, I'm having trouble connecting to my AI service right now. Please try again in a moment, or feel free to browse your recipes and pantry in the meantime!",
+				timestamp: new Date(),
+				suggestions: [
+					"Try asking again",
+					"Browse my recipes",
+					"Check my pantry",
+					"View shopping lists",
+				],
+			};
+		}
 	};
+
 
 	const handleSendMessage = async (messageText?: string) => {
 		const text = messageText || inputValue.trim();
@@ -494,7 +461,7 @@ Would you like me to suggest a specific meal plan based on your pantry?`;
 					</Button>
 				</div>
 				<p className="text-xs text-gray-500 mt-2 text-center">
-					AI responses are simulated for demonstration. Ask about recipes, ingredients, or cooking tips!
+					Powered by OpenAI GPT-4.1. Ask about recipes, ingredients, or cooking tips!
 				</p>
 			</div>
 		</div>
