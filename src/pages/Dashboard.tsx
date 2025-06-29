@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { ingredientService, recipeService } from "../lib/database";
 import { LowStockAlert } from "../components/ui/LowStockAlert";
+import { ExpirationMonitor } from "../components/ui/ExpirationMonitor";
 import {
 	Card,
 	CardContent,
@@ -113,6 +114,15 @@ export function Dashboard() {
 					onViewPantry={() => window.location.href = '/pantry'}
 				/>
 			)}
+
+			{/* Enhanced Expiration Monitor */}
+			{expiringSoonItems.length > 0 && (
+				<ExpirationMonitor
+					ingredients={expiringSoonItems}
+					className="mb-6"
+				/>
+			)}
+
 			{/* Quick Stats */}
 			<div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 lg:gap-6">
 				<Card>

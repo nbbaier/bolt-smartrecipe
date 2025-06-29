@@ -3,6 +3,8 @@ import { useAuth } from "../contexts/AuthContext";
 import { ingredientService } from "../lib/database";
 import { useIngredientHistory } from "../hooks/useIngredientHistory";
 import { AutocompleteInput } from "../components/ui/AutocompleteInput";
+import { SmartCategorySelector } from "../components/ui/SmartCategorySelector";
+import { ExpirationMonitor } from "../components/ui/ExpirationMonitor";
 import {
 	Card,
 	CardContent,
@@ -72,6 +74,7 @@ export function Pantry() {
 	}>>([]);
 	const [isParsingText, setIsParsingText] = useState(false);
 	const [isAddingToPantry, setIsAddingToPantry] = useState(false);
+	const [showExpirationMonitor, setShowExpirationMonitor] = useState(false);
 	const [formData, setFormData] = useState({
 		name: "",
 		quantity: "",
@@ -330,6 +333,9 @@ export function Pantry() {
 		{} as Record<string, number>,
 	);
 
+	// Get ingredients with expiration dates for monitoring
+	const ingredientsWithExpiration = ingredients.filter(ing => ing.expiration_date);
+
 	if (loading) {
 		return (
 			<div className="flex items-center justify-center py-12">
@@ -363,6 +369,7 @@ export function Pantry() {
 						onClick={() => {
 							setShowNaturalLanguageInput(true);
 							setShowAddForm(false);
+							setShowExpirationMonitor(false);
 						}}
 						variant={showNaturalLanguageInput ? "default" : "outline"}
 						className="flex items-center justify-center space-x-2 text-sm sm:text-base"
@@ -370,6 +377,20 @@ export function Pantry() {
 						<MessageCircle className="h-4 w-4" />
 						<span>Add from Text</span>
 					</Button>
+					{ingredientsWithExpiration.length > 0 && (
+						<Button
+							onClick={() => {
+								setShowExpirationMonitor(!showExpirationMonitor);
+								setShowAddForm(false);
+								setShowNaturalLanguageInput(false);
+							}}
+							variant={showExpirationMonitor ? "default" : "outline"}
+							className="flex items-center justify-center space-x-2 text-sm sm:text-base"
+						>
+							<Calendar className="h-4 w-4" />
+							<span>Monitor Expiration</span>
+						</Button>
+					)}
 				</div>
 			</div>
 
@@ -464,22 +485,17 @@ export function Pantry() {
 									</div>
 								</div>
 								<div>
-									<label className="block text-sm font-medium text-secondary-700 mb-1">
-										Category
-									</label>
-									<select
-										value={formData.category}
-										onChange={(e) =>
-											setFormData({ ...formData, category: e.target.value })
+									<SmartCategorySelector
+										ingredientName={formData.name}
+										currentCategory={formData.category}
+										onCategoryChange={(category) =>
+											setFormData({ ...formData, category })
 										}
-										className="w-full h-10 rounded-lg border border-secondary-300 px-3 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-									>
-										{CATEGORIES.map((category) => (
-											<option key={category} value={category}>
-												{category}
-											</option>
-										))}
-									</select>
+										userHistory={ingredients.map(ing => ({
+											name: ing.name,
+											category: ing.category,
+										}))}
+									/>
 								</div>
 								<Input
 									label="Expiration Date (Optional)"
@@ -665,6 +681,17 @@ export function Pantry() {
 						)}
 					</CardContent>
 				</Card>
+			)}
+
+			{/* Expiration Monitor */}
+			{showExpirationMonitor && ingredientsWithExpiration.length > 0 && (
+				<ExpirationMonitor
+					ingredients={ingredientsWithExpiration}
+					onUpdateSettings={(settings) => {
+						console.log("Expiration settings updated:", settings);
+						// Could save to user preferences in the future
+					}}
+				/>
 			)}
 
 			{/* Ingredients Grid */}
