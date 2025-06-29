@@ -84,33 +84,33 @@ export function Dashboard() {
 	if (loading) {
 		return (
 			<div className="flex items-center justify-center py-12">
-				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
 			</div>
 		);
 	}
 
 	return (
-		<div className="space-y-6">
-			<div>
-				<h1 className="text-2xl font-bold text-secondary-900">Dashboard</h1>
-				<p className="text-secondary-600">
+		<div className="space-y-4 sm:space-y-6">
+			<div className="text-center sm:text-left">
+				<h1 className="text-xl sm:text-2xl font-bold text-secondary-900">Dashboard</h1>
+				<p className="text-sm sm:text-base text-secondary-600">
 					Welcome back! Here's what's happening in your kitchen.
 				</p>
 			</div>
 
 			{/* Quick Stats */}
-			<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+			<div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 lg:gap-6">
 				<Card>
-					<CardContent className="p-6">
+					<CardContent className="p-4 sm:p-6">
 						<div className="flex items-center">
 							<div className="flex-shrink-0">
-								<Package className="h-8 w-8 text-primary-600" />
+								<Package className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
 							</div>
-							<div className="ml-4">
-								<p className="text-sm font-medium text-secondary-600">
+							<div className="ml-3 sm:ml-4 min-w-0 flex-1">
+								<p className="text-xs sm:text-sm font-medium text-secondary-600 truncate">
 									Pantry Items
 								</p>
-								<p className="text-2xl font-bold text-secondary-900">
+								<p className="text-lg sm:text-2xl font-bold text-secondary-900">
 									{stats.totalIngredients}
 								</p>
 							</div>
@@ -119,16 +119,16 @@ export function Dashboard() {
 				</Card>
 
 				<Card>
-					<CardContent className="p-6">
+					<CardContent className="p-4 sm:p-6">
 						<div className="flex items-center">
 							<div className="flex-shrink-0">
-								<Sparkles className="h-8 w-8 text-primary-600" />
+								<Sparkles className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
 							</div>
-							<div className="ml-4">
-								<p className="text-sm font-medium text-secondary-600">
+							<div className="ml-3 sm:ml-4 min-w-0 flex-1">
+								<p className="text-xs sm:text-sm font-medium text-secondary-600 truncate">
 									Can Cook
 								</p>
-								<p className="text-2xl font-bold text-secondary-900">
+								<p className="text-lg sm:text-2xl font-bold text-secondary-900">
 									{stats.canCookRecipes}
 								</p>
 							</div>
@@ -137,16 +137,16 @@ export function Dashboard() {
 				</Card>
 
 				<Card>
-					<CardContent className="p-6">
+					<CardContent className="p-4 sm:p-6">
 						<div className="flex items-center">
 							<div className="flex-shrink-0">
-								<BookOpen className="h-8 w-8 text-primary-600" />
+								<BookOpen className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
 							</div>
-							<div className="ml-4">
-								<p className="text-sm font-medium text-secondary-600">
+							<div className="ml-3 sm:ml-4 min-w-0 flex-1">
+								<p className="text-xs sm:text-sm font-medium text-secondary-600 truncate">
 									Total Recipes
 								</p>
-								<p className="text-2xl font-bold text-secondary-900">
+								<p className="text-lg sm:text-2xl font-bold text-secondary-900">
 									{stats.availableRecipes}
 								</p>
 							</div>
@@ -155,18 +155,18 @@ export function Dashboard() {
 				</Card>
 
 				<Card>
-					<CardContent className="p-6">
+					<CardContent className="p-4 sm:p-6">
 						<div className="flex items-center">
 							<div className="flex-shrink-0">
 								<Clock
-									className={`h-8 w-8 ${stats.expiringSoon > 0 ? "text-orange-600" : "text-primary-600"}`}
+									className={`h-6 w-6 sm:h-8 sm:w-8 ${stats.expiringSoon > 0 ? "text-orange-600" : "text-primary"}`}
 								/>
 							</div>
-							<div className="ml-4">
-								<p className="text-sm font-medium text-secondary-600">
+							<div className="ml-3 sm:ml-4 min-w-0 flex-1">
+								<p className="text-xs sm:text-sm font-medium text-secondary-600 truncate">
 									Expiring Soon
 								</p>
-								<p className="text-2xl font-bold text-secondary-900">
+								<p className="text-lg sm:text-2xl font-bold text-secondary-900">
 									{stats.expiringSoon}
 								</p>
 							</div>
@@ -176,19 +176,19 @@ export function Dashboard() {
 			</div>
 
 			{/* Main Content Grid */}
-			<div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+			<div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
 				{/* What Can I Cook */}
 				<Card>
-					<CardHeader>
+					<CardHeader className="pb-3 sm:pb-6">
 						<div className="flex items-center space-x-2">
-							<Sparkles className="h-5 w-5 text-primary-600" />
-							<CardTitle>What Can I Cook?</CardTitle>
+							<Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+							<CardTitle className="text-base sm:text-lg">What Can I Cook?</CardTitle>
 						</div>
-						<CardDescription>
+						<CardDescription className="text-sm">
 							Recipes you can make with your current ingredients
 						</CardDescription>
 					</CardHeader>
-					<CardContent>
+					<CardContent className="pt-0">
 						{canCookRecipes.length > 0 ? (
 							<div className="space-y-3">
 								{canCookRecipes.map((recipe) => (
@@ -202,13 +202,13 @@ export function Dashboard() {
 												"https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg"
 											}
 											alt={recipe.title}
-											className="w-12 h-12 object-cover rounded-lg"
+											className="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded-lg flex-shrink-0"
 										/>
-										<div className="flex-1">
-											<h4 className="font-medium text-secondary-900">
+										<div className="flex-1 min-w-0">
+											<h4 className="font-medium text-secondary-900 text-sm sm:text-base truncate">
 												{recipe.title}
 											</h4>
-											<p className="text-sm text-secondary-600">
+											<p className="text-xs sm:text-sm text-secondary-600">
 												{recipe.prep_time + recipe.cook_time} min •{" "}
 												{recipe.difficulty}
 											</p>
@@ -216,18 +216,18 @@ export function Dashboard() {
 									</div>
 								))}
 								<Link to="/recipes">
-									<Button className="w-full">View All Recipes</Button>
+									<Button className="w-full text-sm sm:text-base">View All Recipes</Button>
 								</Link>
 							</div>
 						) : (
 							<div className="text-center py-6">
-								<BookOpen className="h-12 w-12 text-secondary-400 mx-auto mb-3" />
-								<p className="text-secondary-600 mb-4">
+								<BookOpen className="h-10 w-10 sm:h-12 sm:w-12 text-secondary-400 mx-auto mb-3" />
+								<p className="text-sm sm:text-base text-secondary-600 mb-4">
 									Add ingredients to your pantry to discover recipes you can
 									cook!
 								</p>
 								<Link to="/pantry">
-									<Button>Add Ingredients</Button>
+									<Button className="text-sm sm:text-base">Add Ingredients</Button>
 								</Link>
 							</div>
 						)}
@@ -236,18 +236,18 @@ export function Dashboard() {
 
 				{/* Expiring Soon */}
 				<Card>
-					<CardHeader>
+					<CardHeader className="pb-3 sm:pb-6">
 						<div className="flex items-center space-x-2">
 							<AlertTriangle
-								className={`h-5 w-5 ${stats.expiringSoon > 0 ? "text-orange-600" : "text-secondary-400"}`}
+								className={`h-4 w-4 sm:h-5 sm:w-5 ${stats.expiringSoon > 0 ? "text-orange-600" : "text-secondary-400"}`}
 							/>
-							<CardTitle>Expiring Soon</CardTitle>
+							<CardTitle className="text-base sm:text-lg">Expiring Soon</CardTitle>
 						</div>
-						<CardDescription>
+						<CardDescription className="text-sm">
 							Items in your pantry that need attention
 						</CardDescription>
 					</CardHeader>
-					<CardContent>
+					<CardContent className="pt-0">
 						{expiringSoonItems.length > 0 ? (
 							<div className="space-y-3">
 								{expiringSoonItems.map((item) => {
@@ -259,17 +259,17 @@ export function Dashboard() {
 											key={item.id}
 											className="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-200"
 										>
-											<div>
-												<h4 className="font-medium text-secondary-900">
+											<div className="min-w-0 flex-1">
+												<h4 className="font-medium text-secondary-900 text-sm sm:text-base truncate">
 													{item.name}
 												</h4>
-												<p className="text-sm text-secondary-600">
+												<p className="text-xs sm:text-sm text-secondary-600">
 													{item.quantity} {item.unit}
 												</p>
 											</div>
-											<div className="text-right">
+											<div className="text-right flex-shrink-0 ml-2">
 												<span
-													className={`text-sm font-medium ${
+													className={`text-xs sm:text-sm font-medium ${
 														daysLeft <= 1
 															? "text-red-600"
 															: daysLeft <= 3
@@ -286,19 +286,19 @@ export function Dashboard() {
 									);
 								})}
 								<Link to="/pantry">
-									<Button variant="outline" className="w-full">
+									<Button variant="outline" className="w-full text-sm sm:text-base">
 										Manage Pantry
 									</Button>
 								</Link>
 							</div>
 						) : (
 							<div className="text-center py-6">
-								<Clock className="h-12 w-12 text-secondary-400 mx-auto mb-3" />
-								<p className="text-secondary-600 mb-4">
+								<Clock className="h-10 w-10 sm:h-12 sm:w-12 text-secondary-400 mx-auto mb-3" />
+								<p className="text-sm sm:text-base text-secondary-600 mb-4">
 									No items expiring soon. Your pantry is well managed!
 								</p>
 								<Link to="/pantry">
-									<Button variant="outline">View Pantry</Button>
+									<Button variant="outline" className="text-sm sm:text-base">View Pantry</Button>
 								</Link>
 							</div>
 						)}
@@ -307,13 +307,13 @@ export function Dashboard() {
 			</div>
 
 			{/* Quick Actions */}
-			<div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+			<div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-3">
 				<Link to="/pantry">
 					<Card className="hover:shadow-md transition-shadow cursor-pointer">
-						<CardContent className="p-6 text-center">
-							<Package className="h-8 w-8 text-primary-600 mx-auto mb-2" />
-							<h3 className="font-medium text-secondary-900">Manage Pantry</h3>
-							<p className="text-sm text-secondary-600">
+						<CardContent className="p-4 sm:p-6 text-center">
+							<Package className="h-6 w-6 sm:h-8 sm:w-8 text-primary mx-auto mb-2" />
+							<h3 className="font-medium text-secondary-900 text-sm sm:text-base">Manage Pantry</h3>
+							<p className="text-xs sm:text-sm text-secondary-600">
 								Add and track ingredients
 							</p>
 						</CardContent>
@@ -322,20 +322,20 @@ export function Dashboard() {
 
 				<Link to="/recipes">
 					<Card className="hover:shadow-md transition-shadow cursor-pointer">
-						<CardContent className="p-6 text-center">
-							<BookOpen className="h-8 w-8 text-primary-600 mx-auto mb-2" />
-							<h3 className="font-medium text-secondary-900">Browse Recipes</h3>
-							<p className="text-sm text-secondary-600">Discover new dishes</p>
+						<CardContent className="p-4 sm:p-6 text-center">
+							<BookOpen className="h-6 w-6 sm:h-8 sm:w-8 text-primary mx-auto mb-2" />
+							<h3 className="font-medium text-secondary-900 text-sm sm:text-base">Browse Recipes</h3>
+							<p className="text-xs sm:text-sm text-secondary-600">Discover new dishes</p>
 						</CardContent>
 					</Card>
 				</Link>
 
 				<Link to="/shopping">
 					<Card className="hover:shadow-md transition-shadow cursor-pointer">
-						<CardContent className="p-6 text-center">
-							<ShoppingCart className="h-8 w-8 text-primary-600 mx-auto mb-2" />
-							<h3 className="font-medium text-secondary-900">Shopping List</h3>
-							<p className="text-sm text-secondary-600">
+						<CardContent className="p-4 sm:p-6 text-center">
+							<ShoppingCart className="h-6 w-6 sm:h-8 sm:w-8 text-primary mx-auto mb-2" />
+							<h3 className="font-medium text-secondary-900 text-sm sm:text-base">Shopping List</h3>
+							<p className="text-xs sm:text-sm text-secondary-600">
 								Plan your grocery trips
 							</p>
 						</CardContent>

@@ -188,23 +188,23 @@ export function Pantry() {
 	if (loading) {
 		return (
 			<div className="flex items-center justify-center py-12">
-				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
 			</div>
 		);
 	}
 
 	return (
-		<div className="space-y-6">
-			<div className="flex items-center justify-between">
-				<div>
-					<h1 className="text-2xl font-bold text-secondary-900">My Pantry</h1>
-					<p className="text-secondary-600">
+		<div className="space-y-4 sm:space-y-6">
+			<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+				<div className="text-center sm:text-left">
+					<h1 className="text-xl sm:text-2xl font-bold text-secondary-900">My Pantry</h1>
+					<p className="text-sm sm:text-base text-secondary-600">
 						Track your ingredients and expiration dates
 					</p>
 				</div>
 				<Button
 					onClick={() => setShowAddForm(true)}
-					className="flex items-center space-x-2"
+					className="flex items-center justify-center space-x-2 text-sm sm:text-base"
 				>
 					<Plus className="h-4 w-4" />
 					<span>Add Ingredient</span>
@@ -212,22 +212,22 @@ export function Pantry() {
 			</div>
 
 			{/* Search and Filter */}
-			<div className="flex flex-col sm:flex-row gap-4">
+			<div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:gap-4">
 				<div className="relative flex-1">
 					<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-secondary-400" />
 					<Input
 						placeholder="Search ingredients..."
 						value={searchTerm}
 						onChange={(e) => setSearchTerm(e.target.value)}
-						className="pl-10"
+						className="pl-10 text-sm sm:text-base"
 					/>
 				</div>
 				<div className="flex items-center space-x-2">
-					<Filter className="h-4 w-4 text-secondary-600" />
+					<Filter className="h-4 w-4 text-secondary-600 flex-shrink-0" />
 					<select
 						value={selectedCategory}
 						onChange={(e) => setSelectedCategory(e.target.value)}
-						className="rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+						className="flex-1 sm:flex-none rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
 					>
 						<option value="All">All Categories</option>
 						{CATEGORIES.map((category) => (
@@ -242,35 +242,38 @@ export function Pantry() {
 			{/* Add/Edit Form */}
 			{showAddForm && (
 				<Card>
-					<CardHeader>
-						<CardTitle>
+					<CardHeader className="pb-3 sm:pb-6">
+						<CardTitle className="text-lg sm:text-xl">
 							{editingIngredient ? "Edit Ingredient" : "Add New Ingredient"}
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
 						<form onSubmit={handleSubmit} className="space-y-4">
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-								<Input
-									label="Ingredient Name"
-									value={formData.name}
-									onChange={(e) =>
-										setFormData({ ...formData, name: e.target.value })
-									}
-									required
-								/>
-								<div className="flex space-x-2">
+							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+								<div className="sm:col-span-2">
 									<Input
-										label="Quantity"
-										type="number"
-										step="0.1"
-										value={formData.quantity}
+										label="Ingredient Name"
+										value={formData.name}
 										onChange={(e) =>
-											setFormData({ ...formData, quantity: e.target.value })
+											setFormData({ ...formData, name: e.target.value })
 										}
-										className="flex-1"
+										required
 									/>
-									<div className="space-y-1">
-										<label className="block text-sm font-medium text-secondary-700">
+								</div>
+								<div className="flex space-x-2">
+									<div className="flex-1">
+										<Input
+											label="Quantity"
+											type="number"
+											step="0.1"
+											value={formData.quantity}
+											onChange={(e) =>
+												setFormData({ ...formData, quantity: e.target.value })
+											}
+										/>
+									</div>
+									<div className="w-20 sm:w-24">
+										<label className="block text-sm font-medium text-secondary-700 mb-1">
 											Unit
 										</label>
 										<select
@@ -278,7 +281,7 @@ export function Pantry() {
 											onChange={(e) =>
 												setFormData({ ...formData, unit: e.target.value })
 											}
-											className="h-10 rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+											className="w-full h-10 rounded-lg border border-secondary-300 px-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
 										>
 											{UNITS.map((unit) => (
 												<option key={unit} value={unit}>
@@ -288,8 +291,8 @@ export function Pantry() {
 										</select>
 									</div>
 								</div>
-								<div className="space-y-1">
-									<label className="block text-sm font-medium text-secondary-700">
+								<div>
+									<label className="block text-sm font-medium text-secondary-700 mb-1">
 										Category
 									</label>
 									<select
@@ -297,7 +300,7 @@ export function Pantry() {
 										onChange={(e) =>
 											setFormData({ ...formData, category: e.target.value })
 										}
-										className="w-full h-10 rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+										className="w-full h-10 rounded-lg border border-secondary-300 px-3 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
 									>
 										{CATEGORIES.map((category) => (
 											<option key={category} value={category}>
@@ -326,11 +329,11 @@ export function Pantry() {
 								}
 								placeholder="Any additional notes..."
 							/>
-							<div className="flex space-x-2">
-								<Button type="submit">
+							<div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+								<Button type="submit" className="text-sm sm:text-base">
 									{editingIngredient ? "Update Ingredient" : "Add Ingredient"}
 								</Button>
-								<Button type="button" variant="outline" onClick={resetForm}>
+								<Button type="button" variant="outline" onClick={resetForm} className="text-sm sm:text-base">
 									Cancel
 								</Button>
 							</div>
@@ -342,25 +345,25 @@ export function Pantry() {
 			{/* Ingredients Grid */}
 			{filteredIngredients.length === 0 ? (
 				<Card>
-					<CardContent className="text-center py-12">
-						<Package className="h-12 w-12 text-secondary-400 mx-auto mb-4" />
-						<h3 className="text-lg font-medium text-secondary-900 mb-2">
+					<CardContent className="text-center py-8 sm:py-12">
+						<Package className="h-10 w-10 sm:h-12 sm:w-12 text-secondary-400 mx-auto mb-4" />
+						<h3 className="text-base sm:text-lg font-medium text-secondary-900 mb-2">
 							No ingredients found
 						</h3>
-						<p className="text-secondary-600 mb-4">
+						<p className="text-sm sm:text-base text-secondary-600 mb-4 px-4">
 							{searchTerm || selectedCategory !== "All"
 								? "Try adjusting your search or filter criteria"
 								: "Start building your pantry by adding your first ingredient"}
 						</p>
 						{!searchTerm && selectedCategory === "All" && (
-							<Button onClick={() => setShowAddForm(true)}>
+							<Button onClick={() => setShowAddForm(true)} className="text-sm sm:text-base">
 								Add Your First Ingredient
 							</Button>
 						)}
 					</CardContent>
 				</Card>
 			) : (
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
 					{filteredIngredients.map((ingredient) => (
 						<Card
 							key={ingredient.id}
@@ -372,38 +375,38 @@ export function Pantry() {
 										: ""
 							}`}
 						>
-							<CardContent className="p-4">
+							<CardContent className="p-3 sm:p-4">
 								<div className="flex items-start justify-between mb-2">
-									<div className="flex-1">
-										<h3 className="font-medium text-secondary-900">
+									<div className="flex-1 min-w-0">
+										<h3 className="font-medium text-secondary-900 text-sm sm:text-base truncate">
 											{ingredient.name}
 										</h3>
-										<p className="text-sm text-secondary-600">
+										<p className="text-xs sm:text-sm text-secondary-600">
 											{ingredient.quantity} {ingredient.unit}
 										</p>
 										<span className="inline-block px-2 py-1 text-xs bg-secondary-100 text-secondary-700 rounded-full mt-1">
 											{ingredient.category}
 										</span>
 									</div>
-									<div className="flex space-x-1">
+									<div className="flex space-x-1 flex-shrink-0 ml-2">
 										<button
 											onClick={() => startEdit(ingredient)}
-											className="p-1 text-secondary-400 hover:text-secondary-600"
+											className="p-1.5 text-secondary-400 hover:text-secondary-600 rounded"
 										>
-											<Edit3 className="h-4 w-4" />
+											<Edit3 className="h-3 w-3 sm:h-4 sm:w-4" />
 										</button>
 										<button
 											onClick={() => handleDelete(ingredient.id)}
-											className="p-1 text-secondary-400 hover:text-red-600"
+											className="p-1.5 text-secondary-400 hover:text-red-600 rounded"
 										>
-											<Trash2 className="h-4 w-4" />
+											<Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
 										</button>
 									</div>
 								</div>
 
 								{ingredient.expiration_date && (
 									<div
-										className={`flex items-center space-x-1 text-sm ${
+										className={`flex items-center space-x-1 text-xs sm:text-sm ${
 											isExpired(ingredient.expiration_date)
 												? "text-red-600"
 												: isExpiringSoon(ingredient.expiration_date)
@@ -413,10 +416,10 @@ export function Pantry() {
 									>
 										{(isExpired(ingredient.expiration_date) ||
 											isExpiringSoon(ingredient.expiration_date)) && (
-											<AlertTriangle className="h-3 w-3" />
+											<AlertTriangle className="h-3 w-3 flex-shrink-0" />
 										)}
-										<Calendar className="h-3 w-3" />
-										<span>
+										<Calendar className="h-3 w-3 flex-shrink-0" />
+										<span className="truncate">
 											Expires:{" "}
 											{new Date(
 												ingredient.expiration_date,
@@ -426,7 +429,7 @@ export function Pantry() {
 								)}
 
 								{ingredient.notes && (
-									<p className="text-xs text-secondary-500 mt-2">
+									<p className="text-xs text-secondary-500 mt-2 line-clamp-2">
 										{ingredient.notes}
 									</p>
 								)}
