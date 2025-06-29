@@ -79,6 +79,7 @@ export function Pantry() {
 		category: "Other",
 		expiration_date: "",
 		notes: "",
+		low_stock_threshold: "",
 	});
 
 	useEffect(() => {
@@ -108,6 +109,12 @@ export function Pantry() {
 		if (!user) return;
 
 		try {
+			// Set default threshold based on unit if not provided
+			let threshold = parseFloat(formData.low_stock_threshold);
+			if (!threshold || threshold <= 0) {
+				threshold = getDefaultThreshold(formData.unit);
+			}
+
 			const ingredientData = {
 				user_id: user.id,
 				name: formData.name,
@@ -116,6 +123,7 @@ export function Pantry() {
 				category: formData.category,
 				expiration_date: formData.expiration_date || null,
 				notes: formData.notes,
+				low_stock_threshold: threshold,
 			};
 
 			if (editingIngredient) {
@@ -132,6 +140,26 @@ export function Pantry() {
 		}
 	};
 
+	const getDefaultThreshold = (unit: string): number => {
+		switch (unit) {
+			case 'kg':
+			case 'l':
+				return 0.5;
+			case 'g':
+			case 'ml':
+				return 100;
+			case 'cups':
+				return 0.5;
+			case 'tbsp':
+			case 'tsp':
+				return 2;
+			case 'pieces':
+			case 'cans':
+			case 'bottles':
+			default:
+				return 1;
+		}
+	};
 	const handleDelete = async (id: string) => {
 		if (!confirm("Are you sure you want to delete this ingredient?")) return;
 
@@ -151,6 +179,7 @@ export function Pantry() {
 			category: "Other",
 			expiration_date: "",
 			notes: "",
+			low_stock_threshold: "",
 		});
 		setShowAddForm(false);
 		setEditingIngredient(null);
@@ -229,6 +258,7 @@ export function Pantry() {
 					unit: ingredient.unit,
 					category: ingredient.category,
 					notes: "Added via natural language input",
+					low_stock_threshold: getDefaultThreshold(ingredient.unit),
 				});
 			}
 			
@@ -251,6 +281,7 @@ export function Pantry() {
 			category: ingredient.category,
 			expiration_date: ingredient.expiration_date || "",
 			notes: ingredient.notes || "",
+			low_stock_threshold: (ingredient.low_stock_threshold || getDefaultThreshold(ingredient.unit)).toString(),
 		});
 		setShowAddForm(true);
 		setShowNaturalLanguageInput(false);
@@ -272,6 +303,14 @@ export function Pantry() {
 		return expDate < today;
 	};
 
+	const isLowStock = (ingredient: Ingredient) => {
+		const threshold = ingredient.low_stock_threshold || getDefaultThreshold(ingredient.unit);
+		return ingredient.quantity > 0 && ingredient.quantity <= threshold;
+	};
+
+	const isOutOfStock = (ingredient: Ingredient) => {
+		return ingredient.quantity <= 0;
+	};
 	const filteredIngredients = ingredients.filter((ingredient) => {
 		const matchesSearch = ingredient.name
 			.toLowerCase()
@@ -453,6 +492,21 @@ export function Pantry() {
 										})
 									}
 								/>
+								<div className="sm:col-span-2">
+									<Input
+										label="Low Stock Threshold (Optional)"
+										type="number"
+										step="0.1"
+										value={formData.low_stock_threshold}
+										onChange={(e) =>
+											setFormData({ ...formData, low_stock_threshold: e.target.value })
+										}
+										placeholder={`Default: ${getDefaultThreshold(formData.unit)} ${formData.unit}`}
+									/>
+									<p className="text-xs text-secondary-600 mt-1">
+										Alert when quantity falls below this amount. Leave empty for default.
+									</p>
+								</div>
 							</div>
 							<Input
 								label="Notes (Optional)"
@@ -655,6 +709,16 @@ export function Pantry() {
 										<p className="text-xs sm:text-sm text-secondary-600">
 											{ingredient.quantity} {ingredient.unit}
 										</p>
+											{isOutOfStock(ingredient) && (
+												<span className="inline-block px-2 py-1 text-xs bg-red-100 text-red-700 rounded-full">
+													Out of Stock
+												</span>
+											)}
+											{isLowStock(ingredient) && !isOutOfStock(ingredient) && (
+												<span className="inline-block px-2 py-1 text-xs bg-orange-100 text-orange-700 rounded-full">
+													Low Stock
+												</span>
+											)}
 										<span className="inline-block px-2 py-1 text-xs bg-secondary-100 text-secondary-700 rounded-full mt-1">
 											{ingredient.category}
 										</span>
@@ -675,6 +739,22 @@ export function Pantry() {
 									</div>
 								</div>
 
+								{/* Stock Level Alerts */}
+								{(isOutOfStock(ingredient) || isLowStock(ingredient)) && (
+									<div
+										className={`flex items-center space-x-1 text-xs sm:text-sm mb-2 ${
+											isOutOfStock(ingredient) ? "text-red-600" : "text-orange-600"
+										}`}
+									>
+										<AlertTriangle className="h-3 w-3 flex-shrink-0" />
+										<span className="truncate">
+											{isOutOfStock(ingredient) 
+												? "Out of stock - reorder needed"
+												: `Low stock - below ${ingredient.low_stock_threshold || 1} ${ingredient.unit}`
+											}
+										</span>
+									</div>
+								)}
 								{ingredient.expiration_date && (
 									<div
 										className={`flex items-center space-x-1 text-xs sm:text-sm ${

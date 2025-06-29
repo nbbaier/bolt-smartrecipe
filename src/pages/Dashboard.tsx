@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { ingredientService, recipeService } from "../lib/database";
+import { LowStockAlert } from "../components/ui/LowStockAlert";
 import {
 	Card,
 	CardContent,
@@ -17,6 +18,7 @@ import {
 	Clock,
 	Sparkles,
 	AlertTriangle,
+	TrendingDown,
 } from "lucide-react";
 import type { Ingredient, Recipe } from "../types";
 
@@ -27,8 +29,10 @@ export function Dashboard() {
 		availableRecipes: 0,
 		expiringSoon: 0,
 		canCookRecipes: 0,
+		lowStockItems: 0,
 	});
 	const [expiringSoonItems, setExpiringSoonItems] = useState<Ingredient[]>([]);
+	const [lowStockItems, setLowStockItems] = useState<Ingredient[]>([]);
 	const [canCookRecipes, setCanCookRecipes] = useState<Recipe[]>([]);
 	const [loading, setLoading] = useState(true);
 
@@ -53,6 +57,8 @@ export function Dashboard() {
 			// Get expiring items
 			const expiring = await ingredientService.getExpiringSoon(user.id, 7);
 
+			// Get low stock items
+			const lowStock = await ingredientService.getLowStockItems(user.id);
 			// Get recipes that can be cooked
 			const ingredientNames = ingredients.map((ing) => ing.name);
 			const canCook = await recipeService.getCanCook(ingredientNames);
@@ -62,9 +68,11 @@ export function Dashboard() {
 				availableRecipes: recipes.length,
 				expiringSoon: expiring.length,
 				canCookRecipes: canCook.length,
+				lowStockItems: lowStock.length,
 			});
 
 			setExpiringSoonItems(expiring.slice(0, 5)); // Show top 5
+			setLowStockItems(lowStock.slice(0, 5)); // Show top 5
 			setCanCookRecipes(canCook.slice(0, 3)); // Show top 3
 		} catch (error) {
 			console.error("Error loading dashboard data:", error);
@@ -98,6 +106,13 @@ export function Dashboard() {
 				</p>
 			</div>
 
+			{/* Low Stock Alert */}
+			{lowStockItems.length > 0 && (
+				<LowStockAlert 
+					ingredients={lowStockItems} 
+					onViewPantry={() => window.location.href = '/pantry'}
+				/>
+			)}
 			{/* Quick Stats */}
 			<div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 lg:gap-6">
 				<Card>
@@ -175,6 +190,28 @@ export function Dashboard() {
 				</Card>
 			</div>
 
+			{/* Additional Stats Row for Low Stock */}
+			{stats.lowStockItems > 0 && (
+				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+					<Card className="border-orange-200 bg-orange-50">
+						<CardContent className="p-4 sm:p-6">
+							<div className="flex items-center">
+								<div className="flex-shrink-0">
+									<TrendingDown className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
+								</div>
+								<div className="ml-3 sm:ml-4 min-w-0 flex-1">
+									<p className="text-xs sm:text-sm font-medium text-orange-700 truncate">
+										Low Stock
+									</p>
+									<p className="text-lg sm:text-2xl font-bold text-orange-900">
+										{stats.lowStockItems}
+									</p>
+								</div>
+							</div>
+						</CardContent>
+					</Card>
+				</div>
+			)}
 			{/* Main Content Grid */}
 			<div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
 				{/* What Can I Cook */}

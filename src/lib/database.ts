@@ -123,6 +123,26 @@ export const ingredientService = {
 			});
 		}
 	},
+
+	async getLowStockItems(userId: string): Promise<Ingredient[]> {
+		const { data, error } = await supabase
+			.rpc('get_low_stock_ingredients', { user_uuid: userId });
+
+		if (error) throw error;
+		return data || [];
+	},
+
+	async updateStockThreshold(id: string, threshold: number): Promise<Ingredient> {
+		const { data, error } = await supabase
+			.from("ingredients")
+			.update({ low_stock_threshold: threshold })
+			.eq("id", id)
+			.select()
+			.single();
+
+		if (error) throw error;
+		return data;
+	},
 };
 
 // Recipe operations

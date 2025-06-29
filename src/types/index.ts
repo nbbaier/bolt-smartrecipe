@@ -16,6 +16,7 @@ export interface Ingredient {
 	category: string;
 	expiration_date?: string;
 	notes?: string;
+	low_stock_threshold?: number;
 	created_at: string;
 	updated_at: string;
 }
