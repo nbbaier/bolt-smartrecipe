@@ -161,89 +161,40 @@ export function Pantry() {
 
 		setIsParsingText(true);
 		
-		// Mock parsing logic - simulate API delay
-		await new Promise(resolve => setTimeout(resolve, 1000));
-
-		// Simple mock parsing logic
-		const text = naturalLanguageText.toLowerCase();
-		const parsed: Array<{
-			name: string;
-			quantity: number;
-			unit: string;
-			category: string;
-		}> = [];
-
-		// Common patterns to match
-		const patterns = [
-			// "3 apples", "2 tomatoes"
-			/(\d+(?:\.\d+)?)\s+(apples?|tomatoes?|onions?|carrots?|potatoes?|bananas?|oranges?|lemons?|limes?)/g,
-			// "1kg flour", "500g sugar"
-			/(\d+(?:\.\d+)?)\s*(kg|g|lb|oz)\s+(flour|sugar|rice|pasta|bread|butter|cheese|milk)/g,
-			// "2 cans of tuna", "3 bottles of water"
-			/(\d+(?:\.\d+)?)\s+(cans?|bottles?|jars?|boxes?)\s+(?:of\s+)?(tuna|water|beans?|soup|sauce)/g,
-			// "1 liter milk", "500ml oil"
-			/(\d+(?:\.\d+)?)\s*(liters?|l|ml|cups?|tbsp|tsp)\s+(milk|oil|vinegar|juice|broth)/g,
-		];
-
-		patterns.forEach(pattern => {
-			let match;
-			while ((match = pattern.exec(text)) !== null) {
-				const quantity = parseFloat(match[1]);
-				let unit = match[2] || "pieces";
-				const name = match[3] || match[2];
-				
-				// Normalize units
-				if (unit.includes("can")) unit = "cans";
-				if (unit.includes("bottle")) unit = "bottles";
-				if (unit.includes("jar")) unit = "jars";
-				if (unit.includes("box")) unit = "boxes";
-				if (unit.includes("liter")) unit = "l";
-				
-				// Determine category based on ingredient
-				let category = "Other";
-				if (["apple", "tomato", "onion", "carrot", "potato", "banana", "orange", "lemon", "lime"].some(v => name.includes(v))) {
-					category = "Vegetables";
-				} else if (["flour", "sugar", "rice", "pasta", "bread"].some(v => name.includes(v))) {
-					category = "Grains";
-				} else if (["butter", "cheese", "milk"].some(v => name.includes(v))) {
-					category = "Dairy";
-				} else if (["tuna", "beans", "soup", "sauce"].some(v => name.includes(v))) {
-					category = "Pantry";
-				} else if (["oil", "vinegar", "juice", "broth"].some(v => name.includes(v))) {
-					category = "Condiments";
-				}
-
-				// Capitalize first letter
-				const capitalizedName = name.charAt(0).toUpperCase() + name.slice(1);
-				
-				parsed.push({
-					name: capitalizedName,
-					quantity,
-					unit,
-					category,
-				});
-			}
-		});
-
-		// If no patterns matched, try to extract simple ingredient names
-		if (parsed.length === 0) {
-			const words = text.split(/[,\n]+/).map(w => w.trim()).filter(w => w);
-			words.forEach(word => {
-				// Simple fallback: assume each word/phrase is an ingredient
-				const cleanWord = word.replace(/^\d+\s*/, '').trim();
-				if (cleanWord) {
-					parsed.push({
-						name: cleanWord.charAt(0).toUpperCase() + cleanWord.slice(1),
-						quantity: 1,
-						unit: "pieces",
-						category: "Other",
-					});
-				}
+		try {
+			// Call the Supabase Edge Function for parsing
+			const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-ingredients`, {
+				method: 'POST',
+				headers: {
+					'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					text: naturalLanguageText.trim(),
+				}),
 			});
-		}
 
-		setParsedIngredients(parsed);
-		setIsParsingText(false);
+			if (!response.ok) {
+				throw new Error(`API request failed: ${response.status}`);
+			}
+
+			const data = await response.json();
+			
+			if (data.error) {
+				throw new Error(data.error);
+			}
+
+			// Set the parsed ingredients from the API response
+			setParsedIngredients(data.ingredients || []);
+		} catch (error) {
+			console.error("Error parsing ingredients:", error);
+			
+			// Fallback: show error message to user
+			alert("Failed to parse ingredients. Please try again or add ingredients manually.");
+			setParsedIngredients([]);
+		} finally {
+			setIsParsingText(false);
+		}
 	};
 
 	const updateParsedIngredient = (index: number, field: string, value: string | number) => {

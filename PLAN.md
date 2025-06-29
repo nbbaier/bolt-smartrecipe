@@ -172,9 +172,14 @@ Building a comprehensive smart recipe app with pantry management, recipe discove
 - ✅ Performance optimizations
 
 ### Phase 9: Advanced Ingredient Management
-**Status: ⚪ Not Started**
+**Status: 🔄 In Progress**
 
 **Smart Input Methods:**
+- [x] Natural language input parsing with AI
+  - [x] Supabase Edge Function for NLP processing
+  - [x] OpenAI GPT-4.1-mini integration for ingredient extraction
+  - [x] Frontend interface for text-based ingredient entry
+  - [x] Structured output validation and user editing
   - [ ] Browser-based speech-to-text API integration
   - [ ] Voice input for ingredient entry
   - [ ] Voice commands for common actions
