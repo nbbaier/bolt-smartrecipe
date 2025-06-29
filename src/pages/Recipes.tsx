@@ -33,7 +33,6 @@ import {
 	Timer,
 	ShoppingCart,
 	Plus,
-	Utensils,
 } from "lucide-react";
 import type { Recipe, Ingredient, RecipeIngredient, RecipeInstruction, ShoppingList } from "../types";
 
