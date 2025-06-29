@@ -1,72 +1,66 @@
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+   "Access-Control-Allow-Origin": "*",
+   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
 interface ParseRequest {
-  text: string;
+   text: string;
 }
 
 interface ParsedIngredient {
-  name: string;
-  quantity: number;
-  unit: string;
-  category: string;
+   name: string;
+   quantity: number;
+   unit: string;
+   category: string;
 }
 
 interface ParseResponse {
-  ingredients: ParsedIngredient[];
-  error?: string;
+   ingredients: ParsedIngredient[];
+   error?: string;
 }
 
 Deno.serve(async (req: Request) => {
-  // Handle CORS preflight requests
-  if (req.method === "OPTIONS") {
-    return new Response(null, {
-      status: 200,
-      headers: corsHeaders,
-    });
-  }
+   // Handle CORS preflight requests
+   if (req.method === "OPTIONS") {
+      return new Response(null, {
+         status: 200,
+         headers: corsHeaders,
+      });
+   }
 
-  try {
-    if (req.method !== "POST") {
-      return new Response(
-        JSON.stringify({ error: "Method not allowed" }),
-        {
-          status: 405,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
+   try {
+      if (req.method !== "POST") {
+         return new Response(JSON.stringify({ error: "Method not allowed" }), {
+            status: 405,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+         });
+      }
 
-    // Get the OpenAI API key from environment variables
-    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!openaiApiKey) {
-      return new Response(
-        JSON.stringify({ error: "OpenAI API key not configured" }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
+      // Get the OpenAI API key from environment variables
+      const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
+      if (!openaiApiKey) {
+         return new Response(
+            JSON.stringify({ error: "OpenAI API key not configured" }),
+            {
+               status: 500,
+               headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+         );
+      }
 
-    // Parse the request body
-    const { text }: ParseRequest = await req.json();
+      // Parse the request body
+      const { text }: ParseRequest = await req.json();
 
-    if (!text || typeof text !== "string") {
-      return new Response(
-        JSON.stringify({ error: "Invalid text input" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
+      if (!text || typeof text !== "string") {
+         return new Response(JSON.stringify({ error: "Invalid text input" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+         });
+      }
 
-    // Create the system message for ingredient parsing
-    const systemMessage = `You are a helpful assistant that parses natural language descriptions of food ingredients into structured JSON format.
+      // Create the system message for ingredient parsing
+      const systemMessage = `You are a helpful assistant that parses natural language descriptions of food ingredients into structured JSON format.
 
 Your task is to extract individual ingredients from the user's text and return them as a JSON object with an "ingredients" array.
 
@@ -93,116 +87,121 @@ Example output: {
   ]
 }`;
 
-    const userMessage = `Parse the following ingredient description into structured JSON format: "${text}"`;
+      const userMessage = `Parse the following ingredient description into structured JSON format: "${text}"`;
 
-    // Make request to OpenAI API
-    const openaiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${openaiApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: systemMessage },
-          { role: "user", content: userMessage }
-        ],
-        temperature: 0.2,
-        max_tokens: 1000,
-        response_format: { type: "json_object" }
-      }),
-    });
-
-    if (!openaiResponse.ok) {
-      const errorData = await openaiResponse.text();
-      console.error("OpenAI API error:", errorData);
-      return new Response(
-        JSON.stringify({ error: "Failed to parse ingredients" }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+      // Make request to OpenAI API
+      const openaiResponse = await fetch(
+         "https://api.openai.com/v1/chat/completions",
+         {
+            method: "POST",
+            headers: {
+               Authorization: `Bearer ${openaiApiKey}`,
+               "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+               model: "gpt-4o-mini",
+               messages: [
+                  { role: "system", content: systemMessage },
+                  { role: "user", content: userMessage },
+               ],
+               temperature: 0.2,
+               max_tokens: 1000,
+               response_format: { type: "json_object" },
+            }),
+         },
       );
-    }
 
-    const openaiData = await openaiResponse.json();
-    
-    // Extract the assistant's response
-    const assistantMessage = openaiData.choices?.[0]?.message?.content;
-    
-    if (!assistantMessage) {
-      return new Response(
-        JSON.stringify({ error: "No response from AI" }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Parse the JSON response
-    let parsedResponse: ParseResponse;
-    try {
-      parsedResponse = JSON.parse(assistantMessage);
-    } catch (error) {
-      console.error("Failed to parse AI response as JSON:", assistantMessage);
-      return new Response(
-        JSON.stringify({ error: "Invalid response format from AI" }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Validate the response structure
-    if (!parsedResponse.ingredients || !Array.isArray(parsedResponse.ingredients)) {
-      return new Response(
-        JSON.stringify({ error: "Invalid ingredients format in AI response" }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Validate and sanitize each ingredient
-    const validatedIngredients = parsedResponse.ingredients
-      .filter(ingredient => 
-        ingredient.name && 
-        typeof ingredient.name === 'string' &&
-        typeof ingredient.quantity === 'number' &&
-        typeof ingredient.unit === 'string' &&
-        typeof ingredient.category === 'string'
-      )
-      .map(ingredient => ({
-        name: ingredient.name.trim(),
-        quantity: Math.max(0, ingredient.quantity),
-        unit: ingredient.unit.trim(),
-        category: ingredient.category.trim()
-      }));
-
-    // Return the validated response
-    return new Response(
-      JSON.stringify({
-        ingredients: validatedIngredients,
-        usage: openaiData.usage,
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      if (!openaiResponse.ok) {
+         const errorData = await openaiResponse.text();
+         console.error("OpenAI API error:", errorData);
+         return new Response(
+            JSON.stringify({ error: "Failed to parse ingredients" }),
+            {
+               status: 500,
+               headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+         );
       }
-    );
 
-  } catch (error) {
-    console.error("Parse ingredients function error:", error);
-    return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      const openaiData = await openaiResponse.json();
+
+      // Extract the assistant's response
+      const assistantMessage = openaiData.choices?.[0]?.message?.content;
+
+      if (!assistantMessage) {
+         return new Response(JSON.stringify({ error: "No response from AI" }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+         });
       }
-    );
-  }
+
+      // Parse the JSON response
+      let parsedResponse: ParseResponse;
+      try {
+         parsedResponse = JSON.parse(assistantMessage);
+      } catch (_error) {
+         console.error(
+            "Failed to parse AI response as JSON:",
+            assistantMessage,
+         );
+         return new Response(
+            JSON.stringify({ error: "Invalid response format from AI" }),
+            {
+               status: 500,
+               headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+         );
+      }
+
+      // Validate the response structure
+      if (
+         !parsedResponse.ingredients ||
+         !Array.isArray(parsedResponse.ingredients)
+      ) {
+         return new Response(
+            JSON.stringify({
+               error: "Invalid ingredients format in AI response",
+            }),
+            {
+               status: 500,
+               headers: { ...corsHeaders, "Content-Type": "application/json" },
+            },
+         );
+      }
+
+      // Validate and sanitize each ingredient
+      const validatedIngredients = parsedResponse.ingredients
+         .filter(
+            (ingredient) =>
+               ingredient.name &&
+               typeof ingredient.name === "string" &&
+               typeof ingredient.quantity === "number" &&
+               typeof ingredient.unit === "string" &&
+               typeof ingredient.category === "string",
+         )
+         .map((ingredient) => ({
+            name: ingredient.name.trim(),
+            quantity: Math.max(0, ingredient.quantity),
+            unit: ingredient.unit.trim(),
+            category: ingredient.category.trim(),
+         }));
+
+      // Return the validated response
+      return new Response(
+         JSON.stringify({
+            ingredients: validatedIngredients,
+            usage: openaiData.usage,
+         }),
+         {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+         },
+      );
+   } catch (error) {
+      console.error("Parse ingredients function error:", error);
+      return new Response(JSON.stringify({ error: "Internal server error" }), {
+         status: 500,
+         headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+   }
 });
