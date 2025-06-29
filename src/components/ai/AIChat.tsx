@@ -283,7 +283,6 @@ export function AIChat() {
 			handleSendMessage();
 		}
 		// Allow Shift+Enter for new lines (default textarea behavior)
-		}
 	};
 
 	const formatTime = (date: Date) => {
