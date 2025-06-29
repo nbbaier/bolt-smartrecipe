@@ -1,7 +1,7 @@
 # SmartRecipe Development Plan
 
 ## Project Overview
-Building a comprehensive smart recipe app with pantry management, recipe discovery, shopping lists, and AI assistance.
+Building a comprehensive smart recipe app with pantry management, recipe discovery, shopping lists, AI assistance, and advanced features for minimizing food waste through intelligent ingredient management and leftover tracking.
 
 ## Development Phases
 
@@ -54,6 +54,7 @@ Building a comprehensive smart recipe app with pantry management, recipe discove
 - [x] Complete recipe details (ingredients, instructions, stats)
 - [x] Ingredient availability checking
 - [x] Sample recipe data seeded
+- [x] Add missing ingredients to shopping list from recipe modal
 
 **Key Features:**
 - ✅ Recipe discovery interface
@@ -62,8 +63,9 @@ Building a comprehensive smart recipe app with pantry management, recipe discove
 - ✅ Comprehensive recipe detail views
 - ✅ Real-time ingredient availability checking
 - ✅ Recipe difficulty and cuisine filtering
+- ✅ Smart shopping list integration from recipes
 
-### Phase 4: Shopping List Management (Week 3)
+### Phase 4: Shopping List Management
 **Status: ✅ Complete**
 
 - [x] Shopping list creation and management
@@ -75,6 +77,7 @@ Building a comprehensive smart recipe app with pantry management, recipe discove
 - [x] Mobile responsive design
 - [x] Category-based organization
 - [x] Purchase progress tracking
+- [x] Auto-add purchased items to pantry
 
 **Key Features:**
 - ✅ Shopping list CRUD operations
@@ -83,38 +86,43 @@ Building a comprehensive smart recipe app with pantry management, recipe discove
 - ✅ Smart recipe integration (excludes owned ingredients)
 - ✅ Category-based organization
 - ✅ Mobile-optimized interface
+- ✅ Automatic pantry integration when items are purchased
 
-### Phase 5: AI Assistant & Chat (Week 4)
+### Phase 5: AI Assistant & Chat (Expanded)
 **Status: ⚪ Not Started**
 
-- [ ] Chat interface design
-- [ ] Mock AI response system
-- [ ] Quick prompt buttons
-- [ ] Cooking tips integration
-- [ ] Chat history
-- [ ] Contextual suggestions based on pantry
+- [ ] Chat interface design with message bubbles
+- [ ] Natural language interface for recipe queries
+- [ ] Mock AI response system with contextual awareness
+- [ ] Quick prompt buttons for common queries
+- [ ] Integration with user's pantry data for personalized responses
+- [ ] Basic dietary preference consideration
+- [ ] Chat history and conversation flow
+- [ ] Contextual suggestions based on pantry and preferences
 
 **Key Features:**
-- Chat UI with message bubbles
-- Mock AI responses
-- Predefined cooking tips
-- Quick action buttons
+- Natural language recipe search and recommendations
+- Pantry-aware AI responses
+- Personalized cooking suggestions
+- Interactive chat interface
+- Quick action buttons for common tasks
 
-### Phase 6: User Profile & Settings (Week 4-5)
-**Status: ⚪ Not Started**
+### Phase 6: User Profile & Settings
+**Status: ✅ Complete**
 
-- [ ] User profile management
-- [ ] Dietary preferences and restrictions
-- [ ] Kitchen equipment tracking
-- [ ] App settings (units, notifications)
-- [ ] Onboarding flow
-- [ ] Profile customization
+- [x] User profile management
+- [x] Dietary preferences and restrictions
+- [x] Kitchen equipment tracking
+- [x] App settings (units, notifications)
+- [x] Profile customization
+- [x] Comprehensive preference system
 
 **Key Features:**
-- Comprehensive user profiles
-- Preference management
-- Settings configuration
-- Guided onboarding
+- ✅ Comprehensive user profiles
+- ✅ Preference management
+- ✅ Settings configuration
+- ✅ Dietary restrictions and allergies tracking
+- ✅ Kitchen equipment inventory
 
 ### Phase 7: Data Integration & Backend
 **Status: ✅ Complete**
@@ -134,11 +142,11 @@ Building a comprehensive smart recipe app with pantry management, recipe discove
 - ✅ Security implementation (RLS policies)
 - ✅ Comprehensive sample data
 
-### Phase 8: Polish & Advanced Features (Week 6-7)
-**Status: ✅ Complete**
+### Phase 8: Polish & Advanced Features
+**Status: 🔄 In Progress**
 
 - [x] Error handling and loading states
-- [x] Mobile responsiveness refinement ✅
+- [x] Mobile responsiveness refinement
 - [ ] Animations and micro-interactions
 - [ ] Performance optimizations
 - [ ] Accessibility improvements
@@ -146,10 +154,168 @@ Building a comprehensive smart recipe app with pantry management, recipe discove
 
 **Key Features:**
 - ✅ Error handling
-- ✅ Mobile experience ✅
+- ✅ Mobile experience
 - [ ] Smooth animations
 - [ ] Performance optimization
 - [ ] Advanced search capabilities
+
+### Phase 9: Advanced Ingredient Management
+**Status: ⚪ Not Started**
+
+**Smart Input Methods:**
+- [ ] Research and implement voice command integration
+  - [ ] Browser-based speech-to-text API integration
+  - [ ] Voice input for ingredient entry
+  - [ ] Voice commands for common actions
+- [ ] Photo upload with AI recognition system
+  - [ ] Camera integration for receipt scanning
+  - [ ] AI-powered ingredient recognition from images
+  - [ ] Pantry shelf photo analysis
+  - [ ] User confirmation workflow for AI-recognized items
+- [ ] Enhanced autocomplete with smart suggestions
+  - [ ] Predictive text based on user history
+  - [ ] Common ingredient suggestions
+  - [ ] Brand and product name recognition
+
+**Advanced Inventory Management:**
+- [ ] Automatic categorization system
+  - [ ] AI-powered category suggestions
+  - [ ] Custom category creation
+  - [ ] Smart category learning from user behavior
+- [ ] Inventory level tracking
+  - [ ] Low stock alerts and thresholds
+  - [ ] Automatic reorder suggestions
+  - [ ] Usage pattern analysis
+- [ ] Enhanced expiration monitoring
+  - [ ] Customizable alert timing
+  - [ ] Push notifications for expiring items
+  - [ ] Proactive meal suggestions for soon-to-expire items
+
+### Phase 10: Intelligent Leftover Tracking
+**Status: ⚪ Not Started**
+
+**Database & Core Functionality:**
+- [ ] Create leftovers database schema
+  - [ ] `leftovers` table with expiration tracking
+  - [ ] Link to source recipes when applicable
+  - [ ] Quantity and portion tracking
+- [ ] Leftover management interface
+  - [ ] Quick-add leftover logging system
+  - [ ] Visual leftover inventory display
+  - [ ] Edit and delete leftover entries
+  - [ ] Photo capture for leftover identification
+
+**Smart Expiration & Recommendations:**
+- [ ] Leftover expiration monitoring
+  - [ ] Customizable reminder settings
+  - [ ] Visual expiration indicators
+  - [ ] Integration with main dashboard alerts
+- [ ] Proactive meal suggestions
+  - [ ] Prioritize recipes using soon-to-expire leftovers
+  - [ ] "Use up leftovers" recipe filtering
+  - [ ] Creative leftover transformation suggestions
+- [ ] Food waste tracking and analytics
+  - [ ] Waste reduction metrics
+  - [ ] Monthly food waste reports
+  - [ ] Sustainability impact tracking
+
+### Phase 11: Custom Recipe Management & Import
+**Status: ⚪ Not Started**
+
+**Recipe Creation Tools:**
+- [ ] Comprehensive recipe creation interface
+  - [ ] Rich text editor for instructions
+  - [ ] Dynamic ingredient list management
+  - [ ] Photo upload for recipe images
+  - [ ] Nutrition information input (optional)
+  - [ ] Cooking tips and notes section
+- [ ] Recipe organization system
+  - [ ] Custom tags and categories
+  - [ ] Recipe collections and meal plans
+  - [ ] Difficulty and time estimation tools
+  - [ ] Serving size calculator
+
+**Web Recipe Import:**
+- [ ] URL-based recipe import system
+  - [ ] Web scraping service integration
+  - [ ] Recipe parsing and data extraction
+  - [ ] User review and editing workflow
+  - [ ] Automatic ingredient matching
+- [ ] Recipe variation generator
+  - [ ] AI-powered ingredient substitution suggestions
+  - [ ] Dietary restriction adaptations
+  - [ ] Cooking method variations
+  - [ ] Portion scaling with smart adjustments
+
+### Phase 12: Advanced AI & Personalization
+**Status: ⚪ Not Started**
+
+**Deep Personalization Engine:**
+- [ ] Comprehensive preference integration
+  - [ ] Full dietary restriction compliance
+  - [ ] Allergy-safe recipe filtering
+  - [ ] Cooking skill level appropriate suggestions
+  - [ ] Kitchen equipment-based recipe filtering
+- [ ] Cooking history tracking
+  - [ ] `cooked_recipes` table and analytics
+  - [ ] Favorite recipe identification
+  - [ ] Cooking frequency analysis
+  - [ ] Success rate tracking and learning
+
+**Intelligent Recipe Adaptation:**
+- [ ] Dynamic recipe modification system
+  - [ ] Smart ingredient substitution engine
+  - [ ] Automatic recipe scaling
+  - [ ] Cooking method adaptations
+  - [ ] Nutritional goal optimization
+- [ ] Seasonal and contextual recommendations
+  - [ ] Seasonal ingredient prioritization
+  - [ ] Weather-based meal suggestions
+  - [ ] Time-of-day appropriate recipes
+  - [ ] Special occasion meal planning
+
+**Machine Learning Integration:**
+- [ ] User behavior analysis
+  - [ ] Preference learning from interactions
+  - [ ] Success prediction modeling
+  - [ ] Personalized difficulty assessment
+- [ ] Recommendation refinement
+  - [ ] Continuous learning from user feedback
+  - [ ] A/B testing for recommendation algorithms
+  - [ ] Collaborative filtering with privacy protection
+
+### Phase 13: Offline Capabilities & Performance
+**Status: ⚪ Not Started**
+
+**Mobile Optimization:**
+- [ ] Progressive Web App (PWA) implementation
+  - [ ] App-like mobile experience
+  - [ ] Home screen installation
+  - [ ] Native mobile features integration
+- [ ] Touch-optimized interfaces
+  - [ ] Gesture-based navigation
+  - [ ] Mobile-first responsive design
+  - [ ] Thumb-friendly button placement
+
+**Offline Functionality:**
+- [ ] Service worker implementation
+  - [ ] Critical asset caching
+  - [ ] Offline recipe viewing
+  - [ ] Local data storage and sync
+- [ ] Data synchronization strategy
+  - [ ] Conflict resolution for offline changes
+  - [ ] Background sync when online
+  - [ ] Optimistic UI updates
+
+**Performance Optimization:**
+- [ ] Advanced performance profiling
+  - [ ] Bundle size optimization
+  - [ ] Lazy loading implementation
+  - [ ] Image optimization and compression
+- [ ] Database query optimization
+  - [ ] Efficient data fetching strategies
+  - [ ] Caching layer implementation
+  - [ ] Real-time update optimization
 
 ## Technical Architecture
 
@@ -165,14 +331,22 @@ Building a comprehensive smart recipe app with pantry management, recipe discove
 ### Backend Stack
 - **Database**: Supabase PostgreSQL
 - **Authentication**: Supabase Auth
-- **ORM**: Drizzle + drizzle-kit
 - **Security**: Row Level Security (RLS)
+- **Real-time**: Supabase real-time subscriptions
+- **File Storage**: Supabase Storage (for images)
+
+### AI/ML Integration Points
+- **Voice Recognition**: Browser Speech API / External service
+- **Image Recognition**: External AI service for ingredient detection
+- **Recipe Parsing**: Web scraping + NLP service
+- **Recommendation Engine**: Custom ML service or external API
+- **Natural Language Processing**: External AI service for chat
 
 ### Development Tools
 - **Build Tool**: Vite
 - **Linting**: ESLint + TypeScript ESLint
-- **Formatting**: Prettier (to be added)
 - **Type Checking**: TypeScript strict mode
+- **Testing**: Vitest (planned)
 
 ## Design Principles
 
@@ -188,24 +362,12 @@ Building a comprehensive smart recipe app with pantry management, recipe discove
 - **Progressive Disclosure**: Reveal complexity gradually
 - **Immediate Feedback**: Loading states, success/error messages
 - **Accessibility**: Keyboard navigation, proper contrast, ARIA labels
+- **Performance**: Fast load times and smooth interactions
 
 ### Component Architecture
 - **Modular Design**: Reusable, single-responsibility components
 - **Consistent Patterns**: Standardized component APIs
 - **Scalable Structure**: Organized file structure for growth
-
-## Sample Data Strategy
-
-### Initial Data Sets
-- **Ingredients**: ~100 common pantry items with categories
-- **Recipes**: ~50 diverse recipes with ingredient lists
-- **Categories**: Food categories, dietary restrictions, cuisine types
-- **Units**: Measurement units (metric/imperial)
-
-### Mock Data Approach
-- Start with static JSON data
-- Implement data services layer for easy backend integration
-- Use TypeScript interfaces for type safety
 
 ## Success Metrics
 
@@ -223,6 +385,15 @@ Building a comprehensive smart recipe app with pantry management, recipe discove
 - [x] Recipe bookmarking system
 - [x] Real-time pantry updates
 - [x] Ingredient availability checking
+- [x] Smart shopping list integration
+
+### Advanced Features
+- [ ] Voice input accuracy and usability
+- [ ] AI ingredient recognition precision
+- [ ] Recipe recommendation relevance
+- [ ] Food waste reduction effectiveness
+- [ ] User engagement with AI features
+- [ ] Offline functionality reliability
 
 ### Code Quality
 - [x] Type-safe TypeScript implementation
@@ -234,19 +405,34 @@ Building a comprehensive smart recipe app with pantry management, recipe discove
 
 ## Next Steps
 
-**Current Priority: Shopping List Management (Phase 4)**
+**Current Priority: Phase 5 - AI Assistant & Chat (Expanded)**
 
-1. **Shopping list CRUD operations** - Create, read, update, delete shopping items
-2. **Smart suggestions** - Auto-suggest ingredients from recipe requirements
-3. **Purchase tracking** - Mark items as purchased/unpurchased
-4. **Multiple lists** - Support for different shopping lists (weekly, party, etc.)
+1. **Implement Chat Interface**
+   - Design message bubble UI with conversation flow
+   - Create input field with send functionality
+   - Add typing indicators and message status
 
-**Alternative Priority: AI Assistant (Phase 5)**
+2. **Natural Language Processing Integration**
+   - Set up mock AI service for recipe queries
+   - Implement context-aware responses using pantry data
+   - Add quick action buttons for common requests
 
-1. **Chat interface** - Design and implement chat UI
-2. **Mock AI responses** - Create realistic cooking assistance responses
-3. **Context awareness** - Integrate with pantry and recipe data
-4. **Quick actions** - Predefined helpful prompts
+3. **Personalization Foundation**
+   - Integrate user preferences into AI responses
+   - Consider dietary restrictions in suggestions
+   - Track conversation history for better context
+
+**Alternative Priority: Phase 9 - Advanced Ingredient Management**
+
+1. **Voice Input Research and Implementation**
+   - Investigate browser Speech API capabilities
+   - Design voice command interface
+   - Implement voice-to-text for ingredient entry
+
+2. **Photo Recognition Planning**
+   - Research AI services for ingredient recognition
+   - Design photo upload and confirmation workflow
+   - Plan integration with existing ingredient management
 
 ## Progress Tracking
 
@@ -255,16 +441,25 @@ Use this section to track completion of major milestones:
 - [x] Phase 1: Foundation & Core UI ✅
 - [x] Phase 2: Pantry Management ✅
 - [x] Phase 3: Recipe Discovery & Management ✅
-- [ ] Phase 4: Shopping List Management
 - [x] Phase 4: Shopping List Management ✅
-- [ ] Phase 5: AI Assistant & Chat
-- [ ] Phase 6: User Profile & Settings
+- [ ] Phase 5: AI Assistant & Chat (Expanded)
+- [x] Phase 6: User Profile & Settings ✅
 - [x] Phase 7: Data Integration & Backend ✅
 - [ ] Phase 8: Polish & Advanced Features (In Progress)
+- [ ] Phase 9: Advanced Ingredient Management
+- [ ] Phase 10: Intelligent Leftover Tracking
+- [ ] Phase 11: Custom Recipe Management & Import
+- [ ] Phase 12: Advanced AI & Personalization
+- [ ] Phase 13: Offline Capabilities & Performance
 
 ## Recent Accomplishments
 
 ### Latest Updates (Current Session)
+- ✅ **Enhanced Recipe-Shopping Integration**: Added "Add Missing to Shopping List" functionality directly from recipe detail modal
+- ✅ **Visual Ingredient Status**: Improved recipe ingredient display to clearly show available vs. needed ingredients
+- ✅ **Smart Shopping List Population**: Implemented intelligent filtering to only add ingredients not already in pantry
+- ✅ **Automatic Pantry Updates**: Shopping list items automatically added to pantry when marked as purchased
+- ✅ **Comprehensive Feature Planning**: Expanded roadmap with advanced AI features, leftover tracking, and intelligent ingredient management
 - ✅ **Complete Shopping List System**: Implemented full shopping list management with multiple lists, smart recipe integration, and purchase tracking
 - ✅ **Recipe-to-Shopping Integration**: Users can add recipe ingredients to shopping lists, automatically excluding items already in their pantry
 - ✅ **Advanced Shopping Features**: Category organization, purchase progress tracking, and mobile-optimized shopping experience
@@ -277,9 +472,8 @@ Use this section to track completion of major milestones:
 - ✅ **Ingredient Availability**: Real-time checking of ingredient availability for recipes
 - ✅ **Bookmark System**: Complete recipe bookmarking with persistent storage
 - ✅ **Visual Enhancements**: Improved recipe cards, difficulty badges, and cuisine type indicators
-- ✅ **Error Resolution**: Fixed import case sensitivity issues
 
 ---
 
 **Last Updated**: December 29, 2024
-**Version**: 1.0
+**Version**: 2.0 - Comprehensive AI-Powered Recipe Management System
