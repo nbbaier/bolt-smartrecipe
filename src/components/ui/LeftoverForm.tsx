@@ -1,285 +1,240 @@
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Calendar, Camera, Package, Plus, X } from 'lucide-react';
-import { Button } from './Button';
-import { Input } from './Input';
-import { Card } from './Card';
-import { PhotoCapture } from './PhotoCapture';
-import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../contexts/AuthContext';
-
-const leftoverSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  quantity: z.number().min(0, 'Quantity must be positive').optional(),
-  unit: z.string().optional(),
-  expiration_date: z.string().optional(),
-  source_recipe_id: z.string().uuid().optional(),
-  notes: z.string().optional(),
-});
-
-type LeftoverFormData = z.infer<typeof leftoverSchema>;
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../../contexts/AuthContext";
+import { recipeService } from "../../lib/database";
+import { Button } from "./Button";
+import { Input } from "./Input";
+import { ChefHat, X } from "lucide-react";
+import type { Leftover, Recipe } from "../../types";
 
 interface LeftoverFormProps {
-  onSuccess?: () => void;
-  onCancel?: () => void;
-  initialData?: Partial<LeftoverFormData>;
-  sourceRecipeId?: string;
+  leftover?: Leftover;
+  onSubmit: (data: Omit<Leftover, "id" | "created_at" | "updated_at">) => Promise<void>;
+  onCancel: () => void;
+  loading?: boolean;
 }
 
-export function LeftoverForm({ 
-  onSuccess, 
-  onCancel, 
-  initialData,
-  sourceRecipeId 
-}: LeftoverFormProps) {
-  const { user } = useAuth();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showPhotoCapture, setShowPhotoCapture] = useState(false);
-  const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
+const UNITS = [
+  "portions",
+  "servings",
+  "cups",
+  "g",
+  "kg",
+  "ml",
+  "l",
+  "pieces",
+  "slices",
+];
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-    setValue,
-  } = useForm<LeftoverFormData>({
-    resolver: zodResolver(leftoverSchema),
-    defaultValues: {
-      name: initialData?.name || '',
-      quantity: initialData?.quantity || undefined,
-      unit: initialData?.unit || '',
-      expiration_date: initialData?.expiration_date || '',
-      source_recipe_id: sourceRecipeId || initialData?.source_recipe_id || undefined,
-      notes: initialData?.notes || '',
-    },
+export function LeftoverForm({ leftover, onSubmit, onCancel, loading = false }: LeftoverFormProps) {
+  const { user } = useAuth();
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [showRecipeSelector, setShowRecipeSelector] = useState(false);
+  const [formData, setFormData] = useState({
+    name: leftover?.name || "",
+    quantity: leftover?.quantity?.toString() || "1",
+    unit: leftover?.unit || "portions",
+    expiration_date: leftover?.expiration_date || "",
+    source_recipe_id: leftover?.source_recipe_id || "",
+    notes: leftover?.notes || "",
   });
 
-  const onSubmit = async (data: LeftoverFormData) => {
-    if (!user) return;
+  useEffect(() => {
+    loadRecipes();
+  }, []);
 
-    setIsSubmitting(true);
+  const loadRecipes = async () => {
     try {
-      const leftoverData = {
-        user_id: user.id,
-        name: data.name,
-        quantity: data.quantity || 0,
-        unit: data.unit || '',
-        expiration_date: data.expiration_date || null,
-        source_recipe_id: data.source_recipe_id || null,
-        notes: data.notes || '',
-      };
-
-      const { error } = await supabase
-        .from('leftovers')
-        .insert([leftoverData]);
-
-      if (error) throw error;
-
-      reset();
-      onSuccess?.();
+      const data = await recipeService.getAll();
+      setRecipes(data);
     } catch (error) {
-      console.error('Error adding leftover:', error);
-    } finally {
-      setIsSubmitting(false);
+      console.error("Error loading recipes:", error);
     }
   };
 
-  const handlePhotoCapture = (photoUrl: string) => {
-    setCapturedPhoto(photoUrl);
-    setShowPhotoCapture(false);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    await onSubmit({
+      user_id: user.id,
+      name: formData.name,
+      quantity: parseFloat(formData.quantity) || 1,
+      unit: formData.unit,
+      expiration_date: formData.expiration_date || undefined,
+      source_recipe_id: formData.source_recipe_id || undefined,
+      notes: formData.notes,
+    });
   };
 
-  const handleQuickAdd = (name: string) => {
-    setValue('name', name);
+  const selectRecipe = (recipe: Recipe) => {
+    setFormData({
+      ...formData,
+      name: `${recipe.title} (Leftovers)`,
+      source_recipe_id: recipe.id,
+    });
+    setShowRecipeSelector(false);
   };
 
-  const quickAddSuggestions = [
-    'Leftover pasta',
-    'Cooked rice',
-    'Roasted vegetables',
-    'Soup',
-    'Salad',
-    'Bread',
-  ];
+  const clearRecipe = () => {
+    setFormData({
+      ...formData,
+      source_recipe_id: "",
+    });
+  };
+
+  const selectedRecipe = recipes.find(r => r.id === formData.source_recipe_id);
 
   return (
-    <Card className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <Package className="w-5 h-5 text-emerald-600" />
-          <h2 className="text-xl font-semibold text-gray-900">
-            Add Leftover
-          </h2>
-        </div>
-        {onCancel && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onCancel}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            <X className="w-4 h-4" />
-          </Button>
-        )}
-      </div>
-
-      {/* Quick Add Suggestions */}
-      <div className="mb-6">
-        <p className="text-sm text-gray-600 mb-2">Quick add:</p>
-        <div className="flex flex-wrap gap-2">
-          {quickAddSuggestions.map((suggestion) => (
-            <Button
-              key={suggestion}
-              variant="outline"
-              size="sm"
-              onClick={() => handleQuickAdd(suggestion)}
-              className="text-xs"
-            >
-              <Plus className="w-3 h-3 mr-1" />
-              {suggestion}
-            </Button>
-          ))}
-        </div>
-      </div>
-
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        {/* Name Field */}
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-1 gap-4">
+        {/* Recipe Selection */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Leftover Name *
+          <label className="block text-sm font-medium text-secondary-700 mb-2">
+            Source Recipe (Optional)
           </label>
-          <Input
-            {...register('name')}
-            placeholder="e.g., Leftover pasta, Cooked rice"
-            className={errors.name ? 'border-red-300' : ''}
-          />
-          {errors.name && (
-            <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
+          {selectedRecipe ? (
+            <div className="flex items-center space-x-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <ChefHat className="h-4 w-4 text-blue-600" />
+              <span className="flex-1 text-sm font-medium text-blue-900">
+                {selectedRecipe.title}
+              </span>
+              <button
+                type="button"
+                onClick={clearRecipe}
+                className="p-1 text-blue-600 hover:text-blue-800 rounded"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowRecipeSelector(true)}
+              className="w-full justify-start"
+            >
+              <ChefHat className="h-4 w-4 mr-2" />
+              Select Recipe
+            </Button>
           )}
         </div>
 
-        {/* Quantity and Unit */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Quantity
-            </label>
-            <Input
-              type="number"
-              step="0.01"
-              {...register('quantity', { valueAsNumber: true })}
-              placeholder="0"
-              className={errors.quantity ? 'border-red-300' : ''}
-            />
-            {errors.quantity && (
-              <p className="text-red-500 text-sm mt-1">{errors.quantity.message}</p>
-            )}
+        {/* Recipe Selector Modal */}
+        {showRecipeSelector && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg max-w-md w-full max-h-[70vh] overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b">
+                <h3 className="text-lg font-semibold">Select Recipe</h3>
+                <button
+                  onClick={() => setShowRecipeSelector(false)}
+                  className="p-1 text-gray-400 hover:text-gray-600 rounded"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="overflow-y-auto max-h-[50vh] p-4">
+                <div className="space-y-2">
+                  {recipes.map((recipe) => (
+                    <button
+                      key={recipe.id}
+                      type="button"
+                      onClick={() => selectRecipe(recipe)}
+                      className="w-full text-left p-3 hover:bg-gray-50 rounded-lg border border-gray-200 transition-colors"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <img
+                          src={recipe.image_url || "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg"}
+                          alt={recipe.title}
+                          className="w-12 h-12 object-cover rounded-lg"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-gray-900 truncate">
+                            {recipe.title}
+                          </h4>
+                          <p className="text-sm text-gray-600 truncate">
+                            {recipe.cuisine_type} • {recipe.difficulty}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+        )}
+
+        {/* Leftover Name */}
+        <Input
+          label="Leftover Name"
+          value={formData.name}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          required
+          placeholder="e.g., Spaghetti Carbonara (Leftovers)"
+        />
+
+        {/* Quantity and Unit */}
+        <div className="flex space-x-2">
+          <div className="flex-1">
+            <Input
+              label="Quantity"
+              type="number"
+              step="0.1"
+              value={formData.quantity}
+              onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+              required
+            />
+          </div>
+          <div className="w-24">
+            <label className="block text-sm font-medium text-secondary-700 mb-1">
               Unit
             </label>
-            <Input
-              {...register('unit')}
-              placeholder="cups, servings, etc."
-            />
+            <select
+              value={formData.unit}
+              onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+              className="w-full h-10 rounded-lg border border-secondary-300 px-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+            >
+              {UNITS.map((unit) => (
+                <option key={unit} value={unit}>
+                  {unit}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
         {/* Expiration Date */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            <Calendar className="w-4 h-4 inline mr-1" />
-            Expiration Date
-          </label>
-          <Input
-            type="date"
-            {...register('expiration_date')}
-            className="w-full"
-          />
-        </div>
+        <Input
+          label="Expiration Date (Optional)"
+          type="date"
+          value={formData.expiration_date}
+          onChange={(e) => setFormData({ ...formData, expiration_date: e.target.value })}
+          min={new Date().toISOString().split('T')[0]}
+        />
 
         {/* Notes */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Notes
+          <label className="block text-sm font-medium text-secondary-700 mb-1">
+            Notes (Optional)
           </label>
           <textarea
-            {...register('notes')}
-            placeholder="Additional notes about this leftover..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none"
-            rows={3}
+            value={formData.notes}
+            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+            placeholder="Any additional notes about the leftovers..."
+            className="w-full h-20 rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 resize-none"
           />
         </div>
+      </div>
 
-        {/* Photo Capture */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Photo (Optional)
-          </label>
-          {!showPhotoCapture && !capturedPhoto && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowPhotoCapture(true)}
-              className="w-full"
-            >
-              <Camera className="w-4 h-4 mr-2" />
-              Take Photo
-            </Button>
-          )}
-          
-          {showPhotoCapture && (
-            <PhotoCapture
-              onCapture={handlePhotoCapture}
-              onCancel={() => setShowPhotoCapture(false)}
-            />
-          )}
-          
-          {capturedPhoto && (
-            <div className="relative">
-              <img
-                src={capturedPhoto}
-                alt="Captured leftover"
-                className="w-full h-32 object-cover rounded-md"
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setCapturedPhoto(null)}
-                className="absolute top-2 right-2 bg-white/80 hover:bg-white"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-          )}
-        </div>
-
-        {/* Submit Buttons */}
-        <div className="flex gap-3 pt-4">
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="flex-1"
-          >
-            {isSubmitting ? 'Adding...' : 'Add Leftover'}
-          </Button>
-          {onCancel && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onCancel}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-          )}
-        </div>
-      </form>
-    </Card>
+      {/* Form Actions */}
+      <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+        <Button type="submit" disabled={loading} className="text-sm sm:text-base">
+          {loading ? "Saving..." : leftover ? "Update Leftover" : "Add Leftover"}
+        </Button>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={loading} className="text-sm sm:text-base">
+          Cancel
+        </Button>
+      </div>
+    </form>
   );
 }
