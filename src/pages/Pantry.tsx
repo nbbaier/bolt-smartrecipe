@@ -19,6 +19,9 @@ import {
 	Trash2,
 	AlertTriangle,
 	Filter,
+	MessageCircle,
+	Wand2,
+	X,
 } from "lucide-react";
 import type { Ingredient } from "../types";
 
@@ -56,6 +59,16 @@ export function Pantry() {
 	const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(
 		null,
 	);
+	const [showNaturalLanguageInput, setShowNaturalLanguageInput] = useState(false);
+	const [naturalLanguageText, setNaturalLanguageText] = useState("");
+	const [parsedIngredients, setParsedIngredients] = useState<Array<{
+		name: string;
+		quantity: number;
+		unit: string;
+		category: string;
+	}>>([]);
+	const [isParsingText, setIsParsingText] = useState(false);
+	const [isAddingToPantry, setIsAddingToPantry] = useState(false);
 	const [formData, setFormData] = useState({
 		name: "",
 		quantity: "",
@@ -137,6 +150,140 @@ export function Pantry() {
 		setEditingIngredient(null);
 	};
 
+	const resetNaturalLanguageForm = () => {
+		setNaturalLanguageText("");
+		setParsedIngredients([]);
+		setShowNaturalLanguageInput(false);
+	};
+
+	const parseNaturalLanguageText = async () => {
+		if (!naturalLanguageText.trim()) return;
+
+		setIsParsingText(true);
+		
+		// Mock parsing logic - simulate API delay
+		await new Promise(resolve => setTimeout(resolve, 1000));
+
+		// Simple mock parsing logic
+		const text = naturalLanguageText.toLowerCase();
+		const parsed: Array<{
+			name: string;
+			quantity: number;
+			unit: string;
+			category: string;
+		}> = [];
+
+		// Common patterns to match
+		const patterns = [
+			// "3 apples", "2 tomatoes"
+			/(\d+(?:\.\d+)?)\s+(apples?|tomatoes?|onions?|carrots?|potatoes?|bananas?|oranges?|lemons?|limes?)/g,
+			// "1kg flour", "500g sugar"
+			/(\d+(?:\.\d+)?)\s*(kg|g|lb|oz)\s+(flour|sugar|rice|pasta|bread|butter|cheese|milk)/g,
+			// "2 cans of tuna", "3 bottles of water"
+			/(\d+(?:\.\d+)?)\s+(cans?|bottles?|jars?|boxes?)\s+(?:of\s+)?(tuna|water|beans?|soup|sauce)/g,
+			// "1 liter milk", "500ml oil"
+			/(\d+(?:\.\d+)?)\s*(liters?|l|ml|cups?|tbsp|tsp)\s+(milk|oil|vinegar|juice|broth)/g,
+		];
+
+		patterns.forEach(pattern => {
+			let match;
+			while ((match = pattern.exec(text)) !== null) {
+				const quantity = parseFloat(match[1]);
+				let unit = match[2] || "pieces";
+				const name = match[3] || match[2];
+				
+				// Normalize units
+				if (unit.includes("can")) unit = "cans";
+				if (unit.includes("bottle")) unit = "bottles";
+				if (unit.includes("jar")) unit = "jars";
+				if (unit.includes("box")) unit = "boxes";
+				if (unit.includes("liter")) unit = "l";
+				
+				// Determine category based on ingredient
+				let category = "Other";
+				if (["apple", "tomato", "onion", "carrot", "potato", "banana", "orange", "lemon", "lime"].some(v => name.includes(v))) {
+					category = "Vegetables";
+				} else if (["flour", "sugar", "rice", "pasta", "bread"].some(v => name.includes(v))) {
+					category = "Grains";
+				} else if (["butter", "cheese", "milk"].some(v => name.includes(v))) {
+					category = "Dairy";
+				} else if (["tuna", "beans", "soup", "sauce"].some(v => name.includes(v))) {
+					category = "Pantry";
+				} else if (["oil", "vinegar", "juice", "broth"].some(v => name.includes(v))) {
+					category = "Condiments";
+				}
+
+				// Capitalize first letter
+				const capitalizedName = name.charAt(0).toUpperCase() + name.slice(1);
+				
+				parsed.push({
+					name: capitalizedName,
+					quantity,
+					unit,
+					category,
+				});
+			}
+		});
+
+		// If no patterns matched, try to extract simple ingredient names
+		if (parsed.length === 0) {
+			const words = text.split(/[,\n]+/).map(w => w.trim()).filter(w => w);
+			words.forEach(word => {
+				// Simple fallback: assume each word/phrase is an ingredient
+				const cleanWord = word.replace(/^\d+\s*/, '').trim();
+				if (cleanWord) {
+					parsed.push({
+						name: cleanWord.charAt(0).toUpperCase() + cleanWord.slice(1),
+						quantity: 1,
+						unit: "pieces",
+						category: "Other",
+					});
+				}
+			});
+		}
+
+		setParsedIngredients(parsed);
+		setIsParsingText(false);
+	};
+
+	const updateParsedIngredient = (index: number, field: string, value: string | number) => {
+		setParsedIngredients(prev => 
+			prev.map((item, i) => 
+				i === index ? { ...item, [field]: value } : item
+			)
+		);
+	};
+
+	const removeParsedIngredient = (index: number) => {
+		setParsedIngredients(prev => prev.filter((_, i) => i !== index));
+	};
+
+	const addParsedIngredientsToPantry = async () => {
+		if (!user || parsedIngredients.length === 0) return;
+
+		setIsAddingToPantry(true);
+		
+		try {
+			for (const ingredient of parsedIngredients) {
+				await ingredientService.create({
+					user_id: user.id,
+					name: ingredient.name,
+					quantity: ingredient.quantity,
+					unit: ingredient.unit,
+					category: ingredient.category,
+					notes: "Added via natural language input",
+				});
+			}
+			
+			await loadIngredients();
+			resetNaturalLanguageForm();
+		} catch (error) {
+			console.error("Error adding parsed ingredients:", error);
+		} finally {
+			setIsAddingToPantry(false);
+		}
+	};
+
 	const startEdit = (ingredient: Ingredient) => {
 		setEditingIngredient(ingredient);
 		setFormData({
@@ -148,6 +295,7 @@ export function Pantry() {
 			notes: ingredient.notes || "",
 		});
 		setShowAddForm(true);
+		setShowNaturalLanguageInput(false);
 	};
 
 	const isExpiringSoon = (expirationDate: string | null) => {
@@ -202,13 +350,30 @@ export function Pantry() {
 						Track your ingredients and expiration dates
 					</p>
 				</div>
-				<Button
-					onClick={() => setShowAddForm(true)}
-					className="flex items-center justify-center space-x-2 text-sm sm:text-base"
-				>
-					<Plus className="h-4 w-4" />
-					<span>Add Ingredient</span>
-				</Button>
+				<div className="flex flex-col sm:flex-row gap-2">
+					<Button
+						onClick={() => {
+							setShowAddForm(true);
+							setShowNaturalLanguageInput(false);
+						}}
+						variant={showAddForm ? "default" : "outline"}
+						className="flex items-center justify-center space-x-2 text-sm sm:text-base"
+					>
+						<Plus className="h-4 w-4" />
+						<span>Add Ingredient</span>
+					</Button>
+					<Button
+						onClick={() => {
+							setShowNaturalLanguageInput(true);
+							setShowAddForm(false);
+						}}
+						variant={showNaturalLanguageInput ? "default" : "outline"}
+						className="flex items-center justify-center space-x-2 text-sm sm:text-base"
+					>
+						<MessageCircle className="h-4 w-4" />
+						<span>Add from Text</span>
+					</Button>
+				</div>
 			</div>
 
 			{/* Search and Filter */}

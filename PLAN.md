@@ -175,7 +175,6 @@ Building a comprehensive smart recipe app with pantry management, recipe discove
 **Status: ⚪ Not Started**
 
 **Smart Input Methods:**
-- [ ] Research and implement voice command integration
   - [ ] Browser-based speech-to-text API integration
   - [ ] Voice input for ingredient entry
   - [ ] Voice commands for common actions
@@ -336,15 +335,10 @@ Building a comprehensive smart recipe app with pantry management, recipe discove
 - **Styling**: Tailwind CSS with custom design system
 - **Components**: Custom components with Radix UI primitives
 - **Icons**: Lucide React
-- **Routing**: React Router DOM
 - **Forms**: React Hook Form + Zod validation
 - **State**: React hooks + Context for global state
 
 ### Backend Stack
-- **Database**: Supabase PostgreSQL
-- **Authentication**: Supabase Auth
-- **Security**: Row Level Security (RLS)
-- **Real-time**: Supabase real-time subscriptions
 - **File Storage**: Supabase Storage (for images)
 - **AI Processing**: Supabase Edge Functions
 - **AI Model**: OpenAI GPT-4.1
