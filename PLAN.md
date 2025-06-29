@@ -91,21 +91,9 @@ Building a comprehensive smart recipe app with pantry management, recipe discove
 ### Phase 5: AI Assistant & Chat (Expanded)
 **Status: ⚪ Not Started**
 
-- [ ] Chat interface design with message bubbles
-- [ ] Natural language interface for recipe queries
-- [ ] Mock AI response system with contextual awareness
-- [ ] Quick prompt buttons for common queries
-- [ ] Integration with user's pantry data for personalized responses
 - [ ] Basic dietary preference consideration
-- [ ] Chat history and conversation flow
-- [ ] Contextual suggestions based on pantry and preferences
 
 **Key Features:**
-- Natural language recipe search and recommendations
-- Pantry-aware AI responses
-- Personalized cooking suggestions
-- Interactive chat interface
-- Quick action buttons for common tasks
 
 ### Phase 6: User Profile & Settings
 **Status: ✅ Complete**
