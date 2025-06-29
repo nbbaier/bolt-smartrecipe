@@ -403,7 +403,6 @@ export const shoppingListService = {
 		console.log('Successfully inserted shopping items:', data?.length);
 		return data || [];
 	},
-};
 	async addToPantryFromShopping(
 		userId: string,
 		itemName: string,
@@ -427,6 +426,7 @@ export const shoppingListService = {
 			// Don't throw error - shopping list update should still succeed
 		}
 	},
+};
 
 // User Profile operations
 export const userProfileService = {
