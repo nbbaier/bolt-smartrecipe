@@ -408,10 +408,15 @@ export const userPreferencesService = {
 	},
 
 	async updatePreferences(userId: string, updates: Partial<UserPreferences>): Promise<UserPreferences> {
+		// Use upsert to either update existing record or create new one
+		const dataToUpsert = {
+			...updates,
+			user_id: userId, // Ensure user_id is included for upsert
+		};
+
 		const { data, error } = await supabase
 			.from("user_preferences")
-			.update(updates)
-			.eq("user_id", userId)
+			.upsert(dataToUpsert)
 			.select()
 			.single();
 
