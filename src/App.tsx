@@ -12,6 +12,7 @@ import { Dashboard } from "./pages/Dashboard";
 import { Pantry } from "./pages/Pantry";
 import { Recipes } from "./pages/Recipes";
 import { Shopping } from "./pages/Shopping";
+import { Settings } from "./pages/Settings";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
 	const { user, loading, isSupabaseConnected } = useAuth();
@@ -100,14 +101,7 @@ function AppRoutes() {
 				element={
 					<ProtectedRoute>
 						<Layout>
-							<div className="text-center py-12">
-								<h2 className="text-2xl font-bold text-secondary-900 mb-2">
-									Settings
-								</h2>
-								<p className="text-secondary-600">
-									Coming soon - Customize your cooking preferences
-								</p>
-							</div>
+							<Settings />
 						</Layout>
 					</ProtectedRoute>
 				}

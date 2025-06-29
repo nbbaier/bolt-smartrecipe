@@ -51,7 +51,14 @@ export function Header({ onMenuClick }: HeaderProps) {
 
 					<div className="flex items-center space-x-2 sm:space-x-4">
 						<div className="hidden sm:flex items-center space-x-2 text-sm text-muted-foreground bg-muted/50 rounded-lg px-3 py-1.5">
-							<User className="h-4 w-4" />
+							<div 
+								className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+								style={{ backgroundColor: '#10B981' }}
+							>
+								{user?.user_metadata?.full_name 
+									? user.user_metadata.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
+									: user?.email?.charAt(0).toUpperCase() || 'U'}
+							</div>
 							<span className="max-w-32 sm:max-w-none truncate">
 								{user?.user_metadata?.full_name || user?.email}
 							</span>

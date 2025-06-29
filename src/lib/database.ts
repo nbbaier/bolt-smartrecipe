@@ -6,6 +6,8 @@ import type {
 	RecipeInstruction,
 	ShoppingList,
 	ShoppingListItem,
+	UserProfile,
+	UserPreferences,
 } from "../types";
 
 // Ingredient operations
@@ -345,5 +347,63 @@ export const shoppingListService = {
 		
 		console.log('Successfully inserted shopping items:', data?.length);
 		return data || [];
+	},
+};
+
+// User Profile operations
+export const userProfileService = {
+	async getProfile(userId: string): Promise<UserProfile | null> {
+		const { data, error } = await supabase
+			.from("user_profiles")
+			.select("*")
+			.eq("user_id", userId)
+			.single();
+
+		if (error) {
+			if (error.code === "PGRST116") return null; // Not found
+			throw error;
+		}
+		return data;
+	},
+
+	async updateProfile(userId: string, updates: Partial<UserProfile>): Promise<UserProfile> {
+		const { data, error } = await supabase
+			.from("user_profiles")
+			.update(updates)
+			.eq("user_id", userId)
+			.select()
+			.single();
+
+		if (error) throw error;
+		return data;
+	},
+};
+
+// User Preferences operations
+export const userPreferencesService = {
+	async getPreferences(userId: string): Promise<UserPreferences | null> {
+		const { data, error } = await supabase
+			.from("user_preferences")
+			.select("*")
+			.eq("user_id", userId)
+			.single();
+
+		if (error) {
+			if (error.code === "PGRST116") return null; // Not found
+			throw error;
+		}
+		return data;
+	},
+
+	async updatePreferences(userId: string, updates: Partial<UserPreferences>): Promise<UserPreferences> {
+		const { data, error } = await supabase
+			.from("user_preferences")
+			.update(updates)
+			.eq("user_id", userId)
+			.select()
+			.single();
+
+		if (error) throw error;
+		return data;
 	},
 };

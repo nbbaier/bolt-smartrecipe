@@ -72,3 +72,28 @@ export interface ShoppingList {
 	created_at: string;
 	updated_at: string;
 }
+
+export interface UserProfile {
+	id: string;
+	user_id: string;
+	full_name: string;
+	bio: string;
+	avatar_color: string;
+	onboarding_completed: boolean;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface UserPreferences {
+	id: string;
+	user_id: string;
+	dietary_restrictions: string[];
+	allergies: string[];
+	preferred_cuisines: string[];
+	cooking_skill_level: 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert';
+	measurement_units: 'Metric' | 'Imperial';
+	family_size: number;
+	kitchen_equipment: string[];
+	created_at: string;
+	updated_at: string;
+}
