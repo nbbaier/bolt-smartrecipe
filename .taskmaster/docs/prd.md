@@ -1,116 +1,115 @@
 # **SmartRecipe: AI-Powered Pantry & Recipe Management Application**
 
-Document Version: 1.1 (Concise)
-Date: June 28, 2025
+Document Version: 2.0
+Date: June 29, 2025
 Author: Gemini
-Status: Draft
+Status: Live
 
 ## **1\. Introduction**
 
 ### **1.1 Project Overview**
 
-SmartRecipe is a web application that aims to simplify home cooking by offering intelligent pantry management, AI-powered recipe discovery, and cooking assistance. Its primary goals are to reduce food waste by encouraging the use of existing ingredients and to enhance the overall cooking experience. The application is built using React, TypeScript, Tailwind CSS, Radix UI, and leverages Supabase for backend services.
+SmartRecipe is a sophisticated web application that revolutionizes the home cooking experience through intelligent pantry management, AI-powered recipe discovery, and a context-aware cooking assistant. Its primary goal is to reduce food waste, streamline meal preparation, and inspire culinary creativity by leveraging user-specific data and advanced AI. The application is built with a modern tech stack, including React, TypeScript, and Supabase for a robust and scalable backend.
 
 ### **1.2 Purpose of this Document**
 
-This PRD outlines the essential features, functionalities, and user experience requirements for the SmartRecipe application, serving as a condensed guide for development.
+This PRD outlines the features, functionalities, and user experience requirements for the SmartRecipe application, serving as a comprehensive guide reflecting the current state of the project.
 
 ### **1.3 Target Audience**
 
-Home cooks, food enthusiasts, and individuals seeking efficient meal planning and reduced food waste.
+Home cooks, food enthusiasts, and individuals seeking to optimize their meal planning, reduce food waste, and enhance their cooking skills with the help of AI.
 
 ## **2\. Business Goals & Objectives**
 
--  **Reduce Food Waste:** Enable users to maximize the use of their pantry ingredients.
--  **Streamline Meal Preparation:** Provide intuitive tools for pantry, recipe, and shopping list management.
--  **Enhance Cooking Experience:** Deliver smart insights and assistance.
--  **Increase User Engagement:** Create a valuable and frequently used culinary management platform.
+-  **Reduce Food Waste:** Actively minimize food spoilage by providing advanced tools to track and utilize pantry ingredients.
+-  **Streamline Meal Preparation:** Offer an integrated, intuitive platform for managing pantry, recipes, and shopping lists.
+-  **Enhance Cooking Experience:** Deliver personalized, AI-driven insights, recipe recommendations, and real-time cooking assistance.
+-  **Increase User Engagement:** Become an indispensable daily tool for culinary management and inspiration.
 
 ## **3\. Scope**
 
-### **3.1 In-Scope Features (Current & Near-Term)**
-
-Based on the existing codebase and immediate development priorities:
+### **3.1 In-Scope Features**
 
 #### **3.1.1 User Authentication & Profile Management**
 
--  Secure user registration, login, and protected application routes.
--  Comprehensive user profiles: view/edit personal details, cooking preferences (dietary, cuisine, skill), and kitchen equipment.
--  User settings for notifications, privacy, account security (password change), and app preferences (measurement system, language).
--  Enhanced onboarding process for collecting profile data.
+-  Secure user registration, login, and protected application routes via Supabase Auth.
+-  Comprehensive user profiles for managing personal details, dietary restrictions, allergies, cooking skill level, and kitchen equipment inventory.
+-  Application settings for customizing user experience (e.g., measurement system).
 
-#### **3.1.2 Pantry Management**
+#### **3.1.2 Advanced Pantry Management**
 
--  **Ingredient Inventory:** Add, view, edit, and delete ingredients with details like quantity, unit, expiration date, and notes.
--  **Smart Input:** Manual input with mock support for voice and photo-based ingredient addition.
--  **Expiration Tracking:** Highlight ingredients nearing or past expiration.
--  **Bulk Operations:** Support for bulk deletion, expiration date updates, and CSV export.
--  Ability to mark ingredients as "leftovers."
+-  **Full Ingredient Lifecycle:** Add, view, edit, and delete ingredients with quantity, units, expiration dates, and notes.
+-  **AI-Powered Input:** Parse ingredients from natural language text using an AI-powered Supabase Edge Function.
+-  **Enhanced Autocomplete:** Smart suggestions based on user history and a master ingredient database.
+-  **Advanced Expiration Tracking:** Proactive alerts for ingredients that are expired, or have critical, warning, or upcoming expiration dates. Customizable alert thresholds.
+-  **Intelligent Categorization:** AI-powered category suggestions that learn from user behavior for consistent organization.
+-  **Inventory Level Tracking:** Low stock alerts based on customizable thresholds per ingredient.
 
-#### **3.1.3 Recipe Management**
+#### **3.1.3 Intelligent Recipe Management**
 
--  **Recipe Discovery:** Browse, search, and filter recipes by difficulty or pantry ingredient availability ("Can Cook" section).
--  **Recipe Details:** View comprehensive recipe information (ingredients, instructions, times, servings, mock nutrition).
--  **Recipe Import (Mocked):** Input a URL to simulate scraping and displaying recipe details (persistence mocked).
--  Bookmark recipes for easy access.
+-  **"Can Cook" Discovery:** Browse and filter recipes based on ingredients currently available in the user's pantry.
+-  **Comprehensive Recipe Details:** View full recipe information in a modal, including ingredients, step-by-step instructions, stats (time, difficulty), and notes.
+-  **Smart Shopping List Integration:** Add missing ingredients for a recipe directly to the shopping list, automatically excluding items already in the pantry.
+-  **Bookmark & Organize:** Save favorite recipes for quick and easy access.
 
-#### **3.1.4 Shopping List Management**
+#### **3.1.4 Smart Shopping List Management**
 
--  Create and manage shopping lists, adding items with quantity/unit.
--  Mark items as purchased and clear purchased items.
--  Search and filter list items, with auto-suggestion from a master ingredient database.
+-  Create and manage multiple shopping lists with items, quantities, and categories.
+-  Mark items as purchased, with visual progress tracking.
+-  **Automatic Pantry Integration:** Purchased items are automatically added to the user's pantry inventory.
+-  Smart suggestions for items based on recipes and low-stock alerts.
 
-#### **3.1.5 AI Assistant**
+#### **3.1.5 AI Cooking Assistant**
 
--  **Simulated AI Chat:** A basic chat interface for cooking queries with mocked responses.
--  Provide quick prompt buttons and display curated cooking tips.
--  Future plans for real AI integration with pantry awareness.
+-  **Real-time AI Chat:** A fully integrated chat interface powered by the OpenAI GPT-4.1 API via a Supabase Edge Function.
+-  **Deep Personalization:** The AI provides context-aware responses based on the user's pantry contents, dietary preferences, allergies, and stated cooking skill level.
+-  **Visual Recipe Recommendations:** The assistant can suggest and display rich recipe cards directly within the chat.
+-  **Contextual Conversation:** The AI maintains conversation history to provide relevant, smart follow-up suggestions and a natural interaction flow.
+-  **Robust Error Handling:** Graceful fallbacks and clear user messaging when the AI service is unavailable.
 
-### **3.2 Out-of-Scope Features (for current phase)**
+### **3.2 Out-of-Scope Features (Future Phases)**
 
--  Real-time AI integration (replacing mocks).
--  Advanced recipe import persistence and full custom recipe creation/editing.
--  Advanced shopping list features (e.g., sharing, custom items).
--  Full performance, accessibility, and PWA support beyond current responsive design.
--  Extensive testing coverage.
--  Social features, external API integrations (grocery, smart devices), and advanced analytics.
+-  **Full Recipe Import & Creation:** A dedicated interface for users to create their own recipes or persist recipes imported from URLs.
+-  **Intelligent Leftover Tracking:** A system for logging, tracking, and getting recommendations for using leftovers.
+-  **Advanced Mobile/PWA Support:** Offline capabilities, service workers, and push notifications.
+-  **Social & Community Features:** Recipe sharing, ratings, and community challenges.
+-  **Voice Commands & Photo Recognition:** Voice input for hands-free use and AI-powered ingredient recognition from images.
+-  **Comprehensive Testing Suite:** Full end-to-end and unit test coverage.
 
 ## **4\. User Stories (Examples)**
 
--  As a user, I want to quickly add ingredients to my pantry and see what's expiring soon, to reduce food waste.
--  As a user, I want to find recipes I can cook with ingredients I already have, without needing to go shopping.
--  As a user, I want to manage my shopping list efficiently, marking items as purchased.
--  As a user, I want a cooking assistant to give me tips or recipe ideas.
+-  As a user, I want to type "1 dozen eggs, 2 lbs of chicken breast, and a loaf of bread" and have the app automatically add these items with correct quantities to my pantry.
+-  As a user, I want the AI to suggest a gluten-free dinner recipe I can make with the chicken and vegetables expiring this week.
+-  As a user, I want to add items from my shopping list to my pantry automatically when I mark them as purchased.
+-  As a user, I want to find a "quick and easy" recipe that I have all the ingredients for right now.
 
 ## **5\. Functional Requirements (Summary)**
 
-The system will provide robust user authentication, allowing users to manage their personal profiles, dietary preferences, and kitchen equipment. It will enable comprehensive pantry management, including ingredient tracking, expiration alerts, and bulk operations. Users will be able to discover and manage recipes, including mock importing from URLs and bookmarking favorites. A functional shopping list will support adding and tracking items. A simulated AI assistant will provide cooking guidance through a chat interface.
+The system provides secure user authentication and rich user profiles for deep personalization. It features an advanced pantry management system with AI-powered data entry, intelligent categorization, and proactive expiration and low-stock alerts. Users can discover recipes they can cook with their current inventory and manage smart shopping lists that automatically sync with their pantry. A deeply integrated AI assistant offers personalized, context-aware cooking advice and recipe recommendations in a real-time chat interface.
 
 ## **6\. Non-Functional Requirements (Summary)**
 
--  **Performance:** Fast page loads and API responses, responsive UI interactions.
--  **Security:** Secure storage of user data (Supabase RLS), adherence to authentication best practices, and input validation.
--  **Usability & UX:** Intuitive navigation, consistent design, clear feedback, and loading indicators.
--  **Accessibility:** Adherence to WCAG 2.1 AA guidelines where possible (keyboard navigation, color contrast).
--  **Scalability:** Backend capable of handling growing user and data volumes.
--  **Maintainability:** Modular, well-structured, and documented codebase with regular dependency updates.
+-  **Performance:** Fast page loads, real-time data synchronization, and responsive UI interactions.
+-  **Security:** Secure storage of user data, enforced Row Level Security (RLS) in Supabase, and best practices for authentication.
+-  **Usability & UX:** Intuitive, mobile-first design with consistent patterns, clear feedback, and loading indicators.
+-  **Accessibility:** Adherence to WCAG 2.1 AA guidelines where possible (keyboard navigation, color contrast, ARIA labels).
+-  **Scalability:** The Supabase backend and Edge Functions are architected to handle growing user and data volumes.
+-  **Maintainability:** A modular, well-structured, and documented codebase.
 
 ## **7\. Technical Requirements**
 
 -  **Frontend:** React 18+, TypeScript, Tailwind CSS, Radix UI, Shadcn/ui.
--  **State Management:** React Hooks, custom hooks.
+-  **State Management:** React Hooks, React Context API.
 -  **Routing:** React Router DOM.
--  **Backend:** Supabase (PostgreSQL, Auth, RLS).
--  **ORM:** drizzle and drizzle-kit
+-  **Backend & Database:** Supabase (PostgreSQL, Auth, Realtime, Storage, Edge Functions).
 -  **Build Tool:** Vite.
--  **Libraries:** Lucide React (icons), React Hook Form (forms), Zod (validation), date-fns (date handling).
+-  **Libraries:** Lucide React (icons), React Hook Form (forms), Zod (validation), date-fns (date handling), clsx, tailwind-merge.
 
 ## **8\. Future Considerations**
 
--  Full integration of real AI models (e.g., Gemini API) for pantry-aware suggestions.
--  Advanced recipe creation and persistent import.
--  Enhanced shopping list collaboration and smart features.
--  Full cooking session tracking and guidance.
--  Improved mobile PWA support, animations, and accessibility.
--  Comprehensive testing suite.
--  Social features and third-party integrations (e.g., grocery store APIs).
+-  Implementation of an intelligent leftover tracking system (Phase 10).
+-  Development of custom recipe creation and a robust web recipe importer (Phase 11).
+-  Expansion of AI capabilities, including tracking cooking history and dynamic recipe modification (Phase 12).
+-  Building offline capabilities through a Progressive Web App (PWA) implementation (Phase 13).
+-  Introduction of social features, voice commands, and image recognition for ingredients.
+-  Creation of a comprehensive testing suite.
