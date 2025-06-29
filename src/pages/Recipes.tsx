@@ -4,6 +4,7 @@ import {
 	recipeService,
 	ingredientService,
 	bookmarkService,
+	shoppingListService,
 } from "../lib/database";
 import {
 	Card,
@@ -29,8 +30,10 @@ import {
 	X,
 	Utensils,
 	Timer,
+	ShoppingCart,
+	Plus,
 } from "lucide-react";
-import type { Recipe, Ingredient, RecipeIngredient, RecipeInstruction } from "../types";
+import type { Recipe, Ingredient, RecipeIngredient, RecipeInstruction, ShoppingList } from "../types";
 
 export function Recipes() {
 	const { user } = useAuth();
@@ -38,6 +41,7 @@ export function Recipes() {
 	const [canCookRecipes, setCanCookRecipes] = useState<Recipe[]>([]);
 	const [userIngredients, setUserIngredients] = useState<Ingredient[]>([]);
 	const [bookmarkedRecipes, setBookmarkedRecipes] = useState<string[]>([]);
+	const [userShoppingLists, setUserShoppingLists] = useState<ShoppingList[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [searchTerm, setSearchTerm] = useState("");
 	const [selectedDifficulty, setSelectedDifficulty] = useState<string>("All");
@@ -46,6 +50,9 @@ export function Recipes() {
 	const [recipeIngredients, setRecipeIngredients] = useState<RecipeIngredient[]>([]);
 	const [recipeInstructions, setRecipeInstructions] = useState<RecipeInstruction[]>([]);
 	const [loadingRecipeDetails, setLoadingRecipeDetails] = useState(false);
+	const [showAddToShoppingModal, setShowAddToShoppingModal] = useState(false);
+	const [selectedShoppingListId, setSelectedShoppingListId] = useState<string>("");
+	const [addingToShopping, setAddingToShopping] = useState(false);
 
 	useEffect(() => {
 		loadData();
@@ -56,15 +63,17 @@ export function Recipes() {
 
 		try {
 			setLoading(true);
-			const [recipesData, ingredientsData, bookmarksData] = await Promise.all([
+			const [recipesData, ingredientsData, bookmarksData, shoppingListsData] = await Promise.all([
 				recipeService.getAll(),
 				ingredientService.getAll(user.id),
 				bookmarkService.getUserBookmarks(user.id),
+				shoppingListService.getAllLists(user.id),
 			]);
 
 			setRecipes(recipesData);
 			setUserIngredients(ingredientsData);
 			setBookmarkedRecipes(bookmarksData);
+			setUserShoppingLists(shoppingListsData);
 
 			// Calculate recipes that can be cooked
 			const ingredientNames = ingredientsData.map((ing) => ing.name);
@@ -137,6 +146,40 @@ export function Recipes() {
 				userIng.name.toLowerCase().includes(ingredientName.toLowerCase()) ||
 				ingredientName.toLowerCase().includes(userIng.name.toLowerCase()),
 		);
+	};
+
+	const getMissingIngredients = () => {
+		if (!recipeIngredients.length) return [];
+		
+		return recipeIngredients.filter(recipeIng => 
+			!checkIngredientAvailability(recipeIng.ingredient_name)
+		);
+	};
+
+	const addMissingToShoppingList = async () => {
+		if (!selectedRecipe || !selectedShoppingListId) return;
+
+		try {
+			setAddingToShopping(true);
+			console.log('Adding missing ingredients to shopping list:', selectedShoppingListId);
+			
+			await shoppingListService.createFromRecipe(
+				selectedShoppingListId, 
+				selectedRecipe.id, 
+				userIngredients
+			);
+			
+			setShowAddToShoppingModal(false);
+			setSelectedShoppingListId("");
+			
+			// Show success message
+			alert(`Added missing ingredients from "${selectedRecipe.title}" to your shopping list!`);
+		} catch (error) {
+			console.error("Error adding to shopping list:", error);
+			alert("Failed to add ingredients to shopping list. Please try again.");
+		} finally {
+			setAddingToShopping(false);
+		}
 	};
 
 	const filteredRecipes = (showCanCookOnly ? canCookRecipes : recipes).filter(
@@ -447,39 +490,64 @@ export function Recipes() {
 														Ingredients
 													</h3>
 												</div>
+												
+												{/* Add to Shopping List Button */}
+												{getMissingIngredients().length > 0 && userShoppingLists.length > 0 && (
+													<div className="mb-4">
+														<Button
+															onClick={() => setShowAddToShoppingModal(true)}
+															variant="outline"
+															className="flex items-center space-x-2 text-sm"
+														>
+															<ShoppingCart className="h-4 w-4" />
+															<span>Add Missing to Shopping List ({getMissingIngredients().length})</span>
+														</Button>
+													</div>
+												)}
+												
 												{recipeIngredients.length > 0 ? (
 													<div className="space-y-2 sm:space-y-3">
-														{recipeIngredients.map((ingredient, index) => (
-															<div
-																key={index}
-																className={`flex items-center justify-between p-2 sm:p-3 rounded-lg border transition-colors ${
-																	checkIngredientAvailability(ingredient.ingredient_name)
-																		? "bg-green-50 border-green-200 text-green-900"
-																		: "bg-gray-50 border-gray-200"
-																}`}
-															>
-																<div className="flex items-center space-x-2 min-w-0 flex-1">
-																	<div
-																		className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full flex-shrink-0 ${
-																			checkIngredientAvailability(ingredient.ingredient_name)
-																				? "bg-green-500"
-																				: "bg-gray-300"
-																		}`}
-																	/>
-																	<span className="font-medium text-sm sm:text-base truncate">
-																		{ingredient.ingredient_name}
-																	</span>
+														{recipeIngredients.map((ingredient, index) => {
+															const isAvailable = checkIngredientAvailability(ingredient.ingredient_name);
+															return (
+																<div
+																	key={index}
+																	className={`flex items-center justify-between p-2 sm:p-3 rounded-lg border transition-colors ${
+																		isAvailable
+																			? "bg-green-50 border-green-200 text-green-900"
+																			: "bg-orange-50 border-orange-200 text-orange-900"
+																	}`}
+																>
+																	<div className="flex items-center space-x-2 min-w-0 flex-1">
+																		<div
+																			className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full flex-shrink-0 ${
+																				isAvailable
+																					? "bg-green-500"
+																					: "bg-orange-500"
+																			}`}
+																		/>
+																		<div className="flex items-center space-x-1">
+																			<span className="font-medium text-sm sm:text-base truncate">
+																				{ingredient.ingredient_name}
+																			</span>
+																			{!isAvailable && (
+																				<span className="text-xs bg-orange-200 text-orange-800 px-1.5 py-0.5 rounded-full">
+																					Need
+																				</span>
+																			)}
+																		</div>
+																	</div>
+																	<div className="text-xs sm:text-sm flex-shrink-0 ml-2">
+																		{ingredient.quantity} {ingredient.unit}
+																		{ingredient.notes && (
+																			<span className="text-gray-500 ml-1 hidden sm:inline">
+																				({ingredient.notes})
+																			</span>
+																		)}
+																	</div>
 																</div>
-																<div className="text-xs sm:text-sm flex-shrink-0 ml-2">
-																	{ingredient.quantity} {ingredient.unit}
-																	{ingredient.notes && (
-																		<span className="text-gray-500 ml-1 hidden sm:inline">
-																			({ingredient.notes})
-																		</span>
-																	)}
-																</div>
-															</div>
-														))}
+															);
+														})}
 													</div>
 												) : (
 													<p className="text-sm sm:text-base text-gray-500 italic">No ingredients listed for this recipe.</p>
@@ -520,6 +588,93 @@ export function Recipes() {
 								)}
 							</CardContent>
 						</ScrollArea>
+					</Card>
+				</div>
+			)}
+
+			{/* Add to Shopping List Modal */}
+			{showAddToShoppingModal && selectedRecipe && (
+				<div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+					<Card className="max-w-md w-full">
+						<CardHeader className="pb-3 sm:pb-6">
+							<div className="flex items-center justify-between">
+								<CardTitle className="text-lg sm:text-xl">Add to Shopping List</CardTitle>
+								<Button 
+									variant="ghost" 
+									size="icon" 
+									onClick={() => {
+										setShowAddToShoppingModal(false);
+										setSelectedShoppingListId("");
+									}}
+								>
+									<X className="h-4 w-4" />
+								</Button>
+							</div>
+							<CardDescription>
+								Add missing ingredients from "{selectedRecipe.title}" to your shopping list
+							</CardDescription>
+						</CardHeader>
+						<CardContent className="space-y-4">
+							{/* Missing Ingredients Preview */}
+							<div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+								<h4 className="text-sm font-medium text-orange-900 mb-2">
+									Missing Ingredients ({getMissingIngredients().length}):
+								</h4>
+								<div className="space-y-1">
+									{getMissingIngredients().slice(0, 5).map((ingredient, index) => (
+										<div key={index} className="text-xs text-orange-800">
+											• {ingredient.ingredient_name} ({ingredient.quantity} {ingredient.unit})
+										</div>
+									))}
+									{getMissingIngredients().length > 5 && (
+										<div className="text-xs text-orange-600 italic">
+											...and {getMissingIngredients().length - 5} more
+										</div>
+									)}
+								</div>
+							</div>
+
+							{/* Shopping List Selection */}
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-2">
+									Select Shopping List:
+								</label>
+								<select
+									value={selectedShoppingListId}
+									onChange={(e) => setSelectedShoppingListId(e.target.value)}
+									className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+								>
+									<option value="">Choose a list...</option>
+									{userShoppingLists.map((list) => (
+										<option key={list.id} value={list.id}>
+											{list.name}
+										</option>
+									))}
+								</select>
+							</div>
+
+							{/* Action Buttons */}
+							<div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+								<Button
+									onClick={addMissingToShoppingList}
+									disabled={!selectedShoppingListId || addingToShopping}
+									className="flex items-center justify-center space-x-2"
+								>
+									<Plus className="h-4 w-4" />
+									<span>{addingToShopping ? "Adding..." : "Add to List"}</span>
+								</Button>
+								<Button
+									variant="outline"
+									onClick={() => {
+										setShowAddToShoppingModal(false);
+										setSelectedShoppingListId("");
+									}}
+									disabled={addingToShopping}
+								>
+									Cancel
+								</Button>
+							</div>
+						</CardContent>
 					</Card>
 				</div>
 			)}
