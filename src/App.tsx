@@ -13,6 +13,7 @@ import { Pantry } from "./pages/Pantry";
 import { Recipes } from "./pages/Recipes";
 import { Shopping } from "./pages/Shopping";
 import { Settings } from "./pages/Settings";
+import { Assistant } from "./pages/Assistant";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
 	const { user, loading, isSupabaseConnected } = useAuth();
@@ -84,14 +85,7 @@ function AppRoutes() {
 				element={
 					<ProtectedRoute>
 						<Layout>
-							<div className="text-center py-12">
-								<h2 className="text-2xl font-bold text-secondary-900 mb-2">
-									AI Assistant
-								</h2>
-								<p className="text-secondary-600">
-									Coming soon - Get cooking tips and recipe suggestions
-								</p>
-							</div>
+							<Assistant />
 						</Layout>
 					</ProtectedRoute>
 				}
