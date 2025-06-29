@@ -180,14 +180,6 @@ Building a comprehensive smart recipe app with pantry management, recipe discove
   - [x] OpenAI GPT-4.1-mini integration for ingredient extraction
   - [x] Frontend interface for text-based ingredient entry
   - [x] Structured output validation and user editing
-  - [ ] Browser-based speech-to-text API integration
-  - [ ] Voice input for ingredient entry
-  - [ ] Voice commands for common actions
-- [ ] Photo upload with AI recognition system
-  - [ ] Camera integration for receipt scanning
-  - [ ] AI-powered ingredient recognition from images
-  - [ ] Pantry shelf photo analysis
-  - [ ] User confirmation workflow for AI-recognized items
 - [ ] Enhanced autocomplete with smart suggestions
   - [ ] Predictive text based on user history
   - [ ] Common ingredient suggestions
@@ -332,6 +324,44 @@ Building a comprehensive smart recipe app with pantry management, recipe discove
   - [ ] Efficient data fetching strategies
   - [ ] Caching layer implementation
   - [ ] Real-time update optimization
+
+## Planned Future Enhancements
+
+These features are planned for future development after the initial app launch:
+
+### Voice Command Integration
+- [ ] Research and implement voice command integration
+  - [ ] Browser-based speech-to-text API integration
+  - [ ] Voice input for ingredient entry
+  - [ ] Voice commands for common actions
+
+### Photo Upload with AI Recognition System
+- [ ] Photo upload with AI recognition system
+  - [ ] Camera integration for receipt scanning
+  - [ ] AI-powered ingredient recognition from images
+  - [ ] Pantry shelf photo analysis
+  - [ ] User confirmation workflow for AI-recognized items
+
+### Advanced Mobile Features
+- [ ] Native mobile app development
+  - [ ] iOS and Android native apps
+  - [ ] Push notifications
+  - [ ] Camera integration for mobile
+  - [ ] Barcode scanning for products
+
+### Social Features
+- [ ] Recipe sharing and community features
+  - [ ] Share recipes with friends
+  - [ ] Community recipe ratings and reviews
+  - [ ] Cooking challenges and achievements
+  - [ ] Social meal planning
+
+### Advanced Analytics
+- [ ] Comprehensive cooking analytics
+  - [ ] Detailed nutrition tracking
+  - [ ] Cost analysis and budgeting
+  - [ ] Environmental impact tracking
+  - [ ] Cooking skill progression tracking
 
 ## Technical Architecture
 
