@@ -226,17 +226,26 @@ Building a comprehensive smart recipe app with pantry management, recipe discove
   - [ ] Quick-add leftover logging system
   - [ ] Visual leftover inventory display
   - [ ] Edit and delete leftover entries
-  - [ ] Photo capture for leftover identification
+- [x] Create leftovers database schema
+  - [x] `leftovers` table with expiration tracking
+  - [x] Link to source recipes when applicable
+  - [x] Quantity and portion tracking
+- [x] Leftover management interface
+  - [x] Quick-add leftover logging system
+  - [x] Visual leftover inventory display
+  - [x] Edit and delete leftover entries
+  - [x] Photo capture for leftover identification
 
 **Smart Expiration & Recommendations:**
-- [ ] Leftover expiration monitoring
-  - [ ] Customizable reminder settings
-  - [ ] Visual expiration indicators
-  - [ ] Integration with main dashboard alerts
-- [ ] Proactive meal suggestions
-  - [ ] Prioritize recipes using soon-to-expire leftovers
-  - [ ] "Use up leftovers" recipe filtering
-  - [ ] Creative leftover transformation suggestions
+- [x] Leftover expiration monitoring
+  - [x] Customizable reminder settings
+  - [x] Visual expiration indicators
+  - [x] Integration with main dashboard alerts
+- [x] Proactive meal suggestions
+  - [x] Prioritize recipes using soon-to-expire ingredients
+  - [x] AI-powered recipe recommendations based on expiring items
+  - [x] Personalized suggestions considering dietary preferences
+  - [x] Smart notification system for timely cooking suggestions
 
 ### Phase 11: Custom Recipe Management & Import
 **Status: ⚪ Not Started**

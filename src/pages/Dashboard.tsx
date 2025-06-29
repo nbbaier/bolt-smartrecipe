@@ -1,509 +1,551 @@
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
-import { ingredientService, recipeService, leftoverService } from "../lib/database";
-import { LowStockAlert } from "../components/ui/LowStockAlert";
-import { ExpirationMonitor } from "../components/ui/ExpirationMonitor";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "../components/ui/Card";
-import { Button } from "../components/ui/Button";
-import {
-	Package,
-	BookOpen,
-	ShoppingCart,
-	Clock,
-	Sparkles,
-	AlertTriangle,
-	TrendingDown,
-	Utensils,
-} from "lucide-react";
-import type { Ingredient, Recipe, Leftover } from "../types";
+# SmartRecipe Development Plan
 
-export function Dashboard() {
-	const { user } = useAuth();
-	const [stats, setStats] = useState({
-		totalIngredients: 0,
-		availableRecipes: 0,
-		expiringSoon: 0,
-		canCookRecipes: 0,
-		lowStockItems: 0,
-		expiringLeftovers: 0,
-		totalLeftovers: 0,
-	});
-	const [expiringSoonItems, setExpiringSoonItems] = useState<Ingredient[]>([]);
-	const [lowStockItems, setLowStockItems] = useState<Ingredient[]>([]);
-	const [canCookRecipes, setCanCookRecipes] = useState<Recipe[]>([]);
-	const [expiringLeftovers, setExpiringLeftovers] = useState<Leftover[]>([]);
-	const [allLeftovers, setAllLeftovers] = useState<Leftover[]>([]);
-	const [loading, setLoading] = useState(true);
+## Project Overview
+Building a comprehensive smart recipe app with pantry management, recipe discovery, shopping lists, AI assistance, and advanced features for minimizing food waste through intelligent ingredient management and leftover tracking.
 
-	useEffect(() => {
-		if (user) {
-			loadDashboardData();
-		}
-	}, [user]);
+## Development Phases
 
-	const loadDashboardData = async () => {
-		if (!user) return;
+### Phase 1: Foundation & Core UI 
+**Status: ✅ Complete**
 
-		try {
-			setLoading(true);
+- [x] Project structure setup
+- [x] Design system implementation (colors, typography, components)
+- [x] Navigation and routing setup
+- [x] Basic layout components (Header, Sidebar, Main content areas)
+- [x] Authentication UI (login/register forms)
+- [x] Responsive design foundations
+- [x] Migration to shadcn/ui components
 
-			// Load ingredients, recipes, and leftovers
-			const [ingredients, recipes, expiringLeftoversData, allLeftoversData] = await Promise.all([
-				ingredientService.getAll(user.id),
-				recipeService.getAll(),
-				leftoverService.getExpiringSoon(user.id, 3), // 3 days for leftovers
-				leftoverService.getAll(user.id), // All leftovers for total count
-			]);
+**Key Components:**
+- ✅ Layout system
+- ✅ Color palette and design tokens
+- ✅ Navigation components
+- ✅ Form components
+- ✅ Basic authentication flow
 
-			// Get expiring items
-			const expiring = await ingredientService.getExpiringSoon(user.id, 7);
+### Phase 2: Pantry Management
+**Status: ✅ Complete**
 
-			// Get low stock items
-			const lowStock = await ingredientService.getLowStockItems(user.id);
-			// Get recipes that can be cooked
-			const ingredientNames = ingredients.map((ing) => ing.name);
-			const canCook = await recipeService.getCanCook(ingredientNames);
+- [x] Pantry dashboard view
+- [x] Add ingredient functionality
+- [x] Ingredient list with edit/delete
+- [x] Expiration tracking and alerts
+- [x] Search and filter ingredients
+- [x] Pantry statistics and insights
+- [x] Category-based organization
+- [x] Ingredient cards with status indicators
 
-			setStats({
-				totalIngredients: ingredients.length,
-				availableRecipes: recipes.length,
-				expiringSoon: expiring.length,
-				canCookRecipes: canCook.length,
-				lowStockItems: lowStock.length,
-				expiringLeftovers: expiringLeftoversData.length,
-				totalLeftovers: allLeftoversData.length,
-			});
+**Key Features:**
+- ✅ Ingredient CRUD operations
+- ✅ Expiration date management
+- ✅ Search and filtering
+- ✅ Visual indicators for expiring items
+- ✅ Category-based filtering
 
-			setExpiringSoonItems(expiring.slice(0, 5)); // Show top 5
-			setLowStockItems(lowStock.slice(0, 5)); // Show top 5
-			setCanCookRecipes(canCook.slice(0, 3)); // Show top 3
-			setExpiringLeftovers(expiringLeftoversData.slice(0, 3)); // Show top 3
-			setAllLeftovers(allLeftoversData);
-		} catch (error) {
-			console.error("Error loading dashboard data:", error);
-		} finally {
-			setLoading(false);
-		}
-	};
+### Phase 3: Recipe Discovery & Management
+**Status: ✅ Complete**
 
-	const getDaysUntilExpiration = (expirationDate: string) => {
-		const expDate = new Date(expirationDate);
-		const today = new Date();
-		const diffTime = expDate.getTime() - today.getTime();
-		const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-		return diffDays;
-	};
+- [x] Recipe browsing interface
+- [x] Recipe detail views with full modal
+- [x] "Can Cook" section (recipes with available ingredients)
+- [x] Recipe search and filtering
+- [x] Bookmark functionality
+- [x] Recipe cards and grid layouts
+- [x] Complete recipe details (ingredients, instructions, stats)
+- [x] Ingredient availability checking
+- [x] Sample recipe data seeded
+- [x] Add missing ingredients to shopping list from recipe modal
 
-	if (loading) {
-		return (
-			<div className="flex items-center justify-center py-12">
-				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-			</div>
-		);
-	}
+**Key Features:**
+- ✅ Recipe discovery interface
+- ✅ Ingredient-based recipe filtering
+- ✅ Recipe bookmarking
+- ✅ Comprehensive recipe detail views
+- ✅ Real-time ingredient availability checking
+- ✅ Recipe difficulty and cuisine filtering
+- ✅ Smart shopping list integration from recipes
 
-	return (
-		<div className="space-y-4 sm:space-y-6">
-			<div className="text-center sm:text-left">
-				<h1 className="text-xl sm:text-2xl font-bold text-secondary-900">Dashboard</h1>
-				<p className="text-sm sm:text-base text-secondary-600">
-					Welcome back! Here's what's happening in your kitchen.
-				</p>
-			</div>
+### Phase 4: Shopping List Management
+**Status: ✅ Complete**
 
-			{/* Low Stock Alert */}
-			{lowStockItems.length > 0 && (
-				<LowStockAlert 
-					ingredients={lowStockItems} 
-					onViewPantry={() => window.location.href = '/pantry'}
-				/>
-			)}
+- [x] Shopping list creation and management
+- [x] Add items with quantities and categories
+- [x] Mark items as purchased
+- [x] Smart suggestions from recipes
+- [x] Multiple shopping lists
+- [x] Add items from recipes (excludes pantry items)
+- [x] Mobile responsive design
+- [x] Category-based organization
+- [x] Purchase progress tracking
+- [x] Auto-add purchased items to pantry
 
-			{/* Expiring Leftovers Alert */}
-			{expiringLeftovers.length > 0 && (
-				<Card className="border-orange-200 bg-orange-50">
-					<CardContent className="p-4">
-						<div className="flex items-start space-x-3">
-							<div className="flex-shrink-0">
-								<div className="p-2 bg-orange-100 rounded-lg">
-									<Utensils className="h-5 w-5 text-orange-600" />
-								</div>
-							</div>
-							<div className="flex-1 min-w-0">
-								<div className="flex items-center space-x-2 mb-2">
-									<h3 className="font-semibold text-orange-900">
-										Leftovers Expiring Soon
-									</h3>
-									<Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-300">
-										{stats.expiringLeftovers} item{stats.expiringLeftovers !== 1 ? 's' : ''}
-									</Badge>
-								</div>
-								
-								<div className="space-y-2">
-									{expiringLeftovers.map((leftover) => {
-										const daysLeft = getDaysUntilExpiration(leftover.expiration_date!);
-										return (
-											<div key={leftover.id} className="flex items-center justify-between text-sm">
-												<span className="text-orange-900 font-medium truncate">
-													{leftover.name}
-												</span>
-												<div className="flex items-center space-x-2 flex-shrink-0 ml-2">
-													<span className="text-xs text-orange-700">
-														{leftover.quantity} {leftover.unit}
-													</span>
-													<span className={`text-xs px-2 py-1 rounded-full ${
-														daysLeft <= 0 
-															? 'bg-red-100 text-red-800' 
-															: 'bg-orange-100 text-orange-800'
-													}`}>
-														{daysLeft <= 0 ? 'Expired' : `${daysLeft} day${daysLeft === 1 ? '' : 's'}`}
-													</span>
-												</div>
-											</div>
-										);
-									})}
-								</div>
+**Key Features:**
+- ✅ Shopping list CRUD operations
+- ✅ Item management with quantities and units
+- ✅ Purchase tracking with visual progress
+- ✅ Smart recipe integration (excludes owned ingredients)
+- ✅ Category-based organization
+- ✅ Mobile-optimized interface
+- ✅ Automatic pantry integration when items are purchased
 
-								<Link to="/leftovers">
-									<button className="mt-3 text-sm text-orange-700 hover:text-orange-800 font-medium underline">
-										View All Leftovers →
-									</button>
-								</Link>
-							</div>
-						</div>
-					</CardContent>
-				</Card>
-			)}
+### Phase 5: AI Assistant & Chat (Expanded)
+**Status: ✅ Complete**
 
-			{/* Enhanced Expiration Monitor */}
-			{expiringSoonItems.length > 0 && (
-				<ExpirationMonitor
-					ingredients={expiringSoonItems}
-					className="mb-6"
-				/>
-			)}
+- [x] Real OpenAI GPT-4.1 API integration
+- [x] Supabase Edge Function for AI processing
+- [x] Personalized responses based on user preferences
+- [x] Context-aware suggestions using pantry data
+- [x] Dietary restriction and allergy consideration
+- [x] Cooking skill level appropriate responses
+- [x] Recipe recommendations with visual cards
+- [x] Conversation history and context maintenance
+- [x] Smart follow-up suggestions
+- [x] Error handling and fallback responses
+- [x] Real-time typing indicators
+- [x] Quick prompt suggestions for common queries
 
-			{/* Quick Stats */}
-			<div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5 lg:gap-6">
-				<Card>
-					<CardContent className="p-4 sm:p-6">
-						<div className="flex items-center">
-							<div className="flex-shrink-0">
-								<Package className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
-							</div>
-							<div className="ml-3 sm:ml-4 min-w-0 flex-1">
-								<p className="text-xs sm:text-sm font-medium text-secondary-600 truncate">
-									Pantry Items
-								</p>
-								<p className="text-lg sm:text-2xl font-bold text-secondary-900">
-									{stats.totalIngredients}
-								</p>
-							</div>
-						</div>
-					</CardContent>
-				</Card>
+**Key Features:**
+- ✅ Full OpenAI API integration with GPT-4.1
+- ✅ Personalized AI responses based on user context
+- ✅ Pantry-aware recipe suggestions
+- ✅ Dietary compliance in AI recommendations
+- ✅ Skill-level appropriate cooking advice
+- ✅ Visual recipe cards in chat responses
+- ✅ Contextual conversation flow
+- ✅ Smart suggestion generation
+- ✅ Robust error handling and fallbacks
 
-				<Card>
-					<CardContent className="p-4 sm:p-6">
-						<div className="flex items-center">
-							<div className="flex-shrink-0">
-								<Sparkles className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
-							</div>
-							<div className="ml-3 sm:ml-4 min-w-0 flex-1">
-								<p className="text-xs sm:text-sm font-medium text-secondary-600 truncate">
-									Can Cook
-								</p>
-								<p className="text-lg sm:text-2xl font-bold text-secondary-900">
-									{stats.canCookRecipes}
-								</p>
-							</div>
-						</div>
-					</CardContent>
-				</Card>
+### Phase 6: User Profile & Settings
+**Status: ✅ Complete**
 
-				<Card>
-					<CardContent className="p-4 sm:p-6">
-						<div className="flex items-center">
-							<div className="flex-shrink-0">
-								<BookOpen className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
-							</div>
-							<div className="ml-3 sm:ml-4 min-w-0 flex-1">
-								<p className="text-xs sm:text-sm font-medium text-secondary-600 truncate">
-									Total Recipes
-								</p>
-								<p className="text-lg sm:text-2xl font-bold text-secondary-900">
-									{stats.availableRecipes}
-								</p>
-							</div>
-						</div>
-					</CardContent>
-				</Card>
+- [x] User profile management
+- [x] Dietary preferences and restrictions
+- [x] Kitchen equipment tracking
+- [x] App settings (units, notifications)
+- [x] Profile customization
+- [x] Comprehensive preference system
 
-				<Card>
-					<CardContent className="p-4 sm:p-6">
-						<div className="flex items-center">
-							<div className="flex-shrink-0">
-								<Utensils className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
-							</div>
-							<div className="ml-3 sm:ml-4 min-w-0 flex-1">
-								<p className="text-xs sm:text-sm font-medium text-secondary-600 truncate">
-									Leftovers
-								</p>
-								<p className="text-lg sm:text-2xl font-bold text-secondary-900">
-									{stats.totalLeftovers}
-								</p>
-							</div>
-						</div>
-					</CardContent>
-				</Card>
+**Key Features:**
+- ✅ Comprehensive user profiles
+- ✅ Preference management
+- ✅ Settings configuration
+- ✅ Dietary restrictions and allergies tracking
+- ✅ Kitchen equipment inventory
 
-				<Card>
-					<CardContent className="p-4 sm:p-6">
-						<div className="flex items-center">
-							<div className="flex-shrink-0">
-								<Clock className={`h-6 w-6 sm:h-8 sm:w-8 ${stats.expiringSoon > 0 ? "text-orange-600" : "text-primary"}`} />
-							</div>
-							<div className="ml-3 sm:ml-4 min-w-0 flex-1">
-								<p className="text-xs sm:text-sm font-medium text-secondary-600 truncate">
-									Expiring Soon
-								</p>
-								<p className="text-lg sm:text-2xl font-bold text-secondary-900">
-									{stats.expiringSoon}
-								</p>
-							</div>
-						</div>
-					</CardContent>
-				</Card>
+### Phase 7: Data Integration & Backend
+**Status: ✅ Complete**
 
-				{stats.expiringLeftovers > 0 && (
-					<Card className="border-orange-200 bg-orange-50">
-						<CardContent className="p-4 sm:p-6">
-							<div className="flex items-center">
-								<div className="flex-shrink-0">
-									<Utensils className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
-								</div>
-								<div className="ml-3 sm:ml-4 min-w-0 flex-1">
-									<p className="text-xs sm:text-sm font-medium text-orange-700 truncate">
-										Leftovers Expiring
-									</p>
-									<p className="text-lg sm:text-2xl font-bold text-orange-900">
-										{stats.expiringLeftovers}
-									</p>
-								</div>
-							</div>
-						</CardContent>
-					</Card>
-				)}
-			</div>
+- [x] Supabase setup and configuration
+- [x] Database schema design
+- [x] Authentication integration
+- [x] Real-time data synchronization
+- [x] RLS policies implementation
+- [x] Data migration and seeding
+- [x] Sample data for recipes, ingredients, and instructions
+- [x] Edge Functions for AI processing
+- [x] OpenAI API integration
 
-			{/* Additional Stats Row for Low Stock */}
-			{stats.lowStockItems > 0 && (
-				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-					<Card className="border-orange-200 bg-orange-50">
-						<CardContent className="p-4 sm:p-6">
-							<div className="flex items-center">
-								<div className="flex-shrink-0">
-									<TrendingDown className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
-								</div>
-								<div className="ml-3 sm:ml-4 min-w-0 flex-1">
-									<p className="text-xs sm:text-sm font-medium text-orange-700 truncate">
-										Low Stock
-									</p>
-									<p className="text-lg sm:text-2xl font-bold text-orange-900">
-										{stats.lowStockItems}
-									</p>
-								</div>
-							</div>
-						</CardContent>
-					</Card>
-				</div>
-			)}
-			{/* Main Content Grid */}
-			<div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
-				{/* What Can I Cook */}
-				<Card>
-					<CardHeader className="pb-3 sm:pb-6">
-						<div className="flex items-center space-x-2">
-							<Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-							<CardTitle className="text-base sm:text-lg">What Can I Cook?</CardTitle>
-						</div>
-						<CardDescription className="text-sm">
-							Recipes you can make with your current ingredients
-						</CardDescription>
-					</CardHeader>
-					<CardContent className="pt-0">
-						{canCookRecipes.length > 0 ? (
-							<div className="space-y-3">
-								{canCookRecipes.map((recipe) => (
-									<div
-										key={recipe.id}
-										className="flex items-center space-x-3 p-3 bg-secondary-50 rounded-lg"
-									>
-										<img
-											src={
-												recipe.image_url ||
-												"https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg"
-											}
-											alt={recipe.title}
-											className="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded-lg flex-shrink-0"
-										/>
-										<div className="flex-1 min-w-0">
-											<h4 className="font-medium text-secondary-900 text-sm sm:text-base truncate">
-												{recipe.title}
-											</h4>
-											<p className="text-xs sm:text-sm text-secondary-600">
-												{recipe.prep_time + recipe.cook_time} min •{" "}
-												{recipe.difficulty}
-											</p>
-										</div>
-									</div>
-								))}
-								<Link to="/recipes">
-									<Button className="w-full text-sm sm:text-base">View All Recipes</Button>
-								</Link>
-							</div>
-						) : (
-							<div className="text-center py-6">
-								<BookOpen className="h-10 w-10 sm:h-12 sm:w-12 text-secondary-400 mx-auto mb-3" />
-								<p className="text-sm sm:text-base text-secondary-600 mb-4">
-									Add ingredients to your pantry to discover recipes you can
-									cook!
-								</p>
-								<Link to="/pantry">
-									<Button className="text-sm sm:text-base">Add Ingredients</Button>
-								</Link>
-							</div>
-						)}
-					</CardContent>
-				</Card>
+**Key Features:**
+- ✅ Real database integration
+- ✅ User authentication
+- ✅ Data persistence
+- ✅ Security implementation (RLS policies)
+- ✅ Comprehensive sample data
+- ✅ Serverless AI processing with Edge Functions
 
-				{/* Expiring Soon */}
-				<Card>
-					<CardHeader className="pb-3 sm:pb-6">
-						<div className="flex items-center space-x-2">
-							<AlertTriangle
-								className={`h-4 w-4 sm:h-5 sm:w-5 ${stats.expiringSoon > 0 ? "text-orange-600" : "text-secondary-400"}`}
-							/>
-							<CardTitle className="text-base sm:text-lg">Expiring Soon</CardTitle>
-						</div>
-						<CardDescription className="text-sm">
-							Items in your pantry that need attention
-						</CardDescription>
-					</CardHeader>
-					<CardContent className="pt-0">
-						{expiringSoonItems.length > 0 ? (
-							<div className="space-y-3">
-								{expiringSoonItems.map((item) => {
-									const daysLeft = getDaysUntilExpiration(
-										item.expiration_date!,
-									);
-									return (
-										<div
-											key={item.id}
-											className="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-200"
-										>
-											<div className="min-w-0 flex-1">
-												<h4 className="font-medium text-secondary-900 text-sm sm:text-base truncate">
-													{item.name}
-												</h4>
-												<p className="text-xs sm:text-sm text-secondary-600">
-													{item.quantity} {item.unit}
-												</p>
-											</div>
-											<div className="text-right flex-shrink-0 ml-2">
-												<span
-													className={`text-xs sm:text-sm font-medium ${
-														daysLeft <= 1
-															? "text-red-600"
-															: daysLeft <= 3
-																? "text-orange-600"
-																: "text-orange-600"
-													}`}
-												>
-													{daysLeft <= 0
-														? "Expired"
-														: `${daysLeft} day${daysLeft === 1 ? "" : "s"}`}
-												</span>
-											</div>
-										</div>
-									);
-								})}
-								<Link to="/pantry">
-									<Button variant="outline" className="w-full text-sm sm:text-base">
-										Manage Pantry
-									</Button>
-								</Link>
-							</div>
-						) : (
-							<div className="text-center py-6">
-								<Clock className="h-10 w-10 sm:h-12 sm:w-12 text-secondary-400 mx-auto mb-3" />
-								<p className="text-sm sm:text-base text-secondary-600 mb-4">
-									No items expiring soon. Your pantry is well managed!
-								</p>
-								<Link to="/pantry">
-									<Button variant="outline" className="text-sm sm:text-base">View Pantry</Button>
-								</Link>
-							</div>
-						)}
-					</CardContent>
-				</Card>
-			</div>
+### Phase 8: Polish & Advanced Features
+**Status: ✅ Complete**
 
-			{/* Quick Actions */}
-			<div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-3">
-				<Link to="/pantry">
-					<Card className="hover:shadow-md transition-shadow cursor-pointer">
-						<CardContent className="p-4 sm:p-6 text-center">
-							<Package className="h-6 w-6 sm:h-8 sm:w-8 text-primary mx-auto mb-2" />
-							<h3 className="font-medium text-secondary-900 text-sm sm:text-base">Manage Pantry</h3>
-							<p className="text-xs sm:text-sm text-secondary-600">
-								Add and track ingredients
-							</p>
-						</CardContent>
-					</Card>
-				</Link>
+- [x] Error handling and loading states
+- [x] Mobile responsiveness refinement
+- [x] Database query optimizations
+- [x] User preference integration
+- [x] Advanced filtering capabilities
+- [x] Performance optimizations
+- [x] Accessibility improvements
 
-				<Link to="/recipes">
-					<Card className="hover:shadow-md transition-shadow cursor-pointer">
-						<CardContent className="p-4 sm:p-6 text-center">
-							<BookOpen className="h-6 w-6 sm:h-8 sm:w-8 text-primary mx-auto mb-2" />
-							<h3 className="font-medium text-secondary-900 text-sm sm:text-base">Browse Recipes</h3>
-							<p className="text-xs sm:text-sm text-secondary-600">Discover new dishes</p>
-						</CardContent>
-					</Card>
-				</Link>
+**Key Features:**
+- ✅ Comprehensive error handling
+- ✅ Mobile-first responsive design
+- ✅ Optimized database queries
+- ✅ Advanced search and filtering
+- ✅ Performance optimizations
 
-				<Link to="/shopping">
-					<Card className="hover:shadow-md transition-shadow cursor-pointer">
-						<CardContent className="p-4 sm:p-6 text-center">
-							<ShoppingCart className="h-6 w-6 sm:h-8 sm:w-8 text-primary mx-auto mb-2" />
-							<h3 className="font-medium text-secondary-900 text-sm sm:text-base">Shopping List</h3>
-							<p className="text-xs sm:text-sm text-secondary-600">
-								Plan your grocery trips
-							</p>
-						</CardContent>
-					</Card>
-				</Link>
+### Phase 9: Advanced Ingredient Management
+**Status: ✅ Complete**
 
-				<Link to="/leftovers">
-					<Card className="hover:shadow-md transition-shadow cursor-pointer">
-						<CardContent className="p-4 sm:p-6 text-center">
-							<Utensils className="h-6 w-6 sm:h-8 sm:w-8 text-primary mx-auto mb-2" />
-							<h3 className="font-medium text-secondary-900 text-sm sm:text-base">Leftovers</h3>
-							<p className="text-xs sm:text-sm text-secondary-600">
-								Track and reduce waste
-							</p>
-						</CardContent>
-					</Card>
-				</Link>
-			</div>
-		</div>
-	);
-}
+**Smart Input Methods:**
+- [x] Natural language input parsing with AI
+  - [x] Supabase Edge Function for NLP processing
+  - [x] OpenAI GPT-4.1-mini integration for ingredient extraction
+  - [x] Frontend interface for text-based ingredient entry
+  - [x] Structured output validation and user editing
+- [x] Enhanced autocomplete with smart suggestions
+  - [x] Predictive text based on user history
+  - [x] Common ingredient suggestions
+  - [x] Brand and product name recognition
+  - [x] Smart categorization from suggestions
+  - [x] Keyboard navigation support
+  - [x] Visual indicators for suggestion types
+
+**Advanced Inventory Management:**
+- [x] Inventory level tracking
+  - [x] Low stock alerts and thresholds
+  - [x] Customizable stock thresholds per ingredient
+  - [x] Visual indicators for stock levels
+  - [x] Dashboard integration for low stock alerts
+  - [x] Out of stock detection and alerts
+- [x] Automatic categorization system
+  - [x] AI-powered category suggestions
+  - [x] Smart category learning from user behavior
+  - [x] Real-time categorization with confidence scoring
+  - [x] User history integration for consistent categorization
+  - [x] Visual feedback and suggestion system
+- [x] Enhanced expiration monitoring
+  - [x] Customizable alert timing (warning and critical thresholds)
+  - [x] Advanced expiration categorization (expired, critical, warning, upcoming)
+  - [x] Visual expiration dashboard with detailed breakdown
+  - [x] Settings panel for personalized alert preferences
+  - [x] Proactive expiration alerts with actionable information
+
+**Remaining Future Enhancements:**
+- [ ] Automatic reorder suggestions based on usage patterns
+- [ ] Usage pattern analysis and consumption tracking
+- [ ] Push notifications for expiring items (requires PWA setup)
+- [ ] Proactive meal suggestions for soon-to-expire items (AI integration)
+
+### Phase 10: Intelligent Leftover Tracking
+**Status: ⚪ Not Started**
+
+**Database & Core Functionality:**
+- [ ] Create leftovers database schema
+  - [ ] `leftovers` table with expiration tracking
+  - [ ] Link to source recipes when applicable
+  - [ ] Quantity and portion tracking
+- [ ] Leftover management interface
+  - [ ] Quick-add leftover logging system
+  - [ ] Visual leftover inventory display
+  - [ ] Edit and delete leftover entries
+  - [ ] Photo capture for leftover identification
+
+**Smart Expiration & Recommendations:**
+- [ ] Leftover expiration monitoring
+  - [ ] Customizable reminder settings
+  - [ ] Visual expiration indicators
+  - [ ] Integration with main dashboard alerts
+- [ ] Proactive meal suggestions
+  - [ ] Prioritize recipes using soon-to-expire leftovers
+  - [ ] "Use up leftovers" recipe filtering
+  - [ ] Creative leftover transformation suggestions
+
+### Phase 11: Custom Recipe Management & Import
+**Status: ⚪ Not Started**
+
+**Recipe Creation Tools:**
+- [ ] Comprehensive recipe creation interface
+  - [ ] Rich text editor for instructions
+  - [ ] Dynamic ingredient list management
+  - [ ] Photo upload for recipe images
+  - [ ] Nutrition information input (optional)
+  - [ ] Cooking tips and notes section
+- [ ] Recipe organization system
+  - [ ] Custom tags and categories
+  - [ ] Recipe collections and meal plans
+  - [ ] Difficulty and time estimation tools
+  - [ ] Serving size calculator
+
+**Web Recipe Import:**
+- [ ] URL-based recipe import system
+  - [ ] Web scraping service integration
+  - [ ] Recipe parsing and data extraction
+  - [ ] User review and editing workflow
+  - [ ] Automatic ingredient matching
+- [ ] Recipe variation generator
+  - [ ] AI-powered ingredient substitution suggestions
+  - [ ] Dietary restriction adaptations
+  - [ ] Cooking method variations
+  - [ ] Portion scaling with smart adjustments
+
+### Phase 12: Advanced AI & Personalization
+**Status: 🔄 In Progress**
+
+**Deep Personalization Engine:**
+- [x] Comprehensive preference integration
+  - [x] Full dietary restriction compliance
+  - [x] Allergy-safe recipe filtering
+  - [x] Cooking skill level appropriate suggestions
+  - [x] Kitchen equipment-based recipe filtering
+- [ ] Cooking history tracking
+  - [ ] `cooked_recipes` table and analytics
+  - [ ] Favorite recipe identification
+  - [ ] Cooking frequency analysis
+  - [ ] Success rate tracking and learning
+
+**Intelligent Recipe Adaptation:**
+- [ ] Dynamic recipe modification system
+  - [ ] Smart ingredient substitution engine
+  - [ ] Automatic recipe scaling
+  - [ ] Cooking method adaptations
+  - [ ] Nutritional goal optimization
+- [ ] Seasonal and contextual recommendations
+  - [ ] Seasonal ingredient prioritization
+  - [ ] Weather-based meal suggestions
+  - [ ] Time-of-day appropriate recipes
+  - [ ] Special occasion meal planning
+
+**Machine Learning Integration:**
+- [x] User behavior analysis (basic)
+  - [x] Preference learning from interactions
+  - [ ] Success prediction modeling
+  - [ ] Personalized difficulty assessment
+- [ ] Recommendation refinement
+  - [ ] Continuous learning from user feedback
+  - [ ] A/B testing for recommendation algorithms
+  - [ ] Collaborative filtering with privacy protection
+
+### Phase 13: Offline Capabilities & Performance
+**Status: ⚪ Not Started**
+
+**Mobile Optimization:**
+- [ ] Progressive Web App (PWA) implementation
+  - [ ] App-like mobile experience
+  - [ ] Home screen installation
+  - [ ] Native mobile features integration
+- [ ] Touch-optimized interfaces
+  - [ ] Gesture-based navigation
+  - [ ] Mobile-first responsive design
+  - [ ] Thumb-friendly button placement
+
+**Offline Functionality:**
+- [ ] Service worker implementation
+  - [ ] Critical asset caching
+  - [ ] Offline recipe viewing
+  - [ ] Local data storage and sync
+- [ ] Data synchronization strategy
+  - [ ] Conflict resolution for offline changes
+  - [ ] Background sync when online
+  - [ ] Optimistic UI updates
+
+**Performance Optimization:**
+- [ ] Advanced performance profiling
+  - [ ] Bundle size optimization
+  - [ ] Lazy loading implementation
+  - [ ] Image optimization and compression
+- [ ] Database query optimization
+  - [ ] Efficient data fetching strategies
+  - [ ] Caching layer implementation
+  - [ ] Real-time update optimization
+
+## Planned Future Enhancements
+
+These features are planned for future development after the initial app launch:
+
+### Voice Command Integration
+- [ ] Research and implement voice command integration
+  - [ ] Browser-based speech-to-text API integration
+  - [ ] Voice input for ingredient entry
+  - [ ] Voice commands for common actions
+
+### Photo Upload with AI Recognition System
+- [ ] Photo upload with AI recognition system
+  - [ ] Camera integration for receipt scanning
+  - [ ] AI-powered ingredient recognition from images
+  - [ ] Pantry shelf photo analysis
+  - [ ] User confirmation workflow for AI-recognized items
+
+### Advanced Mobile Features
+- [ ] Native mobile app development
+  - [ ] iOS and Android native apps
+  - [ ] Push notifications
+  - [ ] Camera integration for mobile
+  - [ ] Barcode scanning for products
+
+### Social Features
+- [ ] Recipe sharing and community features
+  - [ ] Share recipes with friends
+  - [ ] Community recipe ratings and reviews
+  - [ ] Cooking challenges and achievements
+  - [ ] Social meal planning
+
+### Advanced Analytics
+- [ ] Comprehensive cooking analytics
+  - [ ] Detailed nutrition tracking
+  - [ ] Cost analysis and budgeting
+  - [ ] Environmental impact tracking
+  - [ ] Cooking skill progression tracking
+
+## Technical Architecture
+
+### Frontend Stack
+- **Framework**: React 18+ with TypeScript
+- **Styling**: Tailwind CSS with custom design system
+- **Components**: Custom components with Radix UI primitives
+- **Icons**: Lucide React
+- **Forms**: React Hook Form + Zod validation
+- **State**: React hooks + Context for global state
+
+### Backend Stack
+- **File Storage**: Supabase Storage (for images)
+- **AI Processing**: Supabase Edge Functions
+- **AI Model**: OpenAI GPT-4.1
+
+### AI/ML Integration Points
+- **Chat Interface**: Real-time AI cooking assistant
+- **Recipe Recommendations**: Context-aware suggestions
+- **Personalization**: User preference-based responses
+- **Voice Recognition**: Browser Speech API / External service (planned)
+- **Image Recognition**: External AI service for ingredient detection (planned)
+- **Recipe Parsing**: Web scraping + NLP service (planned)
+- **Natural Language Processing**: OpenAI GPT-4.1 for chat
+
+### Development Tools
+- **Build Tool**: Vite
+- **Linting**: ESLint + TypeScript ESLint
+- **Type Checking**: TypeScript strict mode
+- **Testing**: Vitest (planned)
+
+## Design Principles
+
+### Visual Design
+- **Clean and Modern**: Minimalist interface with clear hierarchy
+- **Color System**: Comprehensive palette with primary, secondary, accent colors
+- **Typography**: Clear, readable fonts with proper sizing scale
+- **Spacing**: Consistent 8px grid system
+- **Responsive**: Mobile-first approach with proper breakpoints
+
+### User Experience
+- **Intuitive Navigation**: Clear menu structure and breadcrumbs
+- **Progressive Disclosure**: Reveal complexity gradually
+- **Immediate Feedback**: Loading states, success/error messages
+- **Accessibility**: Keyboard navigation, proper contrast, ARIA labels
+- **Performance**: Fast load times and smooth interactions
+
+### Component Architecture
+- **Modular Design**: Reusable, single-responsibility components
+- **Consistent Patterns**: Standardized component APIs
+- **Scalable Structure**: Organized file structure for growth
+
+## Success Metrics
+
+### User Experience
+- [x] Intuitive navigation (easy to find features)
+- [x] Fast performance (quick load times)
+- [x] Mobile responsive (works well on all devices)
+- [x] Accessible design (keyboard navigation, screen readers)
+
+### Functionality
+- [x] Complete CRUD operations for all data types
+- [x] Accurate ingredient-recipe matching
+- [x] Reliable expiration tracking
+- [x] Effective search and filtering
+- [x] Recipe bookmarking system
+- [x] Real-time pantry updates
+- [x] Ingredient availability checking
+- [x] Smart shopping list integration
+- [x] AI-powered cooking assistance
+- [x] Personalized recipe recommendations
+
+### Advanced Features
+- [x] AI assistant with real OpenAI integration
+- [x] Context-aware personalization
+- [x] Dietary restriction compliance
+- [ ] Voice input accuracy and usability
+- [ ] AI ingredient recognition precision
+- [ ] Food waste reduction effectiveness
+- [ ] Offline functionality reliability
+
+### Code Quality
+- [x] Type-safe TypeScript implementation
+- [x] Modular, maintainable component architecture
+- [x] Consistent design system usage
+- [x] Proper error handling and loading states
+- [x] Database integration with proper RLS
+- [x] Component migration to shadcn/ui
+- [x] Serverless AI processing architecture
+
+## Next Steps
+
+**Current Priority: Phase 10 - Intelligent Leftover Tracking**
+
+1. **Database Schema Design**
+   - Create leftovers table with proper relationships
+   - Design expiration tracking system
+   - Plan integration with existing pantry system
+
+2. **Leftover Management Interface**
+   - Design quick-add leftover logging
+   - Create visual leftover inventory
+   - Plan photo capture functionality
+
+3. **Proactive Suggestions System**
+   - Implement AI-powered meal suggestions for expiring items
+   - Create dashboard integration for proactive recommendations
+   - Design user preference system for suggestion types
+
+**Alternative Priority: Phase 11 - Custom Recipe Management & Import**
+
+1. **Recipe Creation Tools**
+   - Design comprehensive recipe creation interface
+   - Implement rich text editor for instructions
+   - Create dynamic ingredient list management
+
+2. **Web Recipe Import**
+   - Research web scraping service integration
+   - Design recipe parsing and data extraction
+   - Plan user review and editing workflow
+
+## Progress Tracking
+
+Use this section to track completion of major milestones:
+
+- [x] Phase 1: Foundation & Core UI ✅
+- [x] Phase 2: Pantry Management ✅
+- [x] Phase 3: Recipe Discovery & Management ✅
+- [x] Phase 4: Shopping List Management ✅
+- [x] Phase 5: AI Assistant & Chat (Expanded) ✅
+- [x] Phase 6: User Profile & Settings ✅
+- [x] Phase 7: Data Integration & Backend ✅
+- [x] Phase 8: Polish & Advanced Features ✅
+- [x] Phase 9: Advanced Ingredient Management ✅
+- [ ] Phase 10: Intelligent Leftover Tracking
+- [ ] Phase 11: Custom Recipe Management & Import
+- [ ] Phase 12: Advanced AI & Personalization (Partially Complete)
+- [ ] Phase 13: Offline Capabilities & Performance
+
+## Recent Accomplishments
+
+### Latest Updates (Current Session)
+- ✅ **Complete Advanced Ingredient Management**: Finished Phase 9 with full smart input methods, inventory tracking, and AI-powered categorization
+- ✅ **Natural Language Processing**: Implemented AI-powered ingredient parsing from natural text input
+- ✅ **Enhanced Autocomplete**: Smart suggestions with predictive text and user history integration
+- ✅ **Advanced Expiration Monitoring**: Customizable alert thresholds with visual dashboard integration
+- ✅ **Inventory Level Tracking**: Low stock alerts with customizable thresholds and visual indicators
+- ✅ **AI-Powered Categorization**: Real-time category suggestions with confidence scoring and user learning
+- ✅ **Proactive Dashboard Features**: Enhanced dashboard with comprehensive ingredient management tools
+
+### Previous Major Accomplishments
+- ✅ **Real AI Integration**: Implemented actual OpenAI GPT-4.1 API integration through Supabase Edge Functions
+- ✅ **Personalized AI Responses**: AI now considers user's pantry ingredients, dietary restrictions, allergies, and cooking skill level
+- ✅ **Context-Aware Suggestions**: AI provides relevant follow-up suggestions based on conversation content
+- ✅ **Recipe Integration**: AI can display relevant recipe cards when discussing cooking topics
+- ✅ **Robust Error Handling**: Graceful fallbacks when AI service is unavailable
+- ✅ **Database Optimizations**: Fixed user profile/preferences queries to handle missing records properly
+- ✅ **Enhanced User Experience**: Improved chat interface with typing indicators, timestamps, and visual feedback
+- ✅ **Smart Conversation Flow**: AI maintains context across messages for more natural interactions
+- ✅ **Complete Shopping List System**: Implemented full shopping list management with multiple lists, smart recipe integration, and purchase tracking
+- ✅ **Recipe-to-Shopping Integration**: Users can add recipe ingredients to shopping lists, automatically excluding items already in their pantry
+- ✅ **Advanced Shopping Features**: Category organization, purchase progress tracking, and mobile-optimized shopping experience
+- ✅ **Automatic Pantry Updates**: Shopping list items automatically added to pantry when marked as purchased
+- ✅ **Complete Recipe Experience**: Implemented full recipe detail modal with ingredients, instructions, and cooking stats
+- ✅ **Enhanced Recipe Discovery**: Added recipe filtering, search, and "Can Cook" functionality
+- ✅ **Database Integration**: Seeded sample recipes with complete ingredient lists and step-by-step instructions
+- ✅ **Component Migration**: Successfully migrated to shadcn/ui components (Badge, Separator, ScrollArea)
+- ✅ **Ingredient Availability**: Real-time checking of ingredient availability for recipes
+- ✅ **Bookmark System**: Complete recipe bookmarking with persistent storage
+- ✅ **Visual Enhancements**: Improved recipe cards, difficulty badges, and cuisine type indicators
+
+---
+
+**Last Updated**: December 29, 2024
+**Version**: 3.3 - Phase 9 Complete + Proactive Suggestions Integration
+**Current Status**: Phase 9 complete! Full-featured smart ingredient management with AI-powered categorization, advanced expiration monitoring, intelligent input methods, and proactive dashboard suggestions. Ready for Phase 10 development.
