@@ -12,7 +12,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "../ui/Card";
-import { ChefHat, AlertCircle } from "lucide-react";
+import { ChefHat, AlertCircle, Sparkles } from "lucide-react";
 
 const signInSchema = z.object({
 	email: z.string().email("Please enter a valid email address"),
@@ -77,20 +77,32 @@ export function AuthForm() {
 	};
 
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center p-4">
-			<Card className="w-full max-w-md">
-				<CardHeader className="text-center">
-					<div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary">
-						<ChefHat className="h-6 w-6 text-primary-foreground" />
+		<div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-100 flex items-center justify-center p-4">
+			<Card className="w-full max-w-md shadow-2xl border-emerald-100">
+				<CardHeader className="text-center pb-8">
+					<div className="mx-auto mb-6 relative">
+						<div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-xl">
+							<ChefHat className="h-8 w-8 text-white" />
+							<Sparkles className="absolute -top-2 -right-2 h-5 w-5 text-yellow-300 animate-pulse" />
+						</div>
 					</div>
-					<CardTitle className="text-2xl">
-						{isSignUp ? "Create your account" : "Welcome to SmartRecipe"}
-					</CardTitle>
-					<CardDescription>
-						{isSignUp
-							? "Start your smart cooking journey"
-							: "Your intelligent cooking companion"}
-					</CardDescription>
+					<div className="space-y-2">
+						<CardTitle className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-700 bg-clip-text text-transparent">
+							{isSignUp ? "Join SmartRecipe" : "Welcome Back"}
+						</CardTitle>
+						<CardDescription className="text-base">
+							{isSignUp
+								? "Start your AI-powered cooking journey today"
+								: "Your intelligent cooking companion awaits"}
+						</CardDescription>
+						<div className="flex items-center justify-center space-x-2 pt-2">
+							<span className="px-2 py-1 text-xs font-medium bg-emerald-100 text-emerald-700 rounded-full">
+								Beta
+							</span>
+							<span className="text-xs text-muted-foreground">•</span>
+							<span className="text-xs text-muted-foreground">AI-Powered</span>
+						</div>
+					</div>
 				</CardHeader>
 				<CardContent>
 					{!isSupabaseConnected && (
@@ -151,7 +163,7 @@ export function AuthForm() {
 
 						<Button
 							type="submit"
-							className="w-full"
+							className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800"
 							disabled={loading || !isSupabaseConnected}
 						>
 							{loading ? "Loading..." : isSignUp ? "Create Account" : "Sign In"}
@@ -162,7 +174,7 @@ export function AuthForm() {
 						<button
 							type="button"
 							onClick={toggleMode}
-							className="text-sm text-primary hover:text-primary/80 disabled:opacity-50"
+							className="text-sm text-emerald-600 hover:text-emerald-700 disabled:opacity-50 font-medium"
 							disabled={loading}
 						>
 							{isSignUp
