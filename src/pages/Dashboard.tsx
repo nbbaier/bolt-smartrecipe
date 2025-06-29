@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { ingredientService, recipeService } from "../lib/database";
+import { ingredientService, recipeService, leftoverService } from "../lib/database";
 import { LowStockAlert } from "../components/ui/LowStockAlert";
 import { ExpirationMonitor } from "../components/ui/ExpirationMonitor";
 import {
@@ -20,8 +20,9 @@ import {
 	Sparkles,
 	AlertTriangle,
 	TrendingDown,
+	Utensils,
 } from "lucide-react";
-import type { Ingredient, Recipe } from "../types";
+import type { Ingredient, Recipe, Leftover } from "../types";
 
 export function Dashboard() {
 	const { user } = useAuth();
@@ -31,10 +32,12 @@ export function Dashboard() {
 		expiringSoon: 0,
 		canCookRecipes: 0,
 		lowStockItems: 0,
+		expiringLeftovers: 0,
 	});
 	const [expiringSoonItems, setExpiringSoonItems] = useState<Ingredient[]>([]);
 	const [lowStockItems, setLowStockItems] = useState<Ingredient[]>([]);
 	const [canCookRecipes, setCanCookRecipes] = useState<Recipe[]>([]);
+	const [expiringLeftovers, setExpiringLeftovers] = useState<Leftover[]>([]);
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
@@ -49,10 +52,11 @@ export function Dashboard() {
 		try {
 			setLoading(true);
 
-			// Load ingredients and recipes
-			const [ingredients, recipes] = await Promise.all([
+			// Load ingredients, recipes, and leftovers
+			const [ingredients, recipes, leftovers] = await Promise.all([
 				ingredientService.getAll(user.id),
 				recipeService.getAll(),
+				leftoverService.getExpiringSoon(user.id, 3), // 3 days for leftovers
 			]);
 
 			// Get expiring items
@@ -70,11 +74,13 @@ export function Dashboard() {
 				expiringSoon: expiring.length,
 				canCookRecipes: canCook.length,
 				lowStockItems: lowStock.length,
+				expiringLeftovers: leftovers.length,
 			});
 
 			setExpiringSoonItems(expiring.slice(0, 5)); // Show top 5
 			setLowStockItems(lowStock.slice(0, 5)); // Show top 5
 			setCanCookRecipes(canCook.slice(0, 3)); // Show top 3
+			setExpiringLeftovers(leftovers.slice(0, 3)); // Show top 3
 		} catch (error) {
 			console.error("Error loading dashboard data:", error);
 		} finally {
@@ -113,6 +119,62 @@ export function Dashboard() {
 					ingredients={lowStockItems} 
 					onViewPantry={() => window.location.href = '/pantry'}
 				/>
+			)}
+
+			{/* Expiring Leftovers Alert */}
+			{expiringLeftovers.length > 0 && (
+				<Card className="border-orange-200 bg-orange-50">
+					<CardContent className="p-4">
+						<div className="flex items-start space-x-3">
+							<div className="flex-shrink-0">
+								<div className="p-2 bg-orange-100 rounded-lg">
+									<Utensils className="h-5 w-5 text-orange-600" />
+								</div>
+							</div>
+							<div className="flex-1 min-w-0">
+								<div className="flex items-center space-x-2 mb-2">
+									<h3 className="font-semibold text-orange-900">
+										Leftovers Expiring Soon
+									</h3>
+									<Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-300">
+										{stats.expiringLeftovers} item{stats.expiringLeftovers !== 1 ? 's' : ''}
+									</Badge>
+								</div>
+								
+								<div className="space-y-2">
+									{expiringLeftovers.map((leftover) => {
+										const daysLeft = getDaysUntilExpiration(leftover.expiration_date!);
+										return (
+											<div key={leftover.id} className="flex items-center justify-between text-sm">
+												<span className="text-orange-900 font-medium truncate">
+													{leftover.name}
+												</span>
+												<div className="flex items-center space-x-2 flex-shrink-0 ml-2">
+													<span className="text-xs text-orange-700">
+														{leftover.quantity} {leftover.unit}
+													</span>
+													<span className={`text-xs px-2 py-1 rounded-full ${
+														daysLeft <= 0 
+															? 'bg-red-100 text-red-800' 
+															: 'bg-orange-100 text-orange-800'
+													}`}>
+														{daysLeft <= 0 ? 'Expired' : `${daysLeft} day${daysLeft === 1 ? '' : 's'}`}
+													</span>
+												</div>
+											</div>
+										);
+									})}
+								</div>
+
+								<Link to="/leftovers">
+									<button className="mt-3 text-sm text-orange-700 hover:text-orange-800 font-medium underline">
+										View All Leftovers →
+									</button>
+								</Link>
+							</div>
+						</div>
+					</CardContent>
+				</Card>
 			)}
 
 			{/* Enhanced Expiration Monitor */}
@@ -183,9 +245,7 @@ export function Dashboard() {
 					<CardContent className="p-4 sm:p-6">
 						<div className="flex items-center">
 							<div className="flex-shrink-0">
-								<Clock
-									className={`h-6 w-6 sm:h-8 sm:w-8 ${stats.expiringSoon > 0 ? "text-orange-600" : "text-primary"}`}
-								/>
+								<Clock className={`h-6 w-6 sm:h-8 sm:w-8 ${stats.expiringSoon > 0 ? "text-orange-600" : "text-primary"}`} />
 							</div>
 							<div className="ml-3 sm:ml-4 min-w-0 flex-1">
 								<p className="text-xs sm:text-sm font-medium text-secondary-600 truncate">
@@ -198,6 +258,26 @@ export function Dashboard() {
 						</div>
 					</CardContent>
 				</Card>
+
+				{stats.expiringLeftovers > 0 && (
+					<Card className="border-orange-200 bg-orange-50">
+						<CardContent className="p-4 sm:p-6">
+							<div className="flex items-center">
+								<div className="flex-shrink-0">
+									<Utensils className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
+								</div>
+								<div className="ml-3 sm:ml-4 min-w-0 flex-1">
+									<p className="text-xs sm:text-sm font-medium text-orange-700 truncate">
+										Leftovers Expiring
+									</p>
+									<p className="text-lg sm:text-2xl font-bold text-orange-900">
+										{stats.expiringLeftovers}
+									</p>
+								</div>
+							</div>
+						</CardContent>
+					</Card>
+				)}
 			</div>
 
 			{/* Additional Stats Row for Low Stock */}
@@ -384,6 +464,18 @@ export function Dashboard() {
 							<h3 className="font-medium text-secondary-900 text-sm sm:text-base">Shopping List</h3>
 							<p className="text-xs sm:text-sm text-secondary-600">
 								Plan your grocery trips
+							</p>
+						</CardContent>
+					</Card>
+				</Link>
+
+				<Link to="/leftovers">
+					<Card className="hover:shadow-md transition-shadow cursor-pointer">
+						<CardContent className="p-4 sm:p-6 text-center">
+							<Utensils className="h-6 w-6 sm:h-8 sm:w-8 text-primary mx-auto mb-2" />
+							<h3 className="font-medium text-secondary-900 text-sm sm:text-base">Leftovers</h3>
+							<p className="text-xs sm:text-sm text-secondary-600">
+								Track and reduce waste
 							</p>
 						</CardContent>
 					</Card>

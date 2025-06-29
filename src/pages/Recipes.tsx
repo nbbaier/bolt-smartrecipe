@@ -5,6 +5,7 @@ import {
 	ingredientService,
 	bookmarkService,
 	shoppingListService,
+	leftoverService,
 } from "../lib/database";
 import {
 	Card,
@@ -32,6 +33,7 @@ import {
 	Timer,
 	ShoppingCart,
 	Plus,
+	Utensils,
 } from "lucide-react";
 import type { Recipe, Ingredient, RecipeIngredient, RecipeInstruction, ShoppingList } from "../types";
 
@@ -53,6 +55,8 @@ export function Recipes() {
 	const [showAddToShoppingModal, setShowAddToShoppingModal] = useState(false);
 	const [selectedShoppingListId, setSelectedShoppingListId] = useState<string>("");
 	const [addingToShopping, setAddingToShopping] = useState(false);
+	const [showCreateLeftoverModal, setShowCreateLeftoverModal] = useState(false);
+	const [creatingLeftover, setCreatingLeftover] = useState(false);
 
 	useEffect(() => {
 		loadData();
@@ -179,6 +183,32 @@ export function Recipes() {
 			alert("Failed to add ingredients to shopping list. Please try again.");
 		} finally {
 			setAddingToShopping(false);
+		}
+	};
+
+	const createLeftoverFromRecipe = async () => {
+		if (!selectedRecipe || !user) return;
+
+		try {
+			setCreatingLeftover(true);
+			await leftoverService.createFromRecipe(
+				user.id,
+				selectedRecipe.id,
+				selectedRecipe.title,
+				2, // Default 2 portions
+				"portions",
+				"Created from recipe"
+			);
+			
+			setShowCreateLeftoverModal(false);
+			
+			// Show success message
+			alert(`Created leftover entry for "${selectedRecipe.title}"!`);
+		} catch (error) {
+			console.error("Error creating leftover:", error);
+			alert("Failed to create leftover. Please try again.");
+		} finally {
+			setCreatingLeftover(false);
 		}
 	};
 
@@ -504,6 +534,18 @@ export function Recipes() {
 														</Button>
 													</div>
 												)}
+
+										{/* Create Leftover Button */}
+										<div className="mb-4">
+											<Button
+												onClick={() => setShowCreateLeftoverModal(true)}
+												variant="outline"
+												className="flex items-center space-x-2 text-sm"
+											>
+												<Utensils className="h-4 w-4" />
+												<span>Create Leftover</span>
+											</Button>
+										</div>
 												
 												{recipeIngredients.length > 0 ? (
 													<div className="space-y-2 sm:space-y-3">
@@ -670,6 +712,87 @@ export function Recipes() {
 										setSelectedShoppingListId("");
 									}}
 									disabled={addingToShopping}
+								>
+									Cancel
+								</Button>
+							</div>
+						</CardContent>
+					</Card>
+				</div>
+			)}
+
+			{/* Create Leftover Modal */}
+			{showCreateLeftoverModal && selectedRecipe && (
+				<div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+					<Card className="max-w-md w-full">
+						<CardHeader className="pb-3 sm:pb-6">
+							<div className="flex items-center justify-between">
+								<CardTitle className="text-lg sm:text-xl">Create Leftover</CardTitle>
+								<Button 
+									variant="ghost" 
+									size="icon" 
+									onClick={() => {
+										setShowCreateLeftoverModal(false);
+									}}
+								>
+									<X className="h-4 w-4" />
+								</Button>
+							</div>
+							<CardDescription>
+								Create a leftover entry for "{selectedRecipe.title}"
+							</CardDescription>
+						</CardHeader>
+						<CardContent className="space-y-4">
+							{/* Recipe Preview */}
+							<div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+								<div className="flex items-center space-x-3">
+									<img
+										src={selectedRecipe.image_url || "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg"}
+										alt={selectedRecipe.title}
+										className="w-12 h-12 object-cover rounded-lg"
+									/>
+									<div className="flex-1 min-w-0">
+										<h4 className="font-medium text-gray-900 truncate">
+											{selectedRecipe.title}
+										</h4>
+										<p className="text-sm text-gray-600">
+											Serves {selectedRecipe.servings} • {selectedRecipe.difficulty}
+										</p>
+									</div>
+								</div>
+							</div>
+
+							<div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+								<h4 className="text-sm font-medium text-blue-900 mb-2">
+									Default Leftover Details:
+								</h4>
+								<div className="space-y-1 text-sm text-blue-800">
+									<div>• Name: {selectedRecipe.title} (Leftovers)</div>
+									<div>• Quantity: 2 portions</div>
+									<div>• Expires: 3 days from now</div>
+									<div>• Linked to this recipe</div>
+								</div>
+								<p className="text-xs text-blue-600 mt-2">
+									You can edit these details after creation in the Leftovers page.
+								</p>
+							</div>
+
+							{/* Action Buttons */}
+							<div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+								<Button
+									onClick={createLeftoverFromRecipe}
+									disabled={creatingLeftover}
+									className="flex items-center justify-center space-x-2"
+								>
+									<Utensils className="h-4 w-4" />
+									<span>{creatingLeftover ? "Creating..." : "Create Leftover"}</span>
+								</Button>
+								<Button
+									variant="outline"
+									onClick={() => {
+										setShowCreateLeftoverModal(false);
+									}}
+									disabled={creatingLeftover}
 								>
 									Cancel
 								</Button>
