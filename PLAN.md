@@ -237,10 +237,6 @@ Building a comprehensive smart recipe app with pantry management, recipe discove
   - [ ] Prioritize recipes using soon-to-expire leftovers
   - [ ] "Use up leftovers" recipe filtering
   - [ ] Creative leftover transformation suggestions
-- [ ] Food waste tracking and analytics
-  - [ ] Waste reduction metrics
-  - [ ] Monthly food waste reports
-  - [ ] Sustainability impact tracking
 
 ### Phase 11: Custom Recipe Management & Import
 **Status: ⚪ Not Started**
