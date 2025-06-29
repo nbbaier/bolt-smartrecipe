@@ -11,6 +11,7 @@ import {
 	X,
 	ChefHat,
 	Sparkles,
+	Utensils,
 } from "lucide-react";
 import { Button } from "../ui/Button";
 
@@ -19,6 +20,7 @@ const navigation = [
 	{ name: "Pantry", href: "/pantry", icon: Package },
 	{ name: "Recipes", href: "/recipes", icon: BookOpen },
 	{ name: "Shopping List", href: "/shopping", icon: ShoppingCart },
+	{ name: "Leftovers", href: "/leftovers", icon: Utensils },
 	{ name: "AI Assistant", href: "/assistant", icon: MessageCircle },
 	{ name: "Settings", href: "/settings", icon: Settings },
 ];

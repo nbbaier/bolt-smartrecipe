@@ -98,3 +98,16 @@ export interface UserPreferences {
 	created_at: string;
 	updated_at: string;
 }
+
+export interface Leftover {
+	id: string;
+	user_id: string;
+	name: string;
+	quantity: number;
+	unit: string;
+	expiration_date?: string;
+	source_recipe_id?: string;
+	notes?: string;
+	created_at: string;
+	updated_at: string;
+}

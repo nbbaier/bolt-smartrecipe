@@ -14,6 +14,7 @@ import { Recipes } from "./pages/Recipes";
 import { Shopping } from "./pages/Shopping";
 import { Settings } from "./pages/Settings";
 import { Assistant } from "./pages/Assistant";
+import { Leftovers } from "./pages/Leftovers";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
 	const { user, loading, isSupabaseConnected } = useAuth();
@@ -76,6 +77,16 @@ function AppRoutes() {
 					<ProtectedRoute>
 						<Layout>
 							<Shopping />
+						</Layout>
+					</ProtectedRoute>
+				}
+			/>
+			<Route
+				path="/leftovers"
+				element={
+					<ProtectedRoute>
+						<Layout>
+							<Leftovers />
 						</Layout>
 					</ProtectedRoute>
 				}

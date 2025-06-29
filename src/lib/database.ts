@@ -8,6 +8,7 @@ import type {
 	ShoppingListItem,
 	UserProfile,
 	UserPreferences,
+	Leftover,
 } from "../types";
 
 // Ingredient operations
@@ -445,6 +446,104 @@ export const shoppingListService = {
 			console.error('Failed to add to pantry:', error);
 			// Don't throw error - shopping list update should still succeed
 		}
+	},
+};
+
+// Leftover operations
+export const leftoverService = {
+	async getAll(userId: string): Promise<Leftover[]> {
+		const { data, error } = await supabase
+			.from("leftovers")
+			.select("*")
+			.eq("user_id", userId)
+			.order("created_at", { ascending: false });
+
+		if (error) throw error;
+		return data || [];
+	},
+
+	async create(
+		leftover: Omit<Leftover, "id" | "created_at" | "updated_at">,
+	): Promise<Leftover> {
+		const { data, error } = await supabase
+			.from("leftovers")
+			.insert([leftover])
+			.select()
+			.single();
+
+		if (error) throw error;
+		return data;
+	},
+
+	async update(id: string, updates: Partial<Leftover>): Promise<Leftover> {
+		const { data, error } = await supabase
+			.from("leftovers")
+			.update(updates)
+			.eq("id", id)
+			.select()
+			.single();
+
+		if (error) throw error;
+		return data;
+	},
+
+	async delete(id: string): Promise<void> {
+		const { error } = await supabase.from("leftovers").delete().eq("id", id);
+
+		if (error) throw error;
+	},
+
+	async getExpiringSoon(
+		userId: string,
+		days: number = 3,
+	): Promise<Leftover[]> {
+		const futureDate = new Date();
+		futureDate.setDate(futureDate.getDate() + days);
+
+		const { data, error } = await supabase
+			.from("leftovers")
+			.select("*")
+			.eq("user_id", userId)
+			.not("expiration_date", "is", null)
+			.lte("expiration_date", futureDate.toISOString().split("T")[0])
+			.order("expiration_date", { ascending: true });
+
+		if (error) throw error;
+		return data || [];
+	},
+
+	async createFromRecipe(
+		userId: string,
+		recipeId: string,
+		recipeName: string,
+		quantity: number = 1,
+		unit: string = "portions",
+		notes?: string,
+	): Promise<Leftover> {
+		const expirationDate = new Date();
+		expirationDate.setDate(expirationDate.getDate() + 3); // Default 3 days for leftovers
+
+		return await this.create({
+			user_id: userId,
+			name: `${recipeName} (Leftovers)`,
+			quantity,
+			unit,
+			expiration_date: expirationDate.toISOString().split("T")[0],
+			source_recipe_id: recipeId,
+			notes: notes || "Created from recipe",
+		});
+	},
+
+	async getByRecipe(userId: string, recipeId: string): Promise<Leftover[]> {
+		const { data, error } = await supabase
+			.from("leftovers")
+			.select("*")
+			.eq("user_id", userId)
+			.eq("source_recipe_id", recipeId)
+			.order("created_at", { ascending: false });
+
+		if (error) throw error;
+		return data || [];
 	},
 };
 
