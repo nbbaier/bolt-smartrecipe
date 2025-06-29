@@ -11,9 +11,12 @@ import {
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "../components/ui/Card";
-import { Button } from "../components/ui/Button";
-import { Input } from "../components/ui/Input";
+} from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Badge } from "../components/ui/badge";
+import { Separator } from "../components/ui/separator";
+import { ScrollArea } from "../components/ui/scroll-area";
 import {
 	BookOpen,
 	Search,
@@ -23,8 +26,11 @@ import {
 	Heart,
 	Filter,
 	Sparkles,
+	X,
+	Utensils,
+	Timer,
 } from "lucide-react";
-import type { Recipe, Ingredient } from "../types";
+import type { Recipe, Ingredient, RecipeIngredient, RecipeInstruction } from "../types";
 
 export function Recipes() {
 	const { user } = useAuth();
@@ -37,6 +43,9 @@ export function Recipes() {
 	const [selectedDifficulty, setSelectedDifficulty] = useState<string>("All");
 	const [showCanCookOnly, setShowCanCookOnly] = useState(false);
 	const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+	const [recipeIngredients, setRecipeIngredients] = useState<RecipeIngredient[]>([]);
+	const [recipeInstructions, setRecipeInstructions] = useState<RecipeInstruction[]>([]);
+	const [loadingRecipeDetails, setLoadingRecipeDetails] = useState(false);
 
 	useEffect(() => {
 		loadData();
@@ -68,6 +77,25 @@ export function Recipes() {
 		}
 	};
 
+	const loadRecipeDetails = async (recipe: Recipe) => {
+		setSelectedRecipe(recipe);
+		setLoadingRecipeDetails(true);
+		
+		try {
+			const [ingredients, instructions] = await Promise.all([
+				recipeService.getIngredients(recipe.id),
+				recipeService.getInstructions(recipe.id),
+			]);
+			
+			setRecipeIngredients(ingredients);
+			setRecipeInstructions(instructions);
+		} catch (error) {
+			console.error("Error loading recipe details:", error);
+		} finally {
+			setLoadingRecipeDetails(false);
+		}
+	};
+
 	const toggleBookmark = async (recipeId: string) => {
 		if (!user) return;
 
@@ -80,7 +108,6 @@ export function Recipes() {
 				if (wasAdded) {
 					setBookmarkedRecipes((prev) => [...prev, recipeId]);
 				} else {
-					// Bookmark already exists, update local state to reflect this
 					setBookmarkedRecipes((prev) =>
 						prev.includes(recipeId) ? prev : [...prev, recipeId],
 					);
@@ -94,14 +121,22 @@ export function Recipes() {
 	const getDifficultyColor = (difficulty: string) => {
 		switch (difficulty) {
 			case "Easy":
-				return "text-green-600 bg-green-50";
+				return "bg-green-100 text-green-800 border-green-200";
 			case "Medium":
-				return "text-orange-600 bg-orange-50";
+				return "bg-orange-100 text-orange-800 border-orange-200";
 			case "Hard":
-				return "text-red-600 bg-red-50";
+				return "bg-red-100 text-red-800 border-red-200";
 			default:
-				return "text-secondary-600 bg-secondary-50";
+				return "bg-gray-100 text-gray-800 border-gray-200";
 		}
+	};
+
+	const checkIngredientAvailability = (ingredientName: string) => {
+		return userIngredients.some(
+			(userIng) =>
+				userIng.name.toLowerCase().includes(ingredientName.toLowerCase()) ||
+				ingredientName.toLowerCase().includes(userIng.name.toLowerCase()),
+		);
 	};
 
 	const filteredRecipes = (showCanCookOnly ? canCookRecipes : recipes).filter(
@@ -119,7 +154,7 @@ export function Recipes() {
 	if (loading) {
 		return (
 			<div className="flex items-center justify-center py-12">
-				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+				<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
 			</div>
 		);
 	}
@@ -128,23 +163,23 @@ export function Recipes() {
 		<div className="space-y-6">
 			<div className="flex items-center justify-between">
 				<div>
-					<h1 className="text-2xl font-bold text-secondary-900">
+					<h1 className="text-3xl font-bold text-gray-900">
 						Recipe Discovery
 					</h1>
-					<p className="text-secondary-600">Find delicious recipes to cook</p>
+					<p className="text-gray-600">Find delicious recipes to cook</p>
 				</div>
 				<div className="flex items-center space-x-2">
-					<span className="text-sm text-secondary-600">Can cook:</span>
-					<span className="font-medium text-primary-600">
+					<span className="text-sm text-gray-600">Can cook:</span>
+					<Badge variant="secondary" className="bg-green-100 text-green-800">
 						{canCookRecipes.length} recipes
-					</span>
+					</Badge>
 				</div>
 			</div>
 
 			{/* Search and Filter */}
 			<div className="flex flex-col lg:flex-row gap-4">
 				<div className="relative flex-1">
-					<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-secondary-400" />
+					<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
 					<Input
 						placeholder="Search recipes..."
 						value={searchTerm}
@@ -154,11 +189,11 @@ export function Recipes() {
 				</div>
 				<div className="flex items-center space-x-4">
 					<div className="flex items-center space-x-2">
-						<Filter className="h-4 w-4 text-secondary-600" />
+						<Filter className="h-4 w-4 text-gray-600" />
 						<select
 							value={selectedDifficulty}
 							onChange={(e) => setSelectedDifficulty(e.target.value)}
-							className="rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+							className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
 						>
 							<option value="All">All Difficulties</option>
 							<option value="Easy">Easy</option>
@@ -167,7 +202,7 @@ export function Recipes() {
 						</select>
 					</div>
 					<Button
-						variant={showCanCookOnly ? "primary" : "outline"}
+						variant={showCanCookOnly ? "default" : "outline"}
 						onClick={() => setShowCanCookOnly(!showCanCookOnly)}
 						className="flex items-center space-x-2"
 					>
@@ -179,19 +214,19 @@ export function Recipes() {
 
 			{/* Can Cook Banner */}
 			{canCookRecipes.length > 0 && !showCanCookOnly && (
-				<Card className="bg-gradient-to-r from-primary-50 to-primary-100 border-primary-200">
+				<Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
 					<CardContent className="p-6">
 						<div className="flex items-center justify-between">
 							<div className="flex items-center space-x-3">
-								<div className="p-2 bg-primary-600 rounded-lg">
+								<div className="p-2 bg-green-600 rounded-lg">
 									<Sparkles className="h-5 w-5 text-white" />
 								</div>
 								<div>
-									<h3 className="font-medium text-primary-900">
+									<h3 className="font-semibold text-green-900">
 										You can cook {canCookRecipes.length} recipes with your
 										current ingredients!
 									</h3>
-									<p className="text-sm text-primary-700">
+									<p className="text-sm text-green-700">
 										Make the most of what you have in your pantry
 									</p>
 								</div>
@@ -208,11 +243,11 @@ export function Recipes() {
 			{filteredRecipes.length === 0 ? (
 				<Card>
 					<CardContent className="text-center py-12">
-						<BookOpen className="h-12 w-12 text-secondary-400 mx-auto mb-4" />
-						<h3 className="text-lg font-medium text-secondary-900 mb-2">
+						<BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+						<h3 className="text-lg font-medium text-gray-900 mb-2">
 							No recipes found
 						</h3>
-						<p className="text-secondary-600">
+						<p className="text-gray-600">
 							{showCanCookOnly
 								? "Add more ingredients to your pantry to unlock more recipes"
 								: "Try adjusting your search or filter criteria"}
@@ -224,7 +259,8 @@ export function Recipes() {
 					{filteredRecipes.map((recipe) => (
 						<Card
 							key={recipe.id}
-							className="group hover:shadow-lg transition-shadow cursor-pointer"
+							className="group hover:shadow-lg transition-all duration-200 cursor-pointer overflow-hidden"
+							onClick={() => loadRecipeDetails(recipe)}
 						>
 							<div className="relative">
 								<img
@@ -233,7 +269,7 @@ export function Recipes() {
 										"https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg"
 									}
 									alt={recipe.title}
-									className="w-full h-48 object-cover rounded-t-xl"
+									className="w-full h-48 object-cover"
 								/>
 								<button
 									onClick={(e) => {
@@ -243,7 +279,7 @@ export function Recipes() {
 									className={`absolute top-3 right-3 p-2 rounded-full transition-colors ${
 										bookmarkedRecipes.includes(recipe.id)
 											? "bg-red-500 text-white"
-											: "bg-white/80 text-secondary-600 hover:bg-white"
+											: "bg-white/80 text-gray-600 hover:bg-white"
 									}`}
 								>
 									<Heart
@@ -251,20 +287,20 @@ export function Recipes() {
 									/>
 								</button>
 								{canCookRecipes.some((r) => r.id === recipe.id) && (
-									<div className="absolute top-3 left-3 px-2 py-1 bg-primary-600 text-white text-xs rounded-full flex items-center space-x-1">
-										<Sparkles className="h-3 w-3" />
-										<span>Can Cook</span>
-									</div>
+									<Badge className="absolute top-3 left-3 bg-green-600 hover:bg-green-700">
+										<Sparkles className="h-3 w-3 mr-1" />
+										Can Cook
+									</Badge>
 								)}
 							</div>
-							<CardHeader>
-								<CardTitle className="text-lg">{recipe.title}</CardTitle>
+							<CardHeader className="pb-2">
+								<CardTitle className="text-lg line-clamp-1">{recipe.title}</CardTitle>
 								<CardDescription className="line-clamp-2">
 									{recipe.description}
 								</CardDescription>
 							</CardHeader>
-							<CardContent>
-								<div className="flex items-center justify-between text-sm text-secondary-600 mb-3">
+							<CardContent className="pt-0">
+								<div className="flex items-center justify-between text-sm text-gray-600 mb-3">
 									<div className="flex items-center space-x-1">
 										<Clock className="h-4 w-4" />
 										<span>{recipe.prep_time + recipe.cook_time} min</span>
@@ -273,79 +309,217 @@ export function Recipes() {
 										<Users className="h-4 w-4" />
 										<span>{recipe.servings} servings</span>
 									</div>
-									<span
-										className={`px-2 py-1 rounded-full text-xs ${getDifficultyColor(recipe.difficulty)}`}
-									>
+									<Badge variant="outline" className={getDifficultyColor(recipe.difficulty)}>
 										{recipe.difficulty}
-									</span>
+									</Badge>
 								</div>
-								<Button
-									variant="outline"
-									className="w-full"
-									onClick={() => setSelectedRecipe(recipe)}
-								>
-									View Recipe
-								</Button>
+								{recipe.cuisine_type && (
+									<Badge variant="secondary" className="text-xs">
+										{recipe.cuisine_type}
+									</Badge>
+								)}
 							</CardContent>
 						</Card>
 					))}
 				</div>
 			)}
 
-			{/* Recipe Detail Modal (simplified for now) */}
+			{/* Recipe Detail Modal */}
 			{selectedRecipe && (
 				<div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-					<Card className="max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-						<CardHeader>
-							<div className="flex items-center justify-between">
-								<CardTitle className="text-xl">
-									{selectedRecipe.title}
-								</CardTitle>
-								<Button variant="ghost" onClick={() => setSelectedRecipe(null)}>
-									×
-								</Button>
+					<Card className="max-w-4xl w-full max-h-[90vh] overflow-hidden">
+						<CardHeader className="relative pb-4">
+							<Button
+								variant="ghost"
+								size="icon"
+								onClick={() => {
+									setSelectedRecipe(null);
+									setRecipeIngredients([]);
+									setRecipeInstructions([]);
+								}}
+								className="absolute right-4 top-4 z-10"
+							>
+								<X className="h-4 w-4" />
+							</Button>
+							
+							<div className="relative">
+								<img
+									src={
+										selectedRecipe.image_url ||
+										"https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg"
+									}
+									alt={selectedRecipe.title}
+									className="w-full h-64 object-cover rounded-lg"
+								/>
+								<div className="absolute bottom-4 left-4 right-4">
+									<div className="bg-white/95 backdrop-blur-sm rounded-lg p-4">
+										<div className="flex items-start justify-between">
+											<div>
+												<h2 className="text-2xl font-bold text-gray-900 mb-2">
+													{selectedRecipe.title}
+												</h2>
+												<p className="text-gray-600 mb-3">
+													{selectedRecipe.description}
+												</p>
+												<div className="flex items-center space-x-4">
+													<Badge variant="outline" className={getDifficultyColor(selectedRecipe.difficulty)}>
+														{selectedRecipe.difficulty}
+													</Badge>
+													{selectedRecipe.cuisine_type && (
+														<Badge variant="secondary">
+															{selectedRecipe.cuisine_type}
+														</Badge>
+													)}
+													{canCookRecipes.some((r) => r.id === selectedRecipe.id) && (
+														<Badge className="bg-green-600">
+															<Sparkles className="h-3 w-3 mr-1" />
+															Can Cook
+														</Badge>
+													)}
+												</div>
+											</div>
+											<button
+												onClick={(e) => {
+													e.stopPropagation();
+													toggleBookmark(selectedRecipe.id);
+												}}
+												className={`p-2 rounded-full transition-colors ${
+													bookmarkedRecipes.includes(selectedRecipe.id)
+														? "bg-red-500 text-white"
+														: "bg-gray-100 text-gray-600 hover:bg-gray-200"
+												}`}
+											>
+												<Heart
+													className={`h-5 w-5 ${bookmarkedRecipes.includes(selectedRecipe.id) ? "fill-current" : ""}`}
+												/>
+											</button>
+										</div>
+									</div>
+								</div>
 							</div>
 						</CardHeader>
-						<CardContent>
-							<img
-								src={
-									selectedRecipe.image_url ||
-									"https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg"
-								}
-								alt={selectedRecipe.title}
-								className="w-full h-64 object-cover rounded-lg mb-4"
-							/>
-							<p className="text-secondary-600 mb-4">
-								{selectedRecipe.description}
-							</p>
-							<div className="grid grid-cols-3 gap-4 text-center mb-6">
-								<div>
-									<div className="text-2xl font-bold text-primary-600">
-										{selectedRecipe.prep_time}
+
+						<ScrollArea className="h-[calc(90vh-300px)]">
+							<CardContent className="p-6">
+								{loadingRecipeDetails ? (
+									<div className="flex items-center justify-center py-8">
+										<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
 									</div>
-									<div className="text-sm text-secondary-600">Prep Time</div>
-								</div>
-								<div>
-									<div className="text-2xl font-bold text-primary-600">
-										{selectedRecipe.cook_time}
+								) : (
+									<div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+										{/* Recipe Stats */}
+										<div className="lg:col-span-2">
+											<div className="grid grid-cols-3 gap-4 text-center mb-6">
+												<div className="bg-gray-50 rounded-lg p-4">
+													<div className="flex items-center justify-center mb-2">
+														<Timer className="h-5 w-5 text-blue-600" />
+													</div>
+													<div className="text-2xl font-bold text-gray-900">
+														{selectedRecipe.prep_time}
+													</div>
+													<div className="text-sm text-gray-600">Prep Time</div>
+												</div>
+												<div className="bg-gray-50 rounded-lg p-4">
+													<div className="flex items-center justify-center mb-2">
+														<ChefHat className="h-5 w-5 text-orange-600" />
+													</div>
+													<div className="text-2xl font-bold text-gray-900">
+														{selectedRecipe.cook_time}
+													</div>
+													<div className="text-sm text-gray-600">Cook Time</div>
+												</div>
+												<div className="bg-gray-50 rounded-lg p-4">
+													<div className="flex items-center justify-center mb-2">
+														<Users className="h-5 w-5 text-green-600" />
+													</div>
+													<div className="text-2xl font-bold text-gray-900">
+														{selectedRecipe.servings}
+													</div>
+													<div className="text-sm text-gray-600">Servings</div>
+												</div>
+											</div>
+										</div>
+
+										{/* Ingredients */}
+										<div>
+											<div className="flex items-center space-x-2 mb-4">
+												<Utensils className="h-5 w-5 text-gray-600" />
+												<h3 className="text-lg font-semibold text-gray-900">
+													Ingredients
+												</h3>
+											</div>
+											{recipeIngredients.length > 0 ? (
+												<div className="space-y-3">
+													{recipeIngredients.map((ingredient, index) => (
+														<div
+															key={index}
+															className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+																checkIngredientAvailability(ingredient.ingredient_name)
+																	? "bg-green-50 border-green-200 text-green-900"
+																	: "bg-gray-50 border-gray-200"
+															}`}
+														>
+															<div className="flex items-center space-x-2">
+																<div
+																	className={`w-3 h-3 rounded-full ${
+																		checkIngredientAvailability(ingredient.ingredient_name)
+																			? "bg-green-500"
+																			: "bg-gray-300"
+																	}`}
+																/>
+																<span className="font-medium">
+																	{ingredient.ingredient_name}
+																</span>
+															</div>
+															<div className="text-sm">
+																{ingredient.quantity} {ingredient.unit}
+																{ingredient.notes && (
+																	<span className="text-gray-500 ml-2">
+																		({ingredient.notes})
+																	</span>
+																)}
+															</div>
+														</div>
+													))}
+												</div>
+											) : (
+												<p className="text-gray-500 italic">No ingredients listed for this recipe.</p>
+											)}
+										</div>
+
+										{/* Instructions */}
+										<div>
+											<div className="flex items-center space-x-2 mb-4">
+												<BookOpen className="h-5 w-5 text-gray-600" />
+												<h3 className="text-lg font-semibold text-gray-900">
+													Instructions
+												</h3>
+											</div>
+											{recipeInstructions.length > 0 ? (
+												<div className="space-y-4">
+													{recipeInstructions.map((instruction, index) => (
+														<div key={index} className="flex space-x-4">
+															<div className="flex-shrink-0">
+																<div className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center text-sm font-medium">
+																	{instruction.step_number}
+																</div>
+															</div>
+															<div className="flex-1">
+																<p className="text-gray-700 leading-relaxed">
+																	{instruction.instruction}
+																</p>
+															</div>
+														</div>
+													))}
+												</div>
+											) : (
+												<p className="text-gray-500 italic">No instructions available for this recipe.</p>
+											)}
+										</div>
 									</div>
-									<div className="text-sm text-secondary-600">Cook Time</div>
-								</div>
-								<div>
-									<div className="text-2xl font-bold text-primary-600">
-										{selectedRecipe.servings}
-									</div>
-									<div className="text-sm text-secondary-600">Servings</div>
-								</div>
-							</div>
-							<div className="text-center">
-								<p className="text-secondary-600 mb-4">
-									Full recipe details with ingredients and instructions coming
-									soon!
-								</p>
-								<Button onClick={() => setSelectedRecipe(null)}>Close</Button>
-							</div>
-						</CardContent>
+								)}
+							</CardContent>
+						</ScrollArea>
 					</Card>
 				</div>
 			)}
