@@ -71,7 +71,7 @@ export function AIChat() {
 	const [availableRecipes, setAvailableRecipes] = useState<Recipe[]>([]);
 	const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
 	const scrollAreaRef = useRef<HTMLDivElement>(null);
-	const inputRef = useRef<HTMLInputElement>(null);
+	const textareaRef = useRef<HTMLTextAreaElement>(null);
 
 	useEffect(() => {
 		if (user) {
@@ -92,6 +92,14 @@ export function AIChat() {
 			setMessages([welcomeMessage]);
 		}
 	}, [user]);
+
+	// Auto-resize textarea based on content
+	useEffect(() => {
+		if (textareaRef.current) {
+			textareaRef.current.style.height = 'auto';
+			textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+		}
+	}, [inputValue]);
 
 	useEffect(() => {
 		// Scroll to bottom when new messages are added
@@ -274,6 +282,8 @@ export function AIChat() {
 			e.preventDefault();
 			handleSendMessage();
 		}
+		// Allow Shift+Enter for new lines (default textarea behavior)
+		}
 	};
 
 	const formatTime = (date: Date) => {
@@ -443,13 +453,14 @@ export function AIChat() {
 			{/* Input Area */}
 			<div className="p-4 border-t border-border bg-white rounded-b-lg">
 				<div className="flex space-x-2">
-					<Input
-						ref={inputRef}
+					<textarea
+						ref={textareaRef}
 						value={inputValue}
 						onChange={(e) => setInputValue(e.target.value)}
-						onKeyPress={handleKeyPress}
+						onKeyDown={handleKeyPress}
 						placeholder="Ask me about recipes, ingredients, or cooking tips..."
-						className="flex-1"
+						className="flex-1 min-h-[40px] max-h-[120px] resize-none overflow-hidden rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+						rows={1}
 						disabled={isTyping}
 					/>
 					<Button
@@ -461,7 +472,7 @@ export function AIChat() {
 					</Button>
 				</div>
 				<p className="text-xs text-gray-500 mt-2 text-center">
-					Powered by OpenAI GPT-4.1. Ask about recipes, ingredients, or cooking tips!
+					Powered by OpenAI GPT-4.1. Press Enter to send, Shift+Enter for new line.
 				</p>
 			</div>
 		</div>
