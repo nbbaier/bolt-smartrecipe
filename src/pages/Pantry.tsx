@@ -507,6 +507,144 @@ export function Pantry() {
 				</Card>
 			)}
 
+			{/* Natural Language Input Form */}
+			{showNaturalLanguageInput && (
+				<Card>
+					<CardHeader className="pb-3 sm:pb-6">
+						<CardTitle className="text-lg sm:text-xl flex items-center space-x-2">
+							<MessageCircle className="h-5 w-5" />
+							<span>Add Ingredients from Text</span>
+						</CardTitle>
+						<CardDescription>
+							Describe your ingredients in natural language (e.g., "3 apples, 1kg flour, 2 cans of tuna")
+						</CardDescription>
+					</CardHeader>
+					<CardContent className="space-y-4">
+						<div>
+							<label className="block text-sm font-medium text-secondary-700 mb-2">
+								Describe your ingredients:
+							</label>
+							<textarea
+								value={naturalLanguageText}
+								onChange={(e) => setNaturalLanguageText(e.target.value)}
+								placeholder="Example: 3 apples, 1kg flour, 2 cans of tuna, 500ml olive oil, 1 liter milk"
+								className="w-full h-24 rounded-lg border border-secondary-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 resize-none"
+							/>
+						</div>
+
+						<div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+							<Button
+								onClick={parseNaturalLanguageText}
+								disabled={!naturalLanguageText.trim() || isParsingText}
+								className="flex items-center justify-center space-x-2"
+							>
+								<Wand2 className="h-4 w-4" />
+								<span>{isParsingText ? "Parsing..." : "Parse Text"}</span>
+							</Button>
+							<Button
+								type="button"
+								variant="outline"
+								onClick={resetNaturalLanguageForm}
+								disabled={isParsingText || isAddingToPantry}
+							>
+								Cancel
+							</Button>
+						</div>
+
+						{/* Parsed Ingredients Display */}
+						{parsedIngredients.length > 0 && (
+							<div className="mt-6 space-y-4">
+								<div className="flex items-center justify-between">
+									<h3 className="text-lg font-medium text-secondary-900">
+										Parsed Ingredients ({parsedIngredients.length})
+									</h3>
+									<Button
+										onClick={addParsedIngredientsToPantry}
+										disabled={isAddingToPantry}
+										className="flex items-center space-x-2"
+									>
+										<Plus className="h-4 w-4" />
+										<span>{isAddingToPantry ? "Adding..." : "Add All to Pantry"}</span>
+									</Button>
+								</div>
+								
+								<div className="space-y-3">
+									{parsedIngredients.map((ingredient, index) => (
+										<div key={index} className="bg-secondary-50 rounded-lg p-4 border border-secondary-200">
+											<div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+												<div>
+													<label className="block text-xs font-medium text-secondary-700 mb-1">
+														Name
+													</label>
+													<input
+														type="text"
+														value={ingredient.name}
+														onChange={(e) => updateParsedIngredient(index, 'name', e.target.value)}
+														className="w-full rounded-md border border-secondary-300 px-2 py-1 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500/20"
+													/>
+												</div>
+												<div>
+													<label className="block text-xs font-medium text-secondary-700 mb-1">
+														Quantity
+													</label>
+													<input
+														type="number"
+														step="0.1"
+														value={ingredient.quantity}
+														onChange={(e) => updateParsedIngredient(index, 'quantity', parseFloat(e.target.value) || 0)}
+														className="w-full rounded-md border border-secondary-300 px-2 py-1 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500/20"
+													/>
+												</div>
+												<div>
+													<label className="block text-xs font-medium text-secondary-700 mb-1">
+														Unit
+													</label>
+													<select
+														value={ingredient.unit}
+														onChange={(e) => updateParsedIngredient(index, 'unit', e.target.value)}
+														className="w-full rounded-md border border-secondary-300 px-2 py-1 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500/20"
+													>
+														{UNITS.map((unit) => (
+															<option key={unit} value={unit}>
+																{unit}
+															</option>
+														))}
+													</select>
+												</div>
+												<div>
+													<label className="block text-xs font-medium text-secondary-700 mb-1">
+														Category
+													</label>
+													<div className="flex items-center space-x-2">
+														<select
+															value={ingredient.category}
+															onChange={(e) => updateParsedIngredient(index, 'category', e.target.value)}
+															className="flex-1 rounded-md border border-secondary-300 px-2 py-1 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500/20"
+														>
+															{CATEGORIES.map((category) => (
+																<option key={category} value={category}>
+																	{category}
+																</option>
+															))}
+														</select>
+														<button
+															onClick={() => removeParsedIngredient(index)}
+															className="p-1 text-secondary-400 hover:text-red-600 rounded"
+														>
+															<X className="h-4 w-4" />
+														</button>
+													</div>
+												</div>
+											</div>
+										</div>
+									))}
+								</div>
+							</div>
+						)}
+					</CardContent>
+				</Card>
+			)}
+
 			{/* Ingredients Grid */}
 			{filteredIngredients.length === 0 ? (
 				<Card>
