@@ -5,9 +5,12 @@ import {
    BrowserRouter as Router,
    Routes,
 } from "react-router-dom";
+import { Toaster } from "sonner";
 import { AuthForm } from "./components/auth/AuthForm";
 import { Layout } from "./components/layout/Layout";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { PantryProvider } from "./contexts/PantryContext";
+import { RecipeProvider } from "./contexts/RecipeContext";
 import { Assistant } from "./pages/Assistant";
 import { Dashboard } from "./pages/Dashboard";
 import { Leftovers } from "./pages/Leftovers";
@@ -21,9 +24,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
    if (loading) {
       return (
-         <div className="min-h-screen bg-background flex items-center justify-center">
+         <div className="flex justify-center items-center min-h-screen bg-background">
             <div className="text-center">
-               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+               <div className="mx-auto w-8 h-8 rounded-full border-b-2 animate-spin border-primary"></div>
                <p className="mt-2 text-muted-foreground">Loading...</p>
             </div>
          </div>
@@ -120,17 +123,22 @@ function App() {
    try {
       return (
          <AuthProvider>
-            <Router>
-               <AppRoutes />
-            </Router>
+            <PantryProvider>
+               <RecipeProvider>
+                  <Router>
+                     <Toaster position="top-right" richColors />
+                     <AppRoutes />
+                  </Router>
+               </RecipeProvider>
+            </PantryProvider>
          </AuthProvider>
       );
    } catch (error) {
       console.error("App render error:", error);
       return (
-         <div className="min-h-screen bg-red-50 flex items-center justify-center p-4">
+         <div className="flex justify-center items-center p-4 min-h-screen bg-red-50">
             <div className="text-center">
-               <h1 className="text-2xl font-bold text-red-600 mb-2">
+               <h1 className="mb-2 text-2xl font-bold text-red-600">
                   Application Error
                </h1>
                <p className="text-red-500">
