@@ -1,3 +1,4 @@
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
    AlertTriangle,
    ChefHat,
@@ -9,6 +10,9 @@ import {
    Utensils,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
 import { Button } from "../components/ui/Button";
 import {
    Card,
@@ -21,6 +25,7 @@ import { Input } from "../components/ui/Input";
 import { Separator } from "../components/ui/separator";
 import { useAuth } from "../contexts/AuthContext";
 import { userPreferencesService, userProfileService } from "../lib/database";
+import { supabase } from "../lib/supabase";
 import type { UserPreferences, UserProfile } from "../types";
 
 const DIETARY_RESTRICTIONS = [
@@ -77,19 +82,30 @@ const KITCHEN_EQUIPMENT = [
    "Rice Cooker",
 ];
 
-const AVATAR_COLORS = [
-   "#10B981", // Emerald
-   "#3B82F6", // Blue
-   "#8B5CF6", // Purple
-   "#F59E0B", // Amber
-   "#EF4444", // Red
-   "#06B6D4", // Cyan
-   "#84CC16", // Lime
-   "#F97316", // Orange
-];
-
 type CookingSkillLevel = "Beginner" | "Intermediate" | "Advanced" | "Expert";
 type MeasurementUnits = "Metric" | "Imperial";
+
+// Zod schemas
+const profileSchema = z.object({
+   full_name: z.string().min(2, "Full name is required"),
+   bio: z.string().max(300, "Bio must be 300 characters or less").optional(),
+   avatar_color: z.string().min(1),
+});
+
+const preferencesSchema = z.object({
+   dietary_restrictions: z.array(z.string()),
+   allergies: z.array(z.string()),
+   preferred_cuisines: z.array(z.string()),
+   cooking_skill_level: z.enum([
+      "Beginner",
+      "Intermediate",
+      "Advanced",
+      "Expert",
+   ]),
+   measurement_units: z.enum(["Metric", "Imperial"]),
+   family_size: z.number().min(1, "Family size must be at least 1"),
+   kitchen_equipment: z.array(z.string()),
+});
 
 export function Settings() {
    const { user } = useAuth();
@@ -100,6 +116,8 @@ export function Settings() {
    const [loading, setLoading] = useState(true);
    const [saving, setSaving] = useState(false);
    const [activeTab, setActiveTab] = useState("profile");
+   const [uploading, setUploading] = useState(false);
+   const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
 
    // Form states
    const [profileForm, setProfileForm] = useState({
@@ -124,6 +142,29 @@ export function Settings() {
       measurement_units: "Metric",
       family_size: 2,
       kitchen_equipment: [],
+   });
+
+   // Replace local state with useForm for profile
+   const {
+      register: registerProfile,
+      handleSubmit: handleProfileSubmit,
+      setValue: _setProfileValue,
+      formState: { errors: profileErrors },
+      control: profileControl,
+   } = useForm({
+      resolver: zodResolver(profileSchema),
+      defaultValues: profileForm,
+   });
+
+   // Replace local state with useForm for preferences
+   const {
+      handleSubmit: handlePreferencesSubmit,
+      setValue: setPreferencesValue,
+      formState: { errors: preferencesErrors },
+      control: preferencesControl,
+   } = useForm({
+      resolver: zodResolver(preferencesSchema),
+      defaultValues: preferencesForm,
    });
 
    const loadUserData = useCallback(async () => {
@@ -170,14 +211,21 @@ export function Settings() {
       }
    }, [user, loadUserData]);
 
+   useEffect(() => {
+      if (_profile?.avatar_url) {
+         setAvatarUrl(_profile.avatar_url);
+      }
+   }, [_profile]);
+
    const saveProfile = async () => {
       if (!user) return;
-
       try {
          setSaving(true);
          await userProfileService.updateProfile(user.id, profileForm);
          await loadUserData();
+         toast.success("Profile saved successfully!");
       } catch (error) {
+         toast.error("Failed to save profile. Please try again.");
          console.error("Error saving profile:", error);
       } finally {
          setSaving(false);
@@ -186,7 +234,6 @@ export function Settings() {
 
    const savePreferences = async () => {
       if (!user) return;
-
       try {
          setSaving(true);
          await userPreferencesService.updatePreferences(
@@ -194,7 +241,9 @@ export function Settings() {
             preferencesForm,
          );
          await loadUserData();
+         toast.success("Preferences saved successfully!");
       } catch (error) {
+         toast.error("Failed to save preferences. Please try again.");
          console.error("Error saving preferences:", error);
       } finally {
          setSaving(false);
@@ -222,6 +271,64 @@ export function Settings() {
          .slice(0, 2);
    };
 
+   const handleAvatarUpload = async (
+      e: React.ChangeEvent<HTMLInputElement>,
+   ) => {
+      if (!user || !e.target.files || e.target.files.length === 0) return;
+      const file = e.target.files[0];
+      setUploading(true);
+      try {
+         const fileExt = file.name.split(".").pop();
+         const filePath = `${user.id}.${fileExt}`;
+         const { error: uploadError } = await supabase.storage
+            .from("avatars")
+            .upload(filePath, file, { upsert: true });
+         if (uploadError) throw uploadError;
+         const { data } = supabase.storage
+            .from("avatars")
+            .getPublicUrl(filePath);
+         const publicUrl = data.publicUrl;
+         setAvatarUrl(publicUrl);
+         await userProfileService.updateProfile(user.id, {
+            avatar_url: publicUrl,
+         });
+         await loadUserData();
+      } catch (_error) {
+         alert("Failed to upload avatar image");
+      } finally {
+         setUploading(false);
+      }
+   };
+
+   // Profile completion calculation
+   function getProfileCompletion(
+      profile: UserProfile | null,
+      preferences: UserPreferences | null,
+   ) {
+      if (!profile || !preferences) return 0;
+      let filled = 0;
+      const total = 8;
+      if (profile.full_name && profile.full_name.trim().length > 1) filled++;
+      if (profile.bio && profile.bio.trim().length > 0) filled++;
+      if (profile.avatar_color || profile.avatar_url) filled++;
+      if (
+         preferences.dietary_restrictions &&
+         preferences.dietary_restrictions.length > 0
+      )
+         filled++;
+      if (preferences.allergies && preferences.allergies.length > 0) filled++;
+      if (preferences.cooking_skill_level) filled++;
+      if (preferences.measurement_units) filled++;
+      if (
+         preferences.kitchen_equipment &&
+         preferences.kitchen_equipment.length > 0
+      )
+         filled++;
+      return Math.round((filled / total) * 100);
+   }
+
+   const completion = getProfileCompletion(_profile, _preferences);
+
    if (loading) {
       return (
          <div className="flex justify-center items-center py-12">
@@ -239,6 +346,24 @@ export function Settings() {
 
    return (
       <div className="space-y-4 sm:space-y-6">
+         {/* Profile Completion Bar */}
+         <div className="flex items-center mb-2 space-x-4">
+            <div className="flex-1">
+               <div className="mb-1 text-xs font-medium text-secondary-700">
+                  Profile {completion}% complete
+               </div>
+               <div className="overflow-hidden w-full h-2 rounded-full bg-secondary-200">
+                  <div
+                     className="h-2 rounded-full transition-all bg-primary"
+                     style={{ width: `${completion}%` }}
+                  />
+               </div>
+            </div>
+            {completion === 100 && (
+               <span className="ml-2 text-xs font-bold text-green-600">✓</span>
+            )}
+         </div>
+
          <div className="text-center sm:text-left">
             <h1 className="text-xl font-bold sm:text-2xl text-secondary-900">
                Settings
@@ -281,56 +406,60 @@ export function Settings() {
                <CardContent className="space-y-6">
                   {/* Avatar Section */}
                   <div className="flex items-center space-x-4">
-                     <div
-                        className="flex justify-center items-center w-16 h-16 text-xl font-bold text-white rounded-full"
-                        style={{ backgroundColor: profileForm.avatar_color }}
-                     >
-                        {getInitials(
-                           profileForm.full_name || user?.email || "U",
-                        )}
-                     </div>
+                     {avatarUrl ? (
+                        <img
+                           src={avatarUrl}
+                           alt="Profile avatar"
+                           className="object-cover w-16 h-16 rounded-full border"
+                        />
+                     ) : (
+                        <div
+                           className="flex justify-center items-center w-16 h-16 text-xl font-bold text-white rounded-full"
+                           style={{
+                              backgroundColor:
+                                 profileControl._formValues.avatar_color,
+                           }}
+                        >
+                           {getInitials(
+                              profileControl._formValues.full_name ||
+                                 user?.email ||
+                                 "U",
+                           )}
+                        </div>
+                     )}
                      <div className="flex-1">
                         <h3 className="font-medium text-secondary-900">
-                           Avatar Color
+                           Profile Image
                         </h3>
                         <p className="mb-2 text-sm text-secondary-600">
-                           Choose a color for your avatar
+                           Upload a profile photo (optional)
                         </p>
-                        <div className="flex flex-wrap gap-2">
-                           {AVATAR_COLORS.map((color) => (
-                              <button
-                                 key={color}
-                                 onClick={() =>
-                                    setProfileForm({
-                                       ...profileForm,
-                                       avatar_color: color,
-                                    })
-                                 }
-                                 className={`w-8 h-8 rounded-full border-2 transition-all ${
-                                    profileForm.avatar_color === color
-                                       ? "border-secondary-900 scale-110"
-                                       : "border-secondary-300 hover:scale-105"
-                                 }`}
-                                 style={{ backgroundColor: color }}
-                              />
-                           ))}
-                        </div>
+                        <input
+                           type="file"
+                           accept="image/*"
+                           onChange={handleAvatarUpload}
+                           disabled={uploading}
+                           className="block w-full text-sm text-secondary-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/80"
+                        />
+                        {uploading && (
+                           <p className="mt-1 text-xs text-secondary-500">
+                              Uploading...
+                           </p>
+                        )}
                      </div>
                   </div>
 
                   <Separator />
 
                   {/* Form Fields */}
-                  <div className="space-y-4">
+                  <form
+                     onSubmit={handleProfileSubmit(saveProfile)}
+                     className="space-y-4"
+                  >
                      <Input
                         label="Full Name"
-                        value={profileForm.full_name}
-                        onChange={(e) =>
-                           setProfileForm({
-                              ...profileForm,
-                              full_name: e.target.value,
-                           })
-                        }
+                        {...registerProfile("full_name")}
+                        error={profileErrors.full_name?.message}
                         placeholder="Enter your full name"
                      />
 
@@ -339,34 +468,36 @@ export function Settings() {
                            Bio (Optional)
                         </label>
                         <textarea
-                           value={profileForm.bio}
-                           onChange={(e) =>
-                              setProfileForm({
-                                 ...profileForm,
-                                 bio: e.target.value,
-                              })
-                           }
+                           {...registerProfile("bio")}
                            placeholder="Tell us about your cooking journey..."
                            className="px-3 py-2 w-full h-20 text-sm rounded-lg border resize-none border-secondary-300 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                         />
+                        {profileErrors.bio && (
+                           <p className="mt-1 text-xs text-red-600">
+                              {profileErrors.bio.message}
+                           </p>
+                        )}
                      </div>
 
                      <Button
-                        onClick={saveProfile}
+                        type="submit"
                         disabled={saving}
                         className="w-full sm:w-auto"
                      >
                         <Save className="mr-2 w-4 h-4" />
                         {saving ? "Saving..." : "Save Profile"}
                      </Button>
-                  </div>
+                  </form>
                </CardContent>
             </Card>
          )}
 
          {/* Dietary Tab */}
          {activeTab === "dietary" && (
-            <div className="space-y-6">
+            <form
+               onSubmit={handlePreferencesSubmit(savePreferences)}
+               className="space-y-6"
+            >
                {/* Dietary Restrictions */}
                <Card>
                   <CardHeader>
@@ -383,19 +514,22 @@ export function Settings() {
                         {DIETARY_RESTRICTIONS.map((restriction) => (
                            <button
                               key={restriction}
-                              onClick={() =>
-                                 toggleArrayItem(
-                                    preferencesForm.dietary_restrictions,
-                                    restriction,
-                                    (newRestrictions) =>
-                                       setPreferencesForm({
-                                          ...preferencesForm,
-                                          dietary_restrictions: newRestrictions,
-                                       }),
-                                 )
-                              }
+                              type="button"
+                              onClick={() => {
+                                 const current =
+                                    preferencesControl._formValues
+                                       .dietary_restrictions;
+                                 setPreferencesValue(
+                                    "dietary_restrictions",
+                                    current.includes(restriction)
+                                       ? current.filter(
+                                            (r: string) => r !== restriction,
+                                         )
+                                       : [...current, restriction],
+                                 );
+                              }}
                               className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                                 preferencesForm.dietary_restrictions.includes(
+                                 preferencesControl._formValues.dietary_restrictions.includes(
                                     restriction,
                                  )
                                     ? "bg-primary text-primary-foreground"
@@ -406,6 +540,11 @@ export function Settings() {
                            </button>
                         ))}
                      </div>
+                     {preferencesErrors.dietary_restrictions && (
+                        <p className="mt-1 text-xs text-red-600">
+                           {preferencesErrors.dietary_restrictions.message}
+                        </p>
+                     )}
                   </CardContent>
                </Card>
 
@@ -425,19 +564,23 @@ export function Settings() {
                         {COMMON_ALLERGIES.map((allergy) => (
                            <button
                               key={allergy}
-                              onClick={() =>
-                                 toggleArrayItem(
-                                    preferencesForm.allergies,
-                                    allergy,
-                                    (newAllergies) =>
-                                       setPreferencesForm({
-                                          ...preferencesForm,
-                                          allergies: newAllergies,
-                                       }),
-                                 )
-                              }
+                              type="button"
+                              onClick={() => {
+                                 const current =
+                                    preferencesControl._formValues.allergies;
+                                 setPreferencesValue(
+                                    "allergies",
+                                    current.includes(allergy)
+                                       ? current.filter(
+                                            (a: string) => a !== allergy,
+                                         )
+                                       : [...current, allergy],
+                                 );
+                              }}
                               className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                                 preferencesForm.allergies.includes(allergy)
+                                 preferencesControl._formValues.allergies.includes(
+                                    allergy,
+                                 )
                                     ? "bg-red-500 text-white"
                                     : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
                               }`}
@@ -446,6 +589,11 @@ export function Settings() {
                            </button>
                         ))}
                      </div>
+                     {preferencesErrors.allergies && (
+                        <p className="mt-1 text-xs text-red-600">
+                           {preferencesErrors.allergies.message}
+                        </p>
+                     )}
                   </CardContent>
                </Card>
 
@@ -465,19 +613,22 @@ export function Settings() {
                         {CUISINE_TYPES.map((cuisine) => (
                            <button
                               key={cuisine}
-                              onClick={() =>
-                                 toggleArrayItem(
-                                    preferencesForm.preferred_cuisines,
-                                    cuisine,
-                                    (newCuisines) =>
-                                       setPreferencesForm({
-                                          ...preferencesForm,
-                                          preferred_cuisines: newCuisines,
-                                       }),
-                                 )
-                              }
+                              type="button"
+                              onClick={() => {
+                                 const current =
+                                    preferencesControl._formValues
+                                       .preferred_cuisines;
+                                 setPreferencesValue(
+                                    "preferred_cuisines",
+                                    current.includes(cuisine)
+                                       ? current.filter(
+                                            (c: string) => c !== cuisine,
+                                         )
+                                       : [...current, cuisine],
+                                 );
+                              }}
                               className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                                 preferencesForm.preferred_cuisines.includes(
+                                 preferencesControl._formValues.preferred_cuisines.includes(
                                     cuisine,
                                  )
                                     ? "bg-primary text-primary-foreground"
@@ -488,18 +639,23 @@ export function Settings() {
                            </button>
                         ))}
                      </div>
+                     {preferencesErrors.preferred_cuisines && (
+                        <p className="mt-1 text-xs text-red-600">
+                           {preferencesErrors.preferred_cuisines.message}
+                        </p>
+                     )}
                   </CardContent>
                </Card>
 
                <Button
-                  onClick={savePreferences}
+                  type="submit"
                   disabled={saving}
                   className="w-full sm:w-auto"
                >
                   <Save className="mr-2 w-4 h-4" />
                   {saving ? "Saving..." : "Save Dietary Preferences"}
                </Button>
-            </div>
+            </form>
          )}
 
          {/* Cooking Tab */}
