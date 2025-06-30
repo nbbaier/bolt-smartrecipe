@@ -43,7 +43,7 @@ export default function LandingPage() {
           with AI-powered assistance.
         </p>
         <Button
-          className="px-8 py-3 w-full text-base sm:w-auto sm:text-lg"
+          className="px-8 py-3 mt-2 w-full text-base sm:w-auto sm:text-lg"
           asChild
         >
           <a href="/signup">Get Started</a>
@@ -76,6 +76,40 @@ export default function LandingPage() {
           </div>
         </section>
       </main>
+
+      {/* Logo Bar: Add logos here */}
+      <div className="flex flex-col items-center mt-2 mb-6">
+        <span className="mb-2 text-xs tracking-wide text-gray-500 uppercase">
+          Built with
+        </span>
+        <div className="flex flex-wrap gap-6 justify-center items-center">
+          <img
+            src="/bolt-badge/black_circle_360x360/black_circle_360x360.svg"
+            alt="Bolt Badge"
+            className="h-8"
+          />
+          <img
+            src="/anthropic/logo-color.svg"
+            alt="Anthropic Logo"
+            className="h-8"
+          />
+          <img
+            src="/entri/wordmark-color.svg"
+            alt="Entri Wordmark"
+            className="h-6"
+          />
+          <img
+            src="/netlify/logo-black.svg"
+            alt="Netlify Logo"
+            className="h-7"
+          />
+          <img
+            src="/supabase/logo-color.svg"
+            alt="Supabase Logo"
+            className="h-8"
+          />
+        </div>
+      </div>
 
       <footer className="flex flex-col items-center px-2 py-4 mt-auto w-full bg-gray-100 sm:py-6">
         <div className="text-xs text-center text-gray-400">
