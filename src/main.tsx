@@ -6,72 +6,72 @@ import type { ErrorInfo, ReactNode } from "react";
 
 // Add error boundary for debugging
 class ErrorBoundary extends React.Component<
-   { children: ReactNode },
-   { hasError: boolean; error: unknown }
+  { children: ReactNode },
+  { hasError: boolean; error: unknown }
 > {
-   constructor(props: { children: ReactNode }) {
-      super(props);
-      this.state = { hasError: false, error: null };
-   }
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
 
-   static getDerivedStateFromError(error: unknown) {
-      return { hasError: true, error };
-   }
+  static getDerivedStateFromError(error: unknown) {
+    return { hasError: true, error };
+  }
 
-   componentDidCatch(error: unknown, errorInfo: ErrorInfo) {
-      console.error("React Error Boundary caught an error:", error, errorInfo);
-   }
+  componentDidCatch(error: unknown, errorInfo: ErrorInfo) {
+    console.error("React Error Boundary caught an error:", error, errorInfo);
+  }
 
-   render() {
-      if (this.state.hasError) {
-         return (
-            <div
-               style={{
-                  padding: "20px",
-                  textAlign: "center",
-                  fontFamily: "system-ui, sans-serif",
-                  color: "#dc2626",
-               }}
-            >
-               <h1>Something went wrong</h1>
-               <p>Check the browser console for more details.</p>
-               <pre
-                  style={{
-                     background: "#f3f4f6",
-                     padding: "10px",
-                     borderRadius: "4px",
-                     textAlign: "left",
-                     fontSize: "12px",
-                     overflow: "auto",
-                  }}
-               >
-                  {this.state.error ? this.state.error.toString() : ""}
-               </pre>
-            </div>
-         );
-      }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div
+          style={{
+            padding: "20px",
+            textAlign: "center",
+            fontFamily: "system-ui, sans-serif",
+            color: "#dc2626",
+          }}
+        >
+          <h1>Something went wrong</h1>
+          <p>Check the browser console for more details.</p>
+          <pre
+            style={{
+              background: "#f3f4f6",
+              padding: "10px",
+              borderRadius: "4px",
+              textAlign: "left",
+              fontSize: "12px",
+              overflow: "auto",
+            }}
+          >
+            {this.state.error ? this.state.error.toString() : ""}
+          </pre>
+        </div>
+      );
+    }
 
-      return this.props.children;
-   }
+    return this.props.children;
+  }
 }
 
 const rootElement = document.getElementById("root");
 if (!rootElement) {
-   throw new Error("Root element not found");
+  throw new Error("Root element not found");
 }
 
 try {
-   const root = createRoot(rootElement);
-   root.render(
-      <StrictMode>
-         <ErrorBoundary>
-            <App />
-         </ErrorBoundary>
-      </StrictMode>,
-   );
+  const root = createRoot(rootElement);
+  root.render(
+    <StrictMode>
+      <ErrorBoundary>
+        <App />
+      </ErrorBoundary>
+    </StrictMode>,
+  );
 } catch (error) {
-   console.error("Failed to render app:", error);
-   rootElement.innerHTML = `
+  console.error("Failed to render app:", error);
+  rootElement.innerHTML = `
     <div style="padding: 20px; text-align: center; font-family: system-ui, sans-serif; color: #dc2626;">
       <h1>Failed to load SmartRecipe</h1>
       <p>Check the browser console for error details.</p>
