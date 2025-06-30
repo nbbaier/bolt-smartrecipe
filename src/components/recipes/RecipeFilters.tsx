@@ -1,7 +1,7 @@
 import { Filter, Search, Sparkles } from "lucide-react";
 import React from "react";
-import { Button } from "./Button";
-import { Input } from "./Input";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
 
 interface RecipeFiltersProps {
   searchTerm: string;
