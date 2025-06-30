@@ -14,7 +14,7 @@ import {
   Wand2,
   X,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -31,6 +31,7 @@ import {
 } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { useAuth } from "../contexts/AuthContext";
+import { useNotification } from "../contexts/NotificationContext";
 import { usePantry } from "../contexts/PantryContext";
 import { useSettings } from "../contexts/SettingsContext";
 import { useIngredientHistory } from "../hooks/useIngredientHistory";
@@ -40,6 +41,7 @@ import {
   ingredientService,
   setToCache,
 } from "../lib/database";
+import { handleApiError, logError } from "../lib/errorUtils";
 import { checkExpiringItems } from "../lib/notificationService";
 import type { Ingredient } from "../types";
 
@@ -90,6 +92,28 @@ const SORT_OPTIONS = [
   { value: "quantity", label: "Quantity" },
 ];
 
+// Move getDefaultThreshold to module scope
+const getDefaultThreshold = (unit: string): number => {
+  switch (unit) {
+    case "kg":
+    case "l":
+      return 0.5;
+    case "g":
+    case "ml":
+      return 100;
+    case "cups":
+      return 0.5;
+    case "tbsp":
+    case "tsp":
+      return 2;
+    case "pieces":
+    case "cans":
+    case "bottles":
+    default:
+      return 1;
+  }
+};
+
 export function Pantry() {
   const { user } = useAuth();
   const { getAllIngredientNames } = useIngredientHistory();
@@ -123,6 +147,7 @@ export function Pantry() {
   const [sortKey, setSortKey] = useState("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [itemsToShow, setItemsToShow] = useState(12);
+  const [error, _setError] = useState<string | null>(null);
   const { register, handleSubmit, reset, setValue, control, getValues } =
     useForm<IngredientFormData>({
       resolver: zodResolver(ingredientSchema),
@@ -141,6 +166,7 @@ export function Pantry() {
   const debouncedSetSearchTerm = useRef(
     debounce((value: string) => setSearchTerm(value), 300),
   ).current;
+  const { notify } = useNotification();
 
   // Notification integration
   useEffect(() => {
@@ -187,51 +213,55 @@ export function Pantry() {
     fetchIngredients();
   }, [user]);
 
-  const onSubmit = async (data: IngredientFormData) => {
-    if (!user) return;
-    try {
-      const ingredientData = {
-        user_id: user.id,
-        ...data,
-        expiration_date: data.expiration_date || undefined,
-      };
-      if (editingIngredient) {
-        await updateIngredient(editingIngredient.id, ingredientData);
-      } else {
-        await addIngredient(ingredientData);
+  const onSubmit = useCallback(
+    async (data: IngredientFormData) => {
+      if (!user) return;
+      try {
+        const ingredientData = {
+          user_id: user.id,
+          ...data,
+          expiration_date: data.expiration_date || undefined,
+        };
+        if (editingIngredient) {
+          await updateIngredient(editingIngredient.id, ingredientData);
+        } else {
+          await addIngredient(ingredientData);
+        }
+        clearCache(`ingredients_${user.id}`);
+        reset();
+        setShowAddForm(false);
+        setEditingIngredient(null);
+      } catch (error) {
+        console.error("Error saving ingredient:", error);
+        notify(handleApiError(error), { type: "error" });
       }
-      clearCache(`ingredients_${user.id}`);
-      reset();
-      setShowAddForm(false);
-      setEditingIngredient(null);
-    } catch (error) {
-      console.error("Error saving ingredient:", error);
-    }
-  };
+    },
+    [user, editingIngredient, updateIngredient, addIngredient, reset, notify],
+  );
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this ingredient?")) return;
+  const handleDelete = useCallback(
+    async (id: string) => {
+      if (!confirm("Are you sure you want to delete this ingredient?")) return;
+      try {
+        await deleteIngredient(id);
+      } catch (error) {
+        console.error("Error deleting ingredient:", error);
+        notify(handleApiError(error), { type: "error" });
+      }
+    },
+    [deleteIngredient, notify],
+  );
 
-    try {
-      await deleteIngredient(id);
-    } catch (error) {
-      console.error("Error deleting ingredient:", error);
-    }
-  };
-
-  const resetNaturalLanguageForm = () => {
+  const resetNaturalLanguageForm = useCallback(() => {
     setNaturalLanguageText("");
     setParsedIngredients([]);
     setShowNaturalLanguageInput(false);
-  };
+  }, []);
 
-  const parseNaturalLanguageText = async () => {
+  const parseNaturalLanguageText = useCallback(async () => {
     if (!naturalLanguageText.trim()) return;
-
     setIsParsingText(true);
-
     try {
-      // Call the Supabase Edge Function for parsing
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-ingredients`,
         {
@@ -245,51 +275,41 @@ export function Pantry() {
           }),
         },
       );
-
       if (!response.ok) {
         throw new Error(`API request failed: ${response.status}`);
       }
-
       const data = await response.json();
-
       if (data.error) {
         throw new Error(data.error);
       }
-
-      // Set the parsed ingredients from the API response
       setParsedIngredients(data.ingredients || []);
     } catch (error) {
-      console.error("Error parsing ingredients:", error);
-
-      // Fallback: show error message to user
-      alert(
-        "Failed to parse ingredients. Please try again or add ingredients manually.",
-      );
       setParsedIngredients([]);
+      notify(handleApiError(error), { type: "error" });
+      logError(error, "parseNaturalLanguageText");
     } finally {
       setIsParsingText(false);
     }
-  };
+  }, [naturalLanguageText, notify]);
 
-  const updateParsedIngredient = (
-    index: number,
-    field: string,
-    value: string | number,
-  ) => {
-    setParsedIngredients((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item)),
-    );
-  };
+  const updateParsedIngredient = useCallback(
+    (index: number, field: string, value: string | number) => {
+      setParsedIngredients((prev) =>
+        prev.map((item, i) =>
+          i === index ? { ...item, [field]: value } : item,
+        ),
+      );
+    },
+    [],
+  );
 
-  const removeParsedIngredient = (index: number) => {
+  const removeParsedIngredient = useCallback((index: number) => {
     setParsedIngredients((prev) => prev.filter((_, i) => i !== index));
-  };
+  }, []);
 
-  const addParsedIngredientsToPantry = async () => {
+  const addParsedIngredientsToPantry = useCallback(async () => {
     if (!user || parsedIngredients.length === 0) return;
-
     setIsAddingToPantry(true);
-
     try {
       for (const ingredient of parsedIngredients) {
         await addIngredient({
@@ -303,27 +323,36 @@ export function Pantry() {
           expiration_date: undefined,
         });
       }
-
       resetNaturalLanguageForm();
     } catch (error) {
       console.error("Error adding parsed ingredients:", error);
+      notify(handleApiError(error), { type: "error" });
     } finally {
       setIsAddingToPantry(false);
     }
-  };
+  }, [
+    user,
+    parsedIngredients,
+    addIngredient,
+    resetNaturalLanguageForm,
+    notify,
+  ]);
 
-  const startEdit = (ingredient: Ingredient) => {
-    setEditingIngredient(ingredient);
-    setShowAddForm(true);
-    setValue("name", ingredient.name);
-    setValue("quantity", ingredient.quantity);
-    setValue("unit", ingredient.unit);
-    setValue("category", ingredient.category);
-    setValue("expiration_date", ingredient.expiration_date || "");
-    setValue("notes", ingredient.notes || "");
-    setValue("low_stock_threshold", ingredient.low_stock_threshold);
-    setShowNaturalLanguageInput(false);
-  };
+  const startEdit = useCallback(
+    (ingredient: Ingredient) => {
+      setEditingIngredient(ingredient);
+      setShowAddForm(true);
+      setValue("name", ingredient.name);
+      setValue("quantity", ingredient.quantity);
+      setValue("unit", ingredient.unit);
+      setValue("category", ingredient.category);
+      setValue("expiration_date", ingredient.expiration_date || "");
+      setValue("notes", ingredient.notes || "");
+      setValue("low_stock_threshold", ingredient.low_stock_threshold);
+      setShowNaturalLanguageInput(false);
+    },
+    [setValue],
+  );
 
   const isExpiringSoon = (expirationDate: string | undefined) => {
     if (!expirationDate) return false;
@@ -351,49 +380,54 @@ export function Pantry() {
     return ingredient.quantity <= 0;
   };
 
-  // Sorting logic
-  const sortedIngredients = [...ingredients].sort((a, b) => {
-    let aValue: string | number = "";
-    let bValue: string | number = "";
-    switch (sortKey) {
-      case "name":
-        aValue = a.name;
-        bValue = b.name;
-        break;
-      case "expiration_date":
-        aValue = a.expiration_date || "9999-12-31";
-        bValue = b.expiration_date || "9999-12-31";
-        break;
-      case "quantity":
-        aValue = a.quantity;
-        bValue = b.quantity;
-        break;
-      default:
-        break;
-    }
-    if (typeof aValue === "string" && typeof bValue === "string") {
-      if (sortOrder === "asc") return aValue.localeCompare(bValue);
-      return bValue.localeCompare(aValue);
-    }
-    if (typeof aValue === "number" && typeof bValue === "number") {
-      if (sortOrder === "asc") return aValue - bValue;
-      return bValue - aValue;
-    }
-    return 0;
-  });
+  // Memoize expensive derived lists
+  const sortedIngredients = useMemo(() => {
+    return [...ingredients].sort((a, b) => {
+      let aValue: string | number = "";
+      let bValue: string | number = "";
+      switch (sortKey) {
+        case "name":
+          aValue = a.name;
+          bValue = b.name;
+          break;
+        case "expiration_date":
+          aValue = a.expiration_date || "9999-12-31";
+          bValue = b.expiration_date || "9999-12-31";
+          break;
+        case "quantity":
+          aValue = a.quantity;
+          bValue = b.quantity;
+          break;
+        default:
+          break;
+      }
+      if (typeof aValue === "string" && typeof bValue === "string") {
+        if (sortOrder === "asc") return aValue.localeCompare(bValue);
+        return bValue.localeCompare(aValue);
+      }
+      if (typeof aValue === "number" && typeof bValue === "number") {
+        if (sortOrder === "asc") return aValue - bValue;
+        return bValue - aValue;
+      }
+      return 0;
+    });
+  }, [ingredients, sortKey, sortOrder]);
 
-  // Filtering logic
-  const filteredIngredients = sortedIngredients.filter((ingredient) => {
-    const matchesSearch = ingredient.name
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
-    const matchesCategory =
-      selectedCategory === "All" || ingredient.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const filteredIngredients = useMemo(() => {
+    return sortedIngredients.filter((ingredient) => {
+      const matchesSearch = ingredient.name
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
+      const matchesCategory =
+        selectedCategory === "All" || ingredient.category === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [sortedIngredients, searchTerm, selectedCategory]);
 
-  // Pagination logic
-  const paginatedIngredients = filteredIngredients.slice(0, itemsToShow);
+  const paginatedIngredients = useMemo(
+    () => filteredIngredients.slice(0, itemsToShow),
+    [filteredIngredients, itemsToShow],
+  );
 
   const categoryCounts = CATEGORIES.reduce(
     (acc, category) => {
@@ -410,27 +444,6 @@ export function Pantry() {
     (ing) => ing.expiration_date,
   );
 
-  const getDefaultThreshold = (unit: string): number => {
-    switch (unit) {
-      case "kg":
-      case "l":
-        return 0.5;
-      case "g":
-      case "ml":
-        return 100;
-      case "cups":
-        return 0.5;
-      case "tbsp":
-      case "tsp":
-        return 2;
-      case "pieces":
-      case "cans":
-      case "bottles":
-      default:
-        return 1;
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -441,6 +454,11 @@ export function Pantry() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      {error && (
+        <div className="p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-lg">
+          {error}
+        </div>
+      )}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-center sm:text-left">
           <h1 className="text-xl font-bold sm:text-2xl text-secondary-900">

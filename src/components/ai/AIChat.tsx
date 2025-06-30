@@ -19,6 +19,7 @@ import {
   useChat,
   useChatDispatch,
 } from "../../contexts/ChatContext";
+import { useNotification } from "../../contexts/NotificationContext";
 import {
   chatMessageService,
   conversationService,
@@ -26,14 +27,15 @@ import {
   recipeService,
   userPreferencesService,
 } from "../../lib/database";
+import { handleApiError } from "../../lib/errorUtils";
 import type {
   Conversation,
   Ingredient,
   Recipe,
   UserPreferences,
 } from "../../types";
-import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
 import { ScrollArea } from "../ui/scroll-area";
 
 export interface Message {
@@ -127,6 +129,7 @@ export function AIChat() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [error, setError] = useState<APIError | null>(null);
   const [lastUserMessage, setLastUserMessage] = useState<string | null>(null);
+  const { notify } = useNotification();
 
   const loadUserData = useCallback(async () => {
     if (!user) return;
@@ -142,8 +145,9 @@ export function AIChat() {
       setUserPreferences(preferences);
     } catch (error) {
       console.error("Error loading user data:", error);
+      notify(handleApiError(error), { type: "error" });
     }
-  }, [user]);
+  }, [user, notify]);
 
   const loadConversations = useCallback(async () => {
     if (!user) return;
@@ -162,21 +166,21 @@ export function AIChat() {
         } catch (err) {
           setError({
             code: "conversation_create_error",
-            message: "Failed to create a new conversation. Please try again.",
+            message: handleApiError(err),
           });
-          console.error("Error creating conversation:", err);
+          notify(handleApiError(err), { type: "error" });
         }
       }
     } catch (err) {
       setError({
         code: "conversation_load_error",
-        message: "Failed to load conversations. Please try again.",
+        message: handleApiError(err),
       });
-      console.error("Error loading conversations:", err);
+      notify(handleApiError(err), { type: "error" });
     } finally {
       setLoadingConversations(false);
     }
-  }, [user, dispatch]);
+  }, [user, dispatch, notify]);
 
   const loadMessages = useCallback(
     async (conversationId: string) => {
@@ -197,14 +201,14 @@ export function AIChat() {
       } catch (err) {
         setError({
           code: "message_load_error",
-          message: "Failed to load messages. Please try again.",
+          message: handleApiError(err),
         });
-        console.error("Error loading messages:", err);
+        notify(handleApiError(err), { type: "error" });
       } finally {
         setLoadingMessages(false);
       }
     },
-    [dispatch],
+    [dispatch, notify],
   );
 
   useEffect(() => {
@@ -310,7 +314,11 @@ export function AIChat() {
           code: "http_error",
           message: `API request failed: ${response.status}`,
         };
-        setError(apiError);
+        setError({
+          code: apiError.code,
+          message: handleApiError(apiError),
+        });
+        notify(handleApiError(apiError), { type: "error" });
         throw new Error(apiError.message);
       }
       const data = (await response.json()) as ChatAPIResponse;
@@ -321,7 +329,11 @@ export function AIChat() {
           requestId: data.error.requestId,
           details: data.error.details,
         };
-        setError(apiError);
+        setError({
+          code: apiError.code,
+          message: handleApiError(apiError),
+        });
+        notify(handleApiError(apiError), { type: "error" });
         throw new Error(apiError.message);
       }
       const aiContent = data.message;
@@ -383,15 +395,19 @@ export function AIChat() {
         } catch (err) {
           setError({
             code: "message_create_error",
-            message: "Failed to save AI response. Please try again.",
+            message: handleApiError(err),
           });
-          console.error("Error creating AI message:", err);
+          notify(handleApiError(err), { type: "error" });
         }
       }
       dispatch({ type: "ADD_MESSAGE", payload: aiMsg });
       return aiMsg;
     } catch (err) {
-      setError(null);
+      setError({
+        code: "ai_response_error",
+        message: handleApiError(err),
+      });
+      notify(handleApiError(err), { type: "error" });
       throw err;
     }
   };
@@ -415,9 +431,9 @@ export function AIChat() {
       } catch (err) {
         setError({
           code: "message_create_error",
-          message: "Failed to send your message. Please try again.",
+          message: handleApiError(err),
         });
-        console.error("Error creating user message:", err);
+        notify(handleApiError(err), { type: "error" });
       }
     }
     try {
@@ -470,10 +486,9 @@ export function AIChat() {
             } catch (err) {
               setError({
                 code: "conversation_create_error",
-                message:
-                  "Failed to create a new conversation. Please try again.",
+                message: handleApiError(err),
               });
-              console.error("Error creating conversation:", err);
+              notify(handleApiError(err), { type: "error" });
             }
           }}
         >
@@ -519,10 +534,9 @@ export function AIChat() {
                     } catch (err) {
                       setError({
                         code: "conversation_rename_error",
-                        message:
-                          "Failed to rename conversation. Please try again.",
+                        message: handleApiError(err),
                       });
-                      console.error("Error renaming conversation:", err);
+                      notify(handleApiError(err), { type: "error" });
                     }
                   }
                 }}
@@ -564,23 +578,18 @@ export function AIChat() {
                           } catch (err) {
                             setError({
                               code: "conversation_create_error",
-                              message:
-                                "Failed to create a new conversation after deletion. Please try again.",
+                              message: handleApiError(err),
                             });
-                            console.error(
-                              "Error creating conversation after deletion:",
-                              err,
-                            );
+                            notify(handleApiError(err), { type: "error" });
                           }
                         }
                       }
                     } catch (err) {
                       setError({
                         code: "conversation_delete_error",
-                        message:
-                          "Failed to delete conversation. Please try again.",
+                        message: handleApiError(err),
                       });
-                      console.error("Error deleting conversation:", err);
+                      notify(handleApiError(err), { type: "error" });
                     }
                   }
                 }}

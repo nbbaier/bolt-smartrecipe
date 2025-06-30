@@ -11,6 +11,7 @@ import type {
   UserPreferences,
   UserProfile,
 } from "../types";
+import { handleApiError, logError } from "./errorUtils";
 import { supabase } from "./supabase";
 
 // Type for Supabase function result
@@ -194,18 +195,26 @@ export const recipeService = {
       return data;
     } catch (error: unknown) {
       if (
-        (typeof error === "object" &&
-          error !== null &&
-          "code" in error &&
-          (error as { code?: string }).code === "PGRST116") ||
-        (typeof (error as { message?: string }).message === "string" &&
-          (error as { message?: string }).message!.includes(
-            "multiple (or no) rows returned",
-          ))
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        (error as { code?: string }).code === "PGRST116"
       ) {
         return null; // Not found
       }
-      throw error;
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "message" in error &&
+        typeof (error as { message?: string }).message === "string" &&
+        (error as { message?: string }).message!.includes(
+          "multiple (or no) rows returned",
+        )
+      ) {
+        return null; // Not found
+      }
+      logError(error, "recipeService.getById");
+      throw new Error(handleApiError(error));
     }
   },
 
@@ -660,18 +669,26 @@ export const userProfileService = {
       return data;
     } catch (error: unknown) {
       if (
-        (typeof error === "object" &&
-          error !== null &&
-          "code" in error &&
-          (error as { code?: string }).code === "PGRST116") ||
-        (typeof (error as { message?: string }).message === "string" &&
-          (error as { message?: string }).message!.includes(
-            "multiple (or no) rows returned",
-          ))
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        (error as { code?: string }).code === "PGRST116"
       ) {
         return null; // Not found
       }
-      throw error;
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "message" in error &&
+        typeof (error as { message?: string }).message === "string" &&
+        (error as { message?: string }).message!.includes(
+          "multiple (or no) rows returned",
+        )
+      ) {
+        return null; // Not found
+      }
+      logError(error, "userProfileService.getProfile");
+      throw new Error(handleApiError(error));
     }
   },
 
@@ -705,18 +722,26 @@ export const userPreferencesService = {
       return data;
     } catch (error: unknown) {
       if (
-        (typeof error === "object" &&
-          error !== null &&
-          "code" in error &&
-          (error as { code?: string }).code === "PGRST116") ||
-        (typeof (error as { message?: string }).message === "string" &&
-          (error as { message?: string }).message!.includes(
-            "multiple (or no) rows returned",
-          ))
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        (error as { code?: string }).code === "PGRST116"
       ) {
         return null; // Not found
       }
-      throw error;
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "message" in error &&
+        typeof (error as { message?: string }).message === "string" &&
+        (error as { message?: string }).message!.includes(
+          "multiple (or no) rows returned",
+        )
+      ) {
+        return null; // Not found
+      }
+      logError(error, "userPreferencesService.getPreferences");
+      throw new Error(handleApiError(error));
     }
   },
 

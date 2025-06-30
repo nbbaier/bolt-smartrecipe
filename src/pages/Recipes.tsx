@@ -1,7 +1,7 @@
 import debounce from "lodash.debounce";
 import throttle from "lodash.throttle";
 import { BookOpen, Plus, Sparkles, Utensils, X } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { RecipeDetailModal } from "../components/recipes/RecipeDetailModal";
 import { RecipeFilters } from "../components/recipes/RecipeFilters";
@@ -85,6 +85,7 @@ export function Recipes() {
     | "difficulty_asc"
     | "difficulty_desc"
   >("match");
+  const [error, _setError] = useState<string | null>(null);
 
   const debouncedSetSearchTerm = useRef(
     debounce((value: string) => setSearchTerm(value), 300),
@@ -153,64 +154,7 @@ export function Recipes() {
     );
   };
 
-  const addMissingToShoppingList = async () => {
-    if (!selectedRecipe || !selectedShoppingListId) return;
-
-    try {
-      setAddingToShopping(true);
-      console.log(
-        "Adding missing ingredients to shopping list:",
-        selectedShoppingListId,
-      );
-
-      await shoppingListService.createFromRecipe(
-        selectedShoppingListId,
-        selectedRecipe.id,
-        userIngredients,
-      );
-
-      setShowAddToShoppingModal(false);
-      setSelectedShoppingListId("");
-
-      toast.success(
-        `Added missing ingredients from "${selectedRecipe.title}" to your shopping list!`,
-      );
-    } catch (error) {
-      console.error("Error adding to shopping list:", error);
-      toast.error(
-        "Failed to add ingredients to shopping list. Please try again.",
-      );
-    } finally {
-      setAddingToShopping(false);
-    }
-  };
-
-  const createLeftoverFromRecipe = async () => {
-    if (!selectedRecipe || !user) return;
-
-    try {
-      setCreatingLeftover(true);
-      await leftoverService.createFromRecipe(
-        user.id,
-        selectedRecipe.id,
-        selectedRecipe.title,
-        2, // Default 2 portions
-        "portions",
-        "Created from recipe",
-      );
-
-      setShowCreateLeftoverModal(false);
-
-      toast.success(`Created leftover entry for "${selectedRecipe.title}"!`);
-    } catch (error) {
-      console.error("Error creating leftover:", error);
-      toast.error("Failed to create leftover. Please try again.");
-    } finally {
-      setCreatingLeftover(false);
-    }
-  };
-
-  const openAddRecipe = () => {
+  const openAddRecipe = useCallback(() => {
     setEditingRecipe(null);
     setFormState({
       user_id: user?.id || "",
@@ -224,124 +168,187 @@ export function Recipes() {
       cuisine_type: "",
     });
     setShowRecipeForm(true);
-  };
+  }, [user]);
 
-  const handleFormChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >,
-  ) => {
-    const { name, value } = e.target;
-    setFormState((prev) => ({
-      ...prev,
-      [name]:
-        name === "prep_time" || name === "cook_time" || name === "servings"
-          ? Number(value)
-          : value,
-    }));
-  };
+  const handleFormChange = useCallback(
+    (
+      e: React.ChangeEvent<
+        HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+      >,
+    ) => {
+      const { name, value } = e.target;
+      setFormState((prev) => ({
+        ...prev,
+        [name]:
+          name === "prep_time" || name === "cook_time" || name === "servings"
+            ? Number(value)
+            : value,
+      }));
+    },
+    [],
+  );
 
-  const handleRecipeFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (editingRecipe) {
-      await updateRecipe(editingRecipe.id, formState);
-    } else {
-      await addRecipe(formState);
+  const handleRecipeFormSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (editingRecipe) {
+        await updateRecipe(editingRecipe.id, formState);
+      } else {
+        await addRecipe(formState);
+      }
+      clearCache(`recipes_${user?.id}`);
+      clearCache(
+        `canCookMatches_${user?.id}_${minMatch}_${maxMissing}_${itemsToShow}`,
+      );
+      setShowRecipeForm(false);
+      setEditingRecipe(null);
+    },
+    [
+      editingRecipe,
+      updateRecipe,
+      addRecipe,
+      formState,
+      user,
+      minMatch,
+      maxMissing,
+      itemsToShow,
+    ],
+  );
+
+  const addMissingToShoppingList = useCallback(async () => {
+    if (!selectedRecipe || !selectedShoppingListId) return;
+    try {
+      setAddingToShopping(true);
+      await shoppingListService.createFromRecipe(
+        selectedShoppingListId,
+        selectedRecipe.id,
+        userIngredients,
+      );
+      setShowAddToShoppingModal(false);
+      setSelectedShoppingListId("");
+      toast.success(
+        `Added missing ingredients from "${selectedRecipe.title}" to your shopping list!`,
+      );
+    } catch (error) {
+      console.error("Error adding to shopping list:", error);
+      toast.error(
+        "Failed to add ingredients to shopping list. Please try again.",
+      );
+    } finally {
+      setAddingToShopping(false);
     }
-    clearCache(`recipes_${user?.id}`);
-    clearCache(
-      `canCookMatches_${user?.id}_${minMatch}_${maxMissing}_${itemsToShow}`,
-    );
-    setShowRecipeForm(false);
-    setEditingRecipe(null);
-  };
+  }, [selectedRecipe, selectedShoppingListId, userIngredients]);
 
-  let filteredRecipes: (Recipe | RecipeMatchResult)[];
-  if (showCanCookOnly) {
-    filteredRecipes = canCookMatches.filter((match) => {
-      const matchesSearch = match.recipe_title
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
-      // Difficulty filter is not available directly, so skip for now or join with recipes if needed
-      return matchesSearch;
-    });
-  } else {
-    filteredRecipes = recipes.filter((recipe) => {
-      const matchesSearch =
-        recipe.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        recipe.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesDifficulty =
-        selectedDifficulty === "All" ||
-        recipe.difficulty === selectedDifficulty;
-      return matchesSearch && matchesDifficulty;
-    });
-  }
+  const createLeftoverFromRecipe = useCallback(async () => {
+    if (!selectedRecipe || !user) return;
+    try {
+      setCreatingLeftover(true);
+      await leftoverService.createFromRecipe(
+        user.id,
+        selectedRecipe.id,
+        selectedRecipe.title,
+        2, // Default 2 portions
+        "portions",
+        "Created from recipe",
+      );
+      setShowCreateLeftoverModal(false);
+      toast.success(`Created leftover entry for "${selectedRecipe.title}"!`);
+    } catch (error) {
+      console.error("Error creating leftover:", error);
+      toast.error("Failed to create leftover. Please try again.");
+    } finally {
+      setCreatingLeftover(false);
+    }
+  }, [selectedRecipe, user]);
 
-  const sortedRecipes = [...filteredRecipes].sort((a, b) => {
+  // Memoize expensive derived lists
+  const filteredRecipes = useMemo(() => {
     if (showCanCookOnly) {
-      const aMatch = a as RecipeMatchResult;
-      const bMatch = b as RecipeMatchResult;
-      switch (canCookSortKey) {
-        case "match":
-          return bMatch.match_percentage - aMatch.match_percentage;
-        case "missing":
-          return (
-            (aMatch.missing_ingredients?.length ?? 0) -
-            (bMatch.missing_ingredients?.length ?? 0)
-          );
-        case "cook_time_asc":
-          // No cook_time in RecipeMatchResult, so skip or use 0
-          return 0;
-        case "cook_time_desc":
-          return 0;
-        case "difficulty_asc":
-          return 0;
-        case "difficulty_desc":
-          return 0;
-        default:
-          return 0;
-      }
+      return canCookMatches.filter((match) => {
+        const matchesSearch = match.recipe_title
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
+        return matchesSearch;
+      });
+    } else {
+      return recipes.filter((recipe) => {
+        const matchesSearch =
+          recipe.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          recipe.description.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesDifficulty =
+          selectedDifficulty === "All" ||
+          recipe.difficulty === selectedDifficulty;
+        return matchesSearch && matchesDifficulty;
+      });
     }
-    // Type guard for Recipe
-    const aRecipe = a as Recipe;
-    const bRecipe = b as Recipe;
-    switch (sortKey) {
-      case "cook_time_asc":
-        return (
-          aRecipe.prep_time +
-          aRecipe.cook_time -
-          (bRecipe.prep_time + bRecipe.cook_time)
-        );
-      case "cook_time_desc":
-        return (
-          bRecipe.prep_time +
-          bRecipe.cook_time -
-          (aRecipe.prep_time + aRecipe.cook_time)
-        );
-      case "difficulty_asc": {
-        const diffOrder = { Easy: 1, Medium: 2, Hard: 3 };
-        return (
-          (diffOrder[aRecipe.difficulty as keyof typeof diffOrder] || 0) -
-          (diffOrder[bRecipe.difficulty as keyof typeof diffOrder] || 0)
-        );
-      }
-      case "difficulty_desc": {
-        const diffOrder = { Easy: 1, Medium: 2, Hard: 3 };
-        return (
-          (diffOrder[bRecipe.difficulty as keyof typeof diffOrder] || 0) -
-          (diffOrder[aRecipe.difficulty as keyof typeof diffOrder] || 0)
-        );
-      }
-      case "recent":
-      default:
-        return (
-          new Date(bRecipe.created_at).getTime() -
-          new Date(aRecipe.created_at).getTime()
-        );
-    }
-  });
+  }, [
+    showCanCookOnly,
+    canCookMatches,
+    searchTerm,
+    recipes,
+    selectedDifficulty,
+  ]);
 
-  const visibleRecipes = sortedRecipes.slice(0, itemsToShow);
+  const sortedRecipes = useMemo(() => {
+    return [...filteredRecipes].sort((a, b) => {
+      if (showCanCookOnly) {
+        const aMatch = a as RecipeMatchResult;
+        const bMatch = b as RecipeMatchResult;
+        switch (canCookSortKey) {
+          case "match":
+            return bMatch.match_percentage - aMatch.match_percentage;
+          case "missing":
+            return (
+              (aMatch.missing_ingredients?.length ?? 0) -
+              (bMatch.missing_ingredients?.length ?? 0)
+            );
+          default:
+            return 0;
+        }
+      }
+      const aRecipe = a as Recipe;
+      const bRecipe = b as Recipe;
+      switch (sortKey) {
+        case "cook_time_asc":
+          return (
+            aRecipe.prep_time +
+            aRecipe.cook_time -
+            (bRecipe.prep_time + bRecipe.cook_time)
+          );
+        case "cook_time_desc":
+          return (
+            bRecipe.prep_time +
+            bRecipe.cook_time -
+            (aRecipe.prep_time + aRecipe.cook_time)
+          );
+        case "difficulty_asc": {
+          const diffOrder = { Easy: 1, Medium: 2, Hard: 3 };
+          return (
+            (diffOrder[aRecipe.difficulty as keyof typeof diffOrder] || 0) -
+            (diffOrder[bRecipe.difficulty as keyof typeof diffOrder] || 0)
+          );
+        }
+        case "difficulty_desc": {
+          const diffOrder = { Easy: 1, Medium: 2, Hard: 3 };
+          return (
+            (diffOrder[bRecipe.difficulty as keyof typeof diffOrder] || 0) -
+            (diffOrder[aRecipe.difficulty as keyof typeof diffOrder] || 0)
+          );
+        }
+        case "recent":
+        default:
+          return (
+            new Date(bRecipe.created_at).getTime() -
+            new Date(aRecipe.created_at).getTime()
+          );
+      }
+    });
+  }, [filteredRecipes, showCanCookOnly, canCookSortKey, sortKey]);
+
+  const visibleRecipes = useMemo(
+    () => sortedRecipes.slice(0, itemsToShow),
+    [sortedRecipes, itemsToShow],
+  );
 
   useEffect(() => {
     if (itemsToShow < sortedRecipes.length) {
@@ -859,6 +866,12 @@ export function Recipes() {
               </Button>
             </div>
           </form>
+        </div>
+      )}
+
+      {error && (
+        <div className="p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-lg">
+          {error}
         </div>
       )}
     </div>

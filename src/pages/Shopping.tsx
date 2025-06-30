@@ -15,6 +15,7 @@ import { ShoppingListsTabs } from "../components/shopping/ShoppingListsTabs";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 import { useAuth } from "../contexts/AuthContext";
+
 import {
   clearCache,
   getFromCache,
@@ -80,6 +81,7 @@ export function Shopping() {
   const [showListForm, setShowListForm] = useState(false);
   const [showRecipeModal, setShowRecipeModal] = useState(false);
   const [editingItem, setEditingItem] = useState<ShoppingListItem | null>(null);
+  const [error, _setError] = useState<string | null>(null);
 
   const [listFormData, setListFormData] = useState({
     name: "",
@@ -572,6 +574,12 @@ export function Shopping() {
         availableRecipes={availableRecipes}
         loading={loading}
       />
+
+      {error && (
+        <div className="p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-lg">
+          {error}
+        </div>
+      )}
     </div>
   );
 }

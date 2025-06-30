@@ -8,7 +8,6 @@ import {
   Search,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
 import { LeftoverCard } from "../components/leftovers/LeftoverCard";
 import { LeftoverForm } from "../components/leftovers/LeftoverForm";
 import { Button } from "../components/ui/button";
@@ -21,6 +20,7 @@ import {
 } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { useAuth } from "../contexts/AuthContext";
+import { useNotification } from "../contexts/NotificationContext";
 import { useSettings } from "../contexts/SettingsContext";
 import { leftoverService } from "../lib/database";
 import { checkExpiringItems } from "../lib/notificationService";
@@ -35,6 +35,8 @@ export function Leftovers() {
   const [editingLeftover, setEditingLeftover] = useState<Leftover | null>(null);
   const [saving, setSaving] = useState(false);
   const { settings } = useSettings();
+  const [error, _setError] = useState<string | null>(null);
+  const { notify } = useNotification();
 
   const loadLeftovers = useCallback(async () => {
     if (!user) return;
@@ -66,15 +68,9 @@ export function Leftovers() {
       warningDays: Math.max(settings.expiration_threshold_days + 4, 7),
       notificationEnabled: settings.notification_enabled,
       onNotify: ({ item, notificationType, message }) => {
-        toast(message, {
+        notify(message, {
           description: `${item.type === "ingredient" ? "Ingredient" : "Leftover"}: ${item.name}`,
           duration: 8000,
-          className:
-            notificationType === "expired"
-              ? "bg-red-50 text-red-800 border-red-200"
-              : notificationType === "critical"
-                ? "bg-orange-50 text-orange-800 border-orange-200"
-                : "bg-yellow-50 text-yellow-800 border-yellow-200",
           icon:
             notificationType === "expired" ? (
               <AlertTriangle className="w-5 h-5 text-red-600" />
@@ -86,7 +82,7 @@ export function Leftovers() {
         });
       },
     });
-  }, [user, loading, leftovers, settings]);
+  }, [user, loading, leftovers, settings, notify]);
 
   const handleSubmit = async (
     data: Omit<Leftover, "id" | "created_at" | "updated_at">,
@@ -368,6 +364,12 @@ export function Leftovers() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {error && (
+        <div className="p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-lg">
+          {error}
         </div>
       )}
     </div>

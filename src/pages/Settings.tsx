@@ -28,7 +28,9 @@ import { Input } from "../components/ui/input";
 import { Separator } from "../components/ui/separator";
 import { useAuth } from "../contexts/AuthContext";
 import { useSettings } from "../contexts/SettingsContext";
+import { fetchWithErrorHandling } from "../lib/api";
 import { userProfileService } from "../lib/database";
+import { handleApiError, logError } from "../lib/errorUtils";
 import { supabase } from "../lib/supabase";
 import type { UserPreferences, UserProfile } from "../types";
 
