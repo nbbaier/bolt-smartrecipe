@@ -20,7 +20,7 @@ interface ExpirationGroup {
   upcoming: Ingredient[];
 }
 
-export function ExpirationMonitor({
+function ExpirationMonitorRaw({
   ingredients,
   className,
 }: ExpirationMonitorProps) {
@@ -264,3 +264,5 @@ export function ExpirationMonitor({
     </Card>
   );
 }
+
+export const ExpirationMonitor = React.memo(ExpirationMonitorRaw);

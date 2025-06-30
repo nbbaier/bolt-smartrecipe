@@ -6,7 +6,7 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
-export function Layout({ children }: LayoutProps) {
+export function LayoutRaw({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
@@ -30,10 +30,10 @@ export function Layout({ children }: LayoutProps) {
       </div>
 
       {/* Main content */}
-      <div className="flex flex-1 flex-col overflow-hidden lg:ml-0">
+      <div className="flex overflow-hidden flex-col flex-1 lg:ml-0">
         <Header onMenuClick={() => setSidebarOpen(true)} />
-        <main className="flex-1 overflow-auto">
-          <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8 lg:py-6">
+        <main className="overflow-auto flex-1">
+          <div className="px-4 py-4 mx-auto max-w-7xl sm:px-6 lg:px-8 lg:py-6">
             {children}
           </div>
         </main>
@@ -41,3 +41,5 @@ export function Layout({ children }: LayoutProps) {
     </div>
   );
 }
+
+export const Layout = React.memo(LayoutRaw);

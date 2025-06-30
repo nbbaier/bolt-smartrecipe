@@ -21,6 +21,22 @@ export type RecipeMatchResult = {
   missing_ingredients: string[];
 };
 
+// In-memory cache utility
+const _cache: Record<string, unknown> = {};
+export function getFromCache<T>(key: string): T | undefined {
+  return _cache[key] as T | undefined;
+}
+export function setToCache<T>(key: string, value: T): void {
+  _cache[key] = value;
+}
+export function clearCache(key?: string): void {
+  if (key) {
+    delete _cache[key];
+  } else {
+    Object.keys(_cache).forEach((k) => delete _cache[k]);
+  }
+}
+
 // Ingredient operations
 export const ingredientService = {
   async getAll(userId: string): Promise<Ingredient[]> {

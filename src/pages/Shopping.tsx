@@ -1,5 +1,7 @@
+import debounce from "lodash.debounce";
+import throttle from "lodash.throttle";
 import { ListPlus, Plus, ShoppingCart } from "lucide-react";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { AddEditItemForm } from "../components/shopping/AddEditItemForm";
@@ -14,8 +16,11 @@ import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 import { useAuth } from "../contexts/AuthContext";
 import {
+  clearCache,
+  getFromCache,
   ingredientService,
   recipeService,
+  setToCache,
   shoppingListService,
 } from "../lib/database";
 import { supabase } from "../lib/supabase";
@@ -89,31 +94,43 @@ export function Shopping() {
     notes: "",
   });
 
-  const loadData = useCallback(async () => {
-    if (!user) return;
+  const debouncedSetSearchTerm = useRef(
+    debounce((value: string) => setSearchTerm(value), 300),
+  ).current;
 
-    try {
+  const loadData = useCallback(
+    throttle(async () => {
+      if (!user) return;
       setLoading(true);
-      const [lists, ingredients, recipes] = await Promise.all([
-        shoppingListService.getAllLists(user.id),
-        ingredientService.getAll(user.id),
-        recipeService.getAll(),
-      ]);
-
-      setShoppingLists(lists);
-      setUserIngredients(ingredients);
-      setAvailableRecipes(recipes);
-
-      // Select first list if available
-      if (lists.length > 0 && !selectedList) {
-        setSelectedList(lists[0]);
+      try {
+        // Caching for shopping lists
+        let lists = getFromCache<ShoppingList[]>(`shoppingLists_${user.id}`);
+        if (!lists) {
+          lists = await shoppingListService.getAllLists(user.id);
+          setToCache(`shoppingLists_${user.id}`, lists);
+        }
+        setShoppingLists(lists);
+        // Caching for ingredients
+        let ingredients = getFromCache<Ingredient[]>(`ingredients_${user.id}`);
+        if (!ingredients) {
+          ingredients = await ingredientService.getAll(user.id);
+          setToCache(`ingredients_${user.id}`, ingredients);
+        }
+        setUserIngredients(ingredients);
+        // Caching for recipes
+        let recipes = getFromCache<Recipe[]>(`recipes_all`);
+        if (!recipes) {
+          recipes = await recipeService.getAll();
+          setToCache(`recipes_all`, recipes);
+        }
+        setAvailableRecipes(recipes);
+        // No caching for list items (list-specific, often changing)
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Error loading shopping data:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [user, selectedList]);
+    }, 1000),
+    [],
+  );
 
   const loadListItems = useCallback(async () => {
     if (!selectedList) return;
@@ -187,14 +204,13 @@ export function Shopping() {
   const createList = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-
     try {
       const newList = await shoppingListService.createList({
         user_id: user.id,
         name: listFormData.name,
         description: listFormData.description,
       });
-
+      clearCache(`shoppingLists_${user.id}`);
       setShoppingLists([newList, ...shoppingLists]);
       setSelectedList(newList);
       resetListForm();
@@ -448,7 +464,7 @@ export function Shopping() {
           {/* Search and Filter */}
           <SearchAndFilterBar
             searchTerm={searchTerm}
-            onSearchChange={(e) => setSearchTerm(e.target.value)}
+            onSearchChange={(e) => debouncedSetSearchTerm(e.target.value)}
             selectedCategory={selectedCategory}
             onCategoryChange={(e) => setSelectedCategory(e.target.value)}
             categories={CATEGORIES}
@@ -510,6 +526,21 @@ export function Shopping() {
               onDelete={deleteItem}
               onTogglePurchased={togglePurchased}
             />
+          )}
+
+          {filteredItems.length < listItems.length && (
+            <div className="flex justify-center mt-6">
+              <Button
+                onClick={throttle(
+                  () =>
+                    setListItems(listItems.slice(0, filteredItems.length + 12)),
+                  500,
+                )}
+                disabled={loading}
+              >
+                Load More
+              </Button>
+            </div>
           )}
         </>
       ) : (

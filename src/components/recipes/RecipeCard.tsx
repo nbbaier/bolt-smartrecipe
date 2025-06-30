@@ -9,7 +9,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "../ui/Card";
+} from "../ui/card";
 
 interface RecipeCardProps {
   recipe: Recipe | RecipeMatchResult;
@@ -35,6 +35,10 @@ function getDifficultyColor(difficulty: string | undefined) {
       return "bg-gray-100 text-gray-800 border-gray-200";
   }
 }
+
+const prefetchRecipeDetailModal = () => {
+  import("../recipes/RecipeDetailModal");
+};
 
 export const RecipeCard: React.FC<RecipeCardProps> = ({
   recipe,
@@ -63,6 +67,8 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
     <Card
       className="overflow-hidden transition-all duration-200 cursor-pointer group hover:shadow-lg"
       onClick={onClick}
+      onMouseEnter={prefetchRecipeDetailModal}
+      onFocus={prefetchRecipeDetailModal}
     >
       <div className="relative">
         <img

@@ -25,7 +25,7 @@ const CATEGORIES = [
   "Other",
 ];
 
-export function SmartCategorySelector({
+export function SmartCategorySelectorRaw({
   ingredientName,
   currentCategory,
   onCategoryChange,
@@ -194,3 +194,5 @@ export function SmartCategorySelector({
     </div>
   );
 }
+
+export const SmartCategorySelector = React.memo(SmartCategorySelectorRaw);

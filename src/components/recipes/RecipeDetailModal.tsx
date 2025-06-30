@@ -16,9 +16,9 @@ import type {
   RecipeInstruction,
   ShoppingList,
 } from "../../types";
-import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
-import { Card, CardContent, CardHeader } from "../ui/Card";
+import { Button } from "../ui/button";
+import { Card, CardContent, CardHeader } from "../ui/card";
 import { ScrollArea } from "../ui/scroll-area";
 
 interface RecipeDetailModalProps {
@@ -45,7 +45,7 @@ interface RecipeDetailModalProps {
   getMissingIngredients: () => RecipeIngredient[];
 }
 
-export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
+const RecipeDetailModalRaw: React.FC<RecipeDetailModalProps> = ({
   open,
   recipe,
   ingredients,
@@ -288,3 +288,5 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
     </div>
   );
 };
+
+export const RecipeDetailModal = React.memo(RecipeDetailModalRaw);

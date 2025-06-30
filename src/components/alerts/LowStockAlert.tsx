@@ -13,7 +13,7 @@ interface LowStockAlertProps {
   className?: string;
 }
 
-export function LowStockAlert({
+function LowStockAlertRaw({
   ingredients,
   onViewPantry,
   className,
@@ -117,3 +117,5 @@ export function LowStockAlert({
     </Card>
   );
 }
+
+export const LowStockAlert = React.memo(LowStockAlertRaw);

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { Plus, Wand2, X } from "lucide-react";
+import React, { useState } from "react";
 import { Button } from "../ui/button";
 import {
   Card,
@@ -6,8 +7,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "../ui/Card";
-import { Plus, Wand2, X } from "lucide-react";
+} from "../ui/card";
 
 const CATEGORIES = [
   "Vegetables",
@@ -45,7 +45,7 @@ interface NaturalLanguagePantryInputProps {
   disabled?: boolean;
 }
 
-export function NaturalLanguagePantryInput({
+function NaturalLanguagePantryInputRaw({
   onAddIngredients,
   disabled,
 }: NaturalLanguagePantryInputProps) {
@@ -312,3 +312,7 @@ export function NaturalLanguagePantryInput({
     </div>
   );
 }
+
+export const NaturalLanguagePantryInput = React.memo(
+  NaturalLanguagePantryInputRaw,
+);

@@ -1,7 +1,7 @@
 import React from "react";
 import type { Recipe } from "../../types";
 import { Button } from "../ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
 interface AddFromRecipeModalProps {
   visible: boolean;
@@ -10,6 +10,10 @@ interface AddFromRecipeModalProps {
   availableRecipes: Recipe[];
   loading: boolean;
 }
+
+const prefetchRecipeDetailModal = () => {
+  import("../recipes/RecipeDetailModal");
+};
 
 export const AddFromRecipeModal: React.FC<AddFromRecipeModalProps> = ({
   visible,
@@ -43,6 +47,8 @@ export const AddFromRecipeModal: React.FC<AddFromRecipeModalProps> = ({
                 <Button
                   key={recipe.id}
                   onClick={() => onAddFromRecipe(recipe.id)}
+                  onMouseEnter={prefetchRecipeDetailModal}
+                  onFocus={prefetchRecipeDetailModal}
                   className="justify-start w-full"
                 >
                   {recipe.title}

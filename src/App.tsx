@@ -1,4 +1,4 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import {
   Navigate,
   Route,
@@ -12,13 +12,29 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { PantryProvider } from "./contexts/PantryContext";
 import { RecipeProvider } from "./contexts/RecipeContext";
 import { SettingsProvider } from "./contexts/SettingsContext";
-import { Assistant } from "./pages/Assistant";
-import { Dashboard } from "./pages/Dashboard";
-import { Leftovers } from "./pages/Leftovers";
-import { Pantry } from "./pages/Pantry";
-import { Recipes } from "./pages/Recipes";
-import { Settings } from "./pages/Settings";
-import { Shopping } from "./pages/Shopping";
+
+// Add lazy imports for pages with correct default export
+const Assistant = lazy(() =>
+  import("./pages/Assistant").then((m) => ({ default: m.Assistant })),
+);
+const Dashboard = lazy(() =>
+  import("./pages/Dashboard").then((m) => ({ default: m.Dashboard })),
+);
+const Leftovers = lazy(() =>
+  import("./pages/Leftovers").then((m) => ({ default: m.Leftovers })),
+);
+const Pantry = lazy(() =>
+  import("./pages/Pantry").then((m) => ({ default: m.Pantry })),
+);
+const Recipes = lazy(() =>
+  import("./pages/Recipes").then((m) => ({ default: m.Recipes })),
+);
+const Settings = lazy(() =>
+  import("./pages/Settings").then((m) => ({ default: m.Settings })),
+);
+const Shopping = lazy(() =>
+  import("./pages/Shopping").then((m) => ({ default: m.Shopping })),
+);
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, isSupabaseConnected } = useAuth();
@@ -51,6 +67,16 @@ function AppRoutes() {
           <ProtectedRoute>
             <Layout>
               <Dashboard />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/assistant"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Assistant />
             </Layout>
           </ProtectedRoute>
         }
@@ -96,16 +122,6 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/assistant"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Assistant />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path="/settings"
         element={
           <ProtectedRoute>
@@ -129,7 +145,18 @@ function App() {
             <RecipeProvider>
               <Router>
                 <Toaster position="top-right" richColors />
-                <AppRoutes />
+                <Suspense
+                  fallback={
+                    <div className="flex justify-center items-center min-h-screen bg-background">
+                      <div className="text-center">
+                        <div className="mx-auto w-8 h-8 rounded-full border-b-2 animate-spin border-primary"></div>
+                        <p className="mt-2 text-muted-foreground">Loading...</p>
+                      </div>
+                    </div>
+                  }
+                >
+                  <AppRoutes />
+                </Suspense>
               </Router>
             </RecipeProvider>
           </PantryProvider>

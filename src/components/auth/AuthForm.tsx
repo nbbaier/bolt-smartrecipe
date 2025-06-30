@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertCircle, ChefHat, Sparkles } from "lucide-react";
-import { useState } from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useAuth } from "../../contexts/AuthContext";
@@ -31,18 +31,13 @@ const signUpSchema = signInSchema
 
 type SignUpFormData = z.infer<typeof signUpSchema>;
 
-export function AuthForm() {
+function AuthFormRaw() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { signIn, signUp, isSupabaseConnected } = useAuth();
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-  } = useForm<SignUpFormData>({
+  const { register, handleSubmit, reset } = useForm<SignUpFormData>({
     resolver: zodResolver(isSignUp ? signUpSchema : signInSchema),
   });
 
@@ -133,33 +128,40 @@ export function AuthForm() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {isSignUp && (
               <Input
-                label="Full Name"
+                disabled={loading}
                 {...register("fullName")}
-                error={errors.fullName?.message}
-                disabled={loading || !isSupabaseConnected}
+                name="fullName"
+                min={2}
+                label="Full Name"
               />
             )}
             <Input
-              label="Email"
+              disabled={loading}
+              onChange={register("email").onChange}
+              onBlur={register("email").onBlur}
+              ref={register("email").ref}
+              name="email"
               type="email"
-              {...register("email")}
-              error={errors.email?.message}
-              disabled={loading || !isSupabaseConnected}
+              label="Email"
             />
             <Input
-              label="Password"
+              disabled={loading}
+              onChange={register("password").onChange}
+              onBlur={register("password").onBlur}
+              ref={register("password").ref}
+              name="password"
               type="password"
-              {...register("password")}
-              error={errors.password?.message}
-              disabled={loading || !isSupabaseConnected}
+              label="Password"
             />
             {isSignUp && (
               <Input
-                label="Confirm Password"
+                disabled={loading}
+                onChange={register("confirmPassword").onChange}
+                onBlur={register("confirmPassword").onBlur}
+                ref={register("confirmPassword").ref}
+                name="confirmPassword"
                 type="password"
-                {...register("confirmPassword")}
-                error={errors.confirmPassword?.message}
-                disabled={loading || !isSupabaseConnected}
+                label="Confirm Password"
               />
             )}
 
@@ -203,3 +205,5 @@ export function AuthForm() {
     </div>
   );
 }
+
+export const AuthForm = React.memo(AuthFormRaw);

@@ -6,9 +6,10 @@ import {
   Edit3,
   Trash2,
 } from "lucide-react";
+import React from "react";
 import type { Leftover } from "../../types";
 import { Badge } from "../ui/badge";
-import { Card, CardContent } from "../ui/Card";
+import { Card, CardContent } from "../ui/card";
 
 interface LeftoverCardProps {
   leftover: Leftover;
@@ -17,7 +18,7 @@ interface LeftoverCardProps {
   className?: string;
 }
 
-export function LeftoverCard({
+function LeftoverCardRaw({
   leftover,
   onEdit,
   onDelete,
@@ -73,8 +74,7 @@ export function LeftoverCard({
           ? "bg-red-50 border-red-200"
           : isExpiringSoon()
             ? "bg-orange-50 border-orange-200"
-            : ""
-      } ${className}`}
+            : ""} ${className}`}
     >
       <CardContent className="p-3 sm:p-4">
         <div className="flex justify-between items-start mb-2">
@@ -151,3 +151,5 @@ export function LeftoverCard({
     </Card>
   );
 }
+
+export const LeftoverCard = React.memo(LeftoverCardRaw);

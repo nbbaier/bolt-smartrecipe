@@ -1,4 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import debounce from "lodash.debounce";
+import throttle from "lodash.throttle";
 import {
   AlertTriangle,
   Calendar,
@@ -12,7 +14,7 @@ import {
   Wand2,
   X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -32,6 +34,12 @@ import { useAuth } from "../contexts/AuthContext";
 import { usePantry } from "../contexts/PantryContext";
 import { useSettings } from "../contexts/SettingsContext";
 import { useIngredientHistory } from "../hooks/useIngredientHistory";
+import {
+  clearCache,
+  getFromCache,
+  ingredientService,
+  setToCache,
+} from "../lib/database";
 import { checkExpiringItems } from "../lib/notificationService";
 import type { Ingredient } from "../types";
 
@@ -130,6 +138,9 @@ export function Pantry() {
     });
   const { settings } = useSettings();
   const defaultInventoryThreshold = settings?.inventory_threshold ?? 1;
+  const debouncedSetSearchTerm = useRef(
+    debounce((value: string) => setSearchTerm(value), 300),
+  ).current;
 
   // Notification integration
   useEffect(() => {
@@ -163,6 +174,19 @@ export function Pantry() {
     });
   }, [user, loading, ingredients, settings]);
 
+  // Replace ingredient fetch with caching and throttling
+  useEffect(() => {
+    const fetchIngredients = throttle(async () => {
+      if (!user) return;
+      let cached = getFromCache<Ingredient[]>(`ingredients_${user.id}`);
+      if (!cached) {
+        cached = await ingredientService.getAll(user.id);
+        setToCache(`ingredients_${user.id}`, cached);
+      }
+    }, 1000);
+    fetchIngredients();
+  }, [user]);
+
   const onSubmit = async (data: IngredientFormData) => {
     if (!user) return;
     try {
@@ -176,6 +200,7 @@ export function Pantry() {
       } else {
         await addIngredient(ingredientData);
       }
+      clearCache(`ingredients_${user.id}`);
       reset();
       setShowAddForm(false);
       setEditingIngredient(null);
@@ -473,7 +498,7 @@ export function Pantry() {
           <Input
             placeholder="Search ingredients..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => debouncedSetSearchTerm(e.target.value)}
             className="pl-10 text-sm sm:text-base"
           />
         </div>
@@ -934,11 +959,11 @@ export function Pantry() {
       )}
 
       {/* Load More Button */}
-      {paginatedIngredients.length < filteredIngredients.length && (
-        <div className="flex justify-center mt-4">
+      {itemsToShow < filteredIngredients.length && (
+        <div className="flex justify-center mt-6">
           <Button
-            onClick={() => setItemsToShow(itemsToShow + 12)}
-            className="text-sm sm:text-base"
+            onClick={throttle(() => setItemsToShow(itemsToShow + 12), 500)}
+            disabled={loading}
           >
             Load More
           </Button>

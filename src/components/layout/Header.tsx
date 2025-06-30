@@ -1,4 +1,5 @@
 import { ChefHat, LogOut, Menu, Sparkles } from "lucide-react";
+import React from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { Button } from "../ui/button";
 
@@ -6,7 +7,7 @@ interface HeaderProps {
   onMenuClick: () => void;
 }
 
-export function Header({ onMenuClick }: HeaderProps) {
+export function HeaderRaw({ onMenuClick }: HeaderProps) {
   const { user, signOut } = useAuth();
 
   return (
@@ -81,3 +82,5 @@ export function Header({ onMenuClick }: HeaderProps) {
     </header>
   );
 }
+
+export const Header = React.memo(HeaderRaw);

@@ -1,5 +1,7 @@
+import debounce from "lodash.debounce";
+import throttle from "lodash.throttle";
 import { BookOpen, Plus, Sparkles, Utensils, X } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { RecipeDetailModal } from "../components/recipes/RecipeDetailModal";
 import { RecipeFilters } from "../components/recipes/RecipeFilters";
@@ -17,9 +19,12 @@ import { useAuth } from "../contexts/AuthContext";
 import { useRecipe } from "../contexts/RecipeContext";
 import type { RecipeMatchResult } from "../lib/database";
 import {
+  clearCache,
+  getFromCache,
   ingredientService,
   leftoverService,
   recipeService,
+  setToCache,
   shoppingListService,
 } from "../lib/database";
 import type { Ingredient, Recipe, ShoppingList } from "../types";
@@ -81,30 +86,52 @@ export function Recipes() {
     | "difficulty_desc"
   >("match");
 
-  const loadData = useCallback(async () => {
-    if (!user) return;
+  const debouncedSetSearchTerm = useRef(
+    debounce((value: string) => setSearchTerm(value), 300),
+  ).current;
 
-    try {
-      const [ingredientsData, shoppingListsData] = await Promise.all([
-        ingredientService.getAll(user.id),
-        shoppingListService.getAllLists(user.id),
-      ]);
-
-      setUserIngredients(ingredientsData);
-      setUserShoppingLists(shoppingListsData);
-
-      // Fetch can cook matches with server-side filtering and pagination
-      const matches = await recipeService.getRecipeMatchesForPantry(user.id, {
-        minMatchPercentage: minMatch,
-        maxMissingIngredients: maxMissing,
-        limit: itemsToShow,
-        offset: 0,
-      });
-      setCanCookMatches(matches);
-    } catch (error) {
-      console.error("Error loading data:", error);
-    }
-  }, [user, minMatch, maxMissing, itemsToShow]);
+  const loadData = useCallback(
+    throttle(async () => {
+      if (!user) return;
+      try {
+        // Caching for ingredients
+        let ingredientsData = getFromCache<Ingredient[]>(
+          `ingredients_${user.id}`,
+        );
+        if (!ingredientsData) {
+          ingredientsData = await ingredientService.getAll(user.id);
+          setToCache(`ingredients_${user.id}`, ingredientsData);
+        }
+        setUserIngredients(ingredientsData);
+        // Caching for shopping lists
+        let shoppingListsData = getFromCache<ShoppingList[]>(
+          `shoppingLists_${user.id}`,
+        );
+        if (!shoppingListsData) {
+          shoppingListsData = await shoppingListService.getAllLists(user.id);
+          setToCache(`shoppingLists_${user.id}`, shoppingListsData);
+        }
+        setUserShoppingLists(shoppingListsData);
+        // Caching for canCookMatches (pagination-aware)
+        const cacheKey = `canCookMatches_${user.id}_${minMatch}_${maxMissing}_${itemsToShow}`;
+        let matches = getFromCache<RecipeMatchResult[]>(cacheKey);
+        if (!matches) {
+          matches = await recipeService.getRecipeMatchesForPantry(user.id, {
+            minMatchPercentage: minMatch,
+            maxMissingIngredients: maxMissing,
+            limit: itemsToShow,
+            offset: 0,
+          });
+          setToCache(cacheKey, matches);
+        }
+        setCanCookMatches(matches);
+      } catch (error) {
+        toast.error("Failed to load recipes or lists. Please try again.");
+        console.error("Error loading data:", error);
+      }
+    }, 1000),
+    [],
+  );
 
   useEffect(() => {
     loadData();
@@ -221,6 +248,10 @@ export function Recipes() {
     } else {
       await addRecipe(formState);
     }
+    clearCache(`recipes_${user?.id}`);
+    clearCache(
+      `canCookMatches_${user?.id}_${minMatch}_${maxMissing}_${itemsToShow}`,
+    );
     setShowRecipeForm(false);
     setEditingRecipe(null);
   };
@@ -312,6 +343,29 @@ export function Recipes() {
 
   const visibleRecipes = sortedRecipes.slice(0, itemsToShow);
 
+  useEffect(() => {
+    if (itemsToShow < sortedRecipes.length) {
+      // Progressive loading: load more recipes after idle or short delay
+      let handle: number;
+      let usedIdleCallback = false;
+      if (window.requestIdleCallback) {
+        handle = window.requestIdleCallback(() =>
+          setItemsToShow(itemsToShow + 12),
+        );
+        usedIdleCallback = true;
+      } else {
+        handle = window.setTimeout(() => setItemsToShow(itemsToShow + 12), 500);
+      }
+      return () => {
+        if (usedIdleCallback && window.cancelIdleCallback) {
+          window.cancelIdleCallback(handle);
+        } else {
+          clearTimeout(handle);
+        }
+      };
+    }
+  }, [itemsToShow, sortedRecipes.length]);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -345,7 +399,7 @@ export function Recipes() {
       {/* Search and Filter */}
       <RecipeFilters
         searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
+        onSearchChange={debouncedSetSearchTerm}
         selectedDifficulty={selectedDifficulty}
         onDifficultyChange={setSelectedDifficulty}
         showCanCookOnly={showCanCookOnly}
@@ -473,7 +527,10 @@ export function Recipes() {
 
       {itemsToShow < sortedRecipes.length && (
         <div className="flex justify-center mt-6">
-          <Button onClick={() => setItemsToShow(itemsToShow + 12)}>
+          <Button
+            onClick={throttle(() => setItemsToShow(itemsToShow + 12), 500)}
+            disabled={loading}
+          >
             Load More
           </Button>
         </div>
