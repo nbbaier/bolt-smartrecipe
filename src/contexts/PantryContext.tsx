@@ -32,6 +32,7 @@ export const PantryProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState(true);
 
   const loadIngredients = useCallback(async () => {
+    console.log("loadIngredients called");
     if (!user) return;
     try {
       setLoading(true);

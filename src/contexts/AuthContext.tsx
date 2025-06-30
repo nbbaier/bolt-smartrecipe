@@ -16,6 +16,9 @@ interface AuthContextType {
     password: string,
   ) => Promise<{ error: import("@supabase/supabase-js").AuthError | null }>;
   signOut: () => Promise<void>;
+  resetPassword: (
+    email: string,
+  ) => Promise<{ error: import("@supabase/supabase-js").AuthError | null }>;
   isSupabaseConnected: boolean;
 }
 
@@ -29,15 +32,25 @@ export function useAuth() {
   return context;
 }
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({
+  children,
+  isSupabaseConnectedOverride,
+}: {
+  children: React.ReactNode;
+  isSupabaseConnectedOverride?: boolean;
+}) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Check if Supabase is properly configured
-  const isSupabaseConnected = !!(
-    import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY
-  );
+  // Allow override for testability
+  const isSupabaseConnected =
+    typeof isSupabaseConnectedOverride === "boolean"
+      ? isSupabaseConnectedOverride
+      : !!(
+          import.meta.env.VITE_SUPABASE_URL &&
+          import.meta.env.VITE_SUPABASE_ANON_KEY
+        );
 
   useEffect(() => {
     let mounted = true;
@@ -84,6 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         },
       );
+      // @ts-expect-error: test mock may not match Supabase Subscription type
       subscription = authSubscription;
     } catch (error) {
       console.warn("Auth state change listener error:", error);
@@ -95,6 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       mounted = false;
       if (subscription) {
+        // @ts-expect-error: test mock may not match Supabase Subscription type
         subscription.unsubscribe();
       }
     };
@@ -105,7 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return {
         error: {
           message: "Please connect to Supabase to create an account",
-        },
+        } as import("@supabase/supabase-js").AuthError,
       };
     }
 
@@ -119,15 +134,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           },
         },
       });
-      return { error };
+      return {
+        error: error as import("@supabase/supabase-js").AuthError | null,
+      };
     } catch (error) {
-      return { error };
+      return { error: error as import("@supabase/supabase-js").AuthError };
     }
   };
 
   const signIn = async (email: string, password: string) => {
     if (!isSupabaseConnected) {
-      return { error: { message: "Please connect to Supabase to sign in" } };
+      return {
+        error: {
+          message: "Please connect to Supabase to sign in",
+        } as import("@supabase/supabase-js").AuthError,
+      };
     }
 
     try {
@@ -135,9 +156,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email,
         password,
       });
-      return { error };
+      return {
+        error: error as import("@supabase/supabase-js").AuthError | null,
+      };
     } catch (error) {
-      return { error };
+      return { error: error as import("@supabase/supabase-js").AuthError };
     }
   };
 
@@ -151,6 +174,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const resetPassword = async (email: string) => {
+    if (!isSupabaseConnected) {
+      return {
+        error: {
+          message: "Please connect to Supabase to reset password",
+        } as import("@supabase/supabase-js").AuthError,
+      };
+    }
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      return {
+        error: error as import("@supabase/supabase-js").AuthError | null,
+      };
+    } catch (error) {
+      return { error: error as import("@supabase/supabase-js").AuthError };
+    }
+  };
+
   const value = {
     user,
     session,
@@ -158,6 +199,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signUp,
     signIn,
     signOut,
+    resetPassword,
     isSupabaseConnected,
   };
 

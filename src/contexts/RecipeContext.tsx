@@ -3,6 +3,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
 } from "react";
 import { bookmarkService, recipeService } from "../lib/database";
@@ -32,6 +33,7 @@ const RecipeContext = createContext<RecipeContextType | undefined>(undefined);
 export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  console.log("RecipeProvider rendered");
   const { user } = useAuth();
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [bookmarkedRecipes, setBookmarkedRecipes] = useState<string[]>([]);
@@ -45,6 +47,7 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({
   >([]);
 
   const loadRecipes = useCallback(async () => {
+    console.log("loadRecipes called, user:", user);
     setLoading(true);
     try {
       const data = await recipeService.getAll();
@@ -81,6 +84,12 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const toggleBookmark = useCallback(
     async (recipeId: string) => {
+      console.log(
+        "toggleBookmark in provider called, user:",
+        user,
+        "recipeId:",
+        recipeId,
+      );
       if (!user) return;
       try {
         if (bookmarkedRecipes.includes(recipeId)) {
@@ -140,27 +149,44 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   useEffect(() => {
+    console.log("useEffect for loadRecipes, user:", user);
     loadRecipes();
-  }, [loadRecipes]);
+  }, [loadRecipes, user]);
+
+  const contextValue = useMemo(
+    () => ({
+      recipes,
+      loading,
+      bookmarkedRecipes,
+      selectedRecipe,
+      recipeIngredients,
+      recipeInstructions,
+      loadRecipes,
+      loadRecipeDetails,
+      toggleBookmark,
+      setSelectedRecipe,
+      addRecipe,
+      updateRecipe,
+      deleteRecipe,
+    }),
+    [
+      recipes,
+      loading,
+      bookmarkedRecipes,
+      selectedRecipe,
+      recipeIngredients,
+      recipeInstructions,
+      loadRecipes,
+      loadRecipeDetails,
+      toggleBookmark,
+      addRecipe,
+      updateRecipe,
+      deleteRecipe,
+    ],
+  );
 
   return (
-    <RecipeContext.Provider
-      value={{
-        recipes,
-        loading,
-        bookmarkedRecipes,
-        selectedRecipe,
-        recipeIngredients,
-        recipeInstructions,
-        loadRecipes,
-        loadRecipeDetails,
-        toggleBookmark,
-        setSelectedRecipe,
-        addRecipe,
-        updateRecipe,
-        deleteRecipe,
-      }}
-    >
+    <RecipeContext.Provider value={contextValue}>
       {children}
     </RecipeContext.Provider>
   );
