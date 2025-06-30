@@ -1,7 +1,7 @@
 import React from "react";
 import type { ShoppingListItem } from "../../types";
 import { Button } from "../ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
 import { useId } from "react";
 
