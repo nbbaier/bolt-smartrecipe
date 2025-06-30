@@ -203,6 +203,24 @@ export function Shopping() {
     };
   }, [selectedList, loadListItems]);
 
+  // Restore last selected list from localStorage on mount
+  useEffect(() => {
+    const lastListId = localStorage.getItem("lastSelectedShoppingListId");
+    if (lastListId && shoppingLists.length > 0) {
+      const found = shoppingLists.find((l) => l.id === lastListId);
+      if (found) setSelectedList(found);
+    } else if (shoppingLists.length === 1) {
+      setSelectedList(shoppingLists[0]);
+    }
+  }, [shoppingLists]);
+
+  // Save selected list id to localStorage
+  useEffect(() => {
+    if (selectedList) {
+      localStorage.setItem("lastSelectedShoppingListId", selectedList.id);
+    }
+  }, [selectedList]);
+
   const createList = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -459,7 +477,10 @@ export function Shopping() {
             selectedList={selectedList}
             totalCount={totalCount}
             purchasedCount={purchasedCount}
-            onAddFromRecipe={() => setShowRecipeModal(true)}
+            onAddFromRecipe={() => {
+              console.log("Add from Recipe button clicked, opening modal");
+              setShowRecipeModal(true);
+            }}
             onAddItem={() => setShowAddForm(true)}
           />
 

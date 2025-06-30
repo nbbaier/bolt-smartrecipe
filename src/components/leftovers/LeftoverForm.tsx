@@ -59,6 +59,19 @@ export function LeftoverForm({
     loadRecipes();
   }, [loadRecipes]);
 
+  useEffect(() => {
+    if (!showRecipeSelector) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setShowRecipeSelector(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showRecipeSelector]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -131,7 +144,7 @@ export function LeftoverForm({
 
         {/* Recipe Selector Modal */}
         {showRecipeSelector && (
-          <div className="flex fixed inset-0 z-50 justify-center items-center p-4 bg-black/50">
+          <div className="flex fixed inset-0 z-50 justify-center items-center p-4">
             <div className="bg-white rounded-lg max-w-md w-full max-h-[70vh] overflow-hidden">
               <div className="flex justify-between items-center p-4 border-b">
                 <h3 className="text-lg font-semibold">Select Recipe</h3>

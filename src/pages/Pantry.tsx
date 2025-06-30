@@ -570,54 +570,61 @@ export function Pantry() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="sm:col-span-2">
-                  <div>
-                    <label className="block mb-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                      Ingredient Name
-                    </label>
-                    <Controller
-                      name="name"
-                      control={control}
-                      render={({ field }) => (
-                        <AutocompleteInput
-                          value={field.value}
-                          onChange={(value) => field.onChange(value)}
-                          onSelect={(suggestion) => {
-                            field.onChange(suggestion.name);
-                            setValue(
-                              "category",
-                              suggestion.category || field.value,
-                            );
-                          }}
-                          userHistory={getAllIngredientNames()}
-                          placeholder="Start typing ingredient name..."
-                        />
-                      )}
-                    />
-                  </div>
+              {/* Main fields grid */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {/* Ingredient Name - full width */}
+                <div className="flex flex-col col-span-1 sm:col-span-2 lg:col-span-4">
+                  <label className="mb-1 text-sm font-medium">
+                    Ingredient Name
+                  </label>
+                  <Controller
+                    name="name"
+                    control={control}
+                    render={({ field }) => (
+                      <AutocompleteInput
+                        value={field.value}
+                        onChange={(value) => field.onChange(value)}
+                        onSelect={(suggestion) => {
+                          field.onChange(suggestion.name);
+                          setValue(
+                            "category",
+                            suggestion.category || field.value,
+                          );
+                        }}
+                        userHistory={getAllIngredientNames()}
+                        placeholder="Start typing ingredient name..."
+                      />
+                    )}
+                  />
                 </div>
-                <div className="flex space-x-2">
-                  <div className="flex-1">
-                    <Input type="number" step="0.1" {...register("quantity")} />
-                  </div>
-                  <div className="w-20 sm:w-24">
-                    <label className="block mb-1 text-sm font-medium text-secondary-700">
-                      Unit
-                    </label>
-                    <select
-                      {...register("unit")}
-                      className="px-2 w-full h-10 text-sm rounded-lg border border-secondary-300 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                    >
-                      {UNITS.map((unit) => (
-                        <option key={unit} value={unit}>
-                          {unit}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                {/* Quantity */}
+                <div className="flex flex-col col-span-1">
+                  <label className="mb-1 text-sm font-medium">Quantity</label>
+                  <Input type="number" step="0.1" {...register("quantity")} />
                 </div>
-                <div>
+                {/* Unit */}
+                <div className="flex flex-col col-span-1">
+                  <label className="mb-1 text-sm font-medium">Unit</label>
+                  <select
+                    {...register("unit")}
+                    className="px-2 w-full h-10 text-sm rounded-lg border border-secondary-300 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                  >
+                    {UNITS.map((unit) => (
+                      <option key={unit} value={unit}>
+                        {unit}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {/* Expiration Date */}
+                <div className="flex flex-col col-span-1">
+                  <label className="mb-1 text-sm font-medium">
+                    Expiration Date
+                  </label>
+                  <Input type="date" {...register("expiration_date")} />
+                </div>
+                {/* Category - always its own row, but next to Expiration Date on sm+ */}
+                <div className="flex overflow-x-auto flex-col col-span-1 min-w-0">
                   <Controller
                     name="category"
                     control={control}
@@ -636,8 +643,13 @@ export function Pantry() {
                     )}
                   />
                 </div>
-                <Input type="date" {...register("expiration_date")} />
-                <div className="sm:col-span-2">
+              </div>
+              {/* Threshold and Notes */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-12">
+                <div className="flex flex-col sm:col-span-6">
+                  <label className="mb-1 text-sm font-medium">
+                    Low Stock Threshold
+                  </label>
                   <Input
                     type="number"
                     step="0.1"
@@ -649,12 +661,16 @@ export function Pantry() {
                     default.
                   </p>
                 </div>
+                <div className="flex flex-col sm:col-span-6">
+                  <label className="mb-1 text-sm font-medium">Notes</label>
+                  <Input
+                    {...register("notes")}
+                    placeholder="Any additional notes..."
+                  />
+                </div>
               </div>
-              <Input
-                {...register("notes")}
-                placeholder="Any additional notes..."
-              />
-              <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
+              {/* Buttons */}
+              <div className="flex flex-col justify-end space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
                 <Button type="submit" className="text-sm sm:text-base">
                   {editingIngredient ? "Update Ingredient" : "Add Ingredient"}
                 </Button>

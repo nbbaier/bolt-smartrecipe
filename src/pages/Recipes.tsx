@@ -1,7 +1,13 @@
 import debounce from "lodash.debounce";
 import throttle from "lodash.throttle";
 import { BookOpen, Plus, Sparkles, Utensils, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { toast } from "sonner";
 import { RecipeDetailModal } from "../components/recipes/RecipeDetailModal";
 import { RecipeFilters } from "../components/recipes/RecipeFilters";
@@ -43,6 +49,7 @@ export function Recipes() {
     setSelectedRecipe,
     addRecipe,
     updateRecipe,
+    deleteRecipe,
   } = useRecipe();
   const [userIngredients, setUserIngredients] = useState<Ingredient[]>([]);
   const [userShoppingLists, setUserShoppingLists] = useState<ShoppingList[]>(
@@ -61,9 +68,17 @@ export function Recipes() {
   const [itemsToShow, setItemsToShow] = useState(12);
   const [showRecipeForm, setShowRecipeForm] = useState(false);
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
-  const [formState, setFormState] = useState<
-    Omit<Recipe, "id" | "created_at" | "updated_at">
-  >({
+  const [formState, setFormState] = useState<{
+    user_id: string;
+    title: string;
+    description: string;
+    image_url: string;
+    prep_time: number;
+    cook_time: number;
+    servings: number;
+    difficulty: "Easy" | "Medium" | "Hard";
+    cuisine_type?: string;
+  }>({
     user_id: user?.id || "",
     title: "",
     description: "",
@@ -192,9 +207,15 @@ export function Recipes() {
     async (e: React.FormEvent) => {
       e.preventDefault();
       if (editingRecipe) {
-        await updateRecipe(editingRecipe.id, formState);
+        await updateRecipe(editingRecipe.id, {
+          ...formState,
+          difficulty: formState.difficulty as "Easy" | "Medium" | "Hard",
+        });
       } else {
-        await addRecipe(formState);
+        await addRecipe({
+          ...formState,
+          difficulty: formState.difficulty as "Easy" | "Medium" | "Hard",
+        });
       }
       clearCache(`recipes_${user?.id}`);
       clearCache(
@@ -372,6 +393,24 @@ export function Recipes() {
       };
     }
   }, [itemsToShow, sortedRecipes.length]);
+
+  // Add delete handler
+  const handleDeleteRecipe = useCallback(async () => {
+    if (!selectedRecipe) return;
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this recipe? This cannot be undone.",
+      )
+    )
+      return;
+    try {
+      await deleteRecipe(selectedRecipe.id);
+      toast.success("Recipe deleted successfully.");
+      setSelectedRecipe(null);
+    } catch (_err) {
+      toast.error("Failed to delete recipe. Please try again.");
+    }
+  }, [selectedRecipe, deleteRecipe, setSelectedRecipe]);
 
   if (loading) {
     return (
@@ -584,6 +623,8 @@ export function Recipes() {
           createLeftoverFromRecipe={createLeftoverFromRecipe}
           creatingLeftover={creatingLeftover}
           getMissingIngredients={getMissingIngredients}
+          currentUserId={user?.id}
+          onDelete={handleDeleteRecipe}
         />
       )}
 
@@ -773,99 +814,14 @@ export function Recipes() {
 
       {/* Recipe Add/Edit Modal */}
       {showRecipeForm && (
-        <div className="flex fixed inset-0 z-50 justify-center items-center bg-black/40">
-          <form
-            className="p-6 space-y-4 w-full max-w-md bg-white rounded-lg shadow-lg"
-            onSubmit={handleRecipeFormSubmit}
-          >
-            <h2 className="mb-2 text-lg font-bold">
-              {editingRecipe ? "Edit Recipe" : "Add Recipe"}
-            </h2>
-            <input
-              name="title"
-              value={formState.title}
-              onChange={handleFormChange}
-              placeholder="Title"
-              className="p-2 w-full rounded border"
-              required
-            />
-            <textarea
-              name="description"
-              value={formState.description}
-              onChange={handleFormChange}
-              placeholder="Description"
-              className="p-2 w-full rounded border"
-              required
-            />
-            <input
-              name="image_url"
-              value={formState.image_url}
-              onChange={handleFormChange}
-              placeholder="Image URL"
-              className="p-2 w-full rounded border"
-            />
-            <div className="flex space-x-2">
-              <input
-                name="prep_time"
-                type="number"
-                value={formState.prep_time}
-                onChange={handleFormChange}
-                placeholder="Prep Time (min)"
-                className="p-2 w-1/3 rounded border"
-                min={0}
-                required
-              />
-              <input
-                name="cook_time"
-                type="number"
-                value={formState.cook_time}
-                onChange={handleFormChange}
-                placeholder="Cook Time (min)"
-                className="p-2 w-1/3 rounded border"
-                min={0}
-                required
-              />
-              <input
-                name="servings"
-                type="number"
-                value={formState.servings}
-                onChange={handleFormChange}
-                placeholder="Servings"
-                className="p-2 w-1/3 rounded border"
-                min={1}
-                required
-              />
-            </div>
-            <select
-              name="difficulty"
-              value={formState.difficulty}
-              onChange={handleFormChange}
-              className="p-2 w-full rounded border"
-            >
-              <option value="Easy">Easy</option>
-              <option value="Medium">Medium</option>
-              <option value="Hard">Hard</option>
-            </select>
-            <input
-              name="cuisine_type"
-              value={formState.cuisine_type}
-              onChange={handleFormChange}
-              placeholder="Cuisine Type"
-              className="p-2 w-full rounded border"
-            />
-            <div className="flex justify-end mt-4 space-x-2">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setShowRecipeForm(false)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" variant="default">
-                {editingRecipe ? "Update" : "Add"}
-              </Button>
-            </div>
-          </form>
+        <div className="flex fixed inset-0 z-50 justify-center items-center">
+          <RecipeFormModal
+            formState={formState}
+            handleFormChange={handleFormChange}
+            handleRecipeFormSubmit={handleRecipeFormSubmit}
+            editingRecipe={editingRecipe}
+            setShowRecipeForm={setShowRecipeForm}
+          />
         </div>
       )}
 
@@ -875,5 +831,191 @@ export function Recipes() {
         </div>
       )}
     </div>
+  );
+}
+
+function RecipeFormModal({
+  formState,
+  handleFormChange,
+  handleRecipeFormSubmit,
+  editingRecipe,
+  setShowRecipeForm,
+}: {
+  formState: {
+    user_id: string;
+    title: string;
+    description: string;
+    image_url: string;
+    prep_time: number;
+    cook_time: number;
+    servings: number;
+    difficulty: "Easy" | "Medium" | "Hard";
+    cuisine_type?: string;
+  };
+  handleFormChange: React.ChangeEventHandler<
+    HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+  >;
+  handleRecipeFormSubmit: React.FormEventHandler<HTMLFormElement>;
+  editingRecipe: Recipe | null;
+  setShowRecipeForm: React.Dispatch<React.SetStateAction<boolean>>;
+}) {
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setShowRecipeForm(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [setShowRecipeForm]);
+  return (
+    <form
+      className="p-6 space-y-2 w-full max-w-md bg-white rounded-lg shadow-lg"
+      onSubmit={handleRecipeFormSubmit}
+    >
+      <h2 className="mb-2 text-lg font-bold">
+        {editingRecipe ? "Edit Recipe" : "Add Recipe"}
+      </h2>
+      {/* Title */}
+      <div className="flex flex-col">
+        <label className="text-sm font-medium" htmlFor="recipe-title">
+          Title
+        </label>
+        <input
+          id="recipe-title"
+          name="title"
+          value={formState.title}
+          onChange={handleFormChange}
+          placeholder="Title"
+          className="p-2 mt-1 w-full rounded border"
+          required
+        />
+      </div>
+      {/* Description */}
+      <div className="flex flex-col">
+        <label className="text-sm font-medium" htmlFor="recipe-description">
+          Description
+        </label>
+        <textarea
+          id="recipe-description"
+          name="description"
+          value={formState.description}
+          onChange={handleFormChange}
+          placeholder="Description"
+          className="p-2 mt-1 w-full rounded border"
+          required
+        />
+      </div>
+      {/* Image URL */}
+      <div className="flex flex-col">
+        <label className="text-sm font-medium" htmlFor="recipe-image-url">
+          Image URL
+        </label>
+        <input
+          id="recipe-image-url"
+          name="image_url"
+          value={formState.image_url}
+          onChange={handleFormChange}
+          placeholder="Image URL"
+          className="p-2 mt-1 w-full rounded border"
+        />
+      </div>
+      {/* Prep Time, Cook Time, Servings */}
+      <div className="flex space-x-2">
+        <div className="flex flex-col w-1/3">
+          <label className="text-sm font-medium" htmlFor="prep-time">
+            Prep Time (min)
+          </label>
+          <input
+            id="prep-time"
+            name="prep_time"
+            type="number"
+            value={formState.prep_time}
+            onChange={handleFormChange}
+            placeholder="Prep Time (min)"
+            className="p-2 mt-1 rounded border"
+            min={0}
+            required
+          />
+        </div>
+        <div className="flex flex-col w-1/3">
+          <label className="text-sm font-medium" htmlFor="cook-time">
+            Cook Time (min)
+          </label>
+          <input
+            id="cook-time"
+            name="cook_time"
+            type="number"
+            value={formState.cook_time}
+            onChange={handleFormChange}
+            placeholder="Cook Time (min)"
+            className="p-2 mt-1 rounded border"
+            min={0}
+            required
+          />
+        </div>
+        <div className="flex flex-col w-1/3">
+          <label className="text-sm font-medium" htmlFor="servings">
+            Servings
+          </label>
+          <input
+            id="servings"
+            name="servings"
+            type="number"
+            value={formState.servings}
+            onChange={handleFormChange}
+            placeholder="Servings"
+            className="p-2 mt-1 rounded border"
+            min={1}
+            required
+          />
+        </div>
+      </div>
+      {/* Difficulty */}
+      <div className="flex flex-col">
+        <label className="text-sm font-medium" htmlFor="difficulty">
+          Difficulty
+        </label>
+        <select
+          id="difficulty"
+          name="difficulty"
+          value={formState.difficulty}
+          onChange={handleFormChange}
+          className="p-2 mt-1 w-full rounded border"
+        >
+          <option value="Easy">Easy</option>
+          <option value="Medium">Medium</option>
+          <option value="Hard">Hard</option>
+        </select>
+      </div>
+      {/* Cuisine Type */}
+      <div className="flex flex-col">
+        <label className="text-sm font-medium" htmlFor="cuisine-type">
+          Cuisine Type
+        </label>
+        <input
+          id="cuisine-type"
+          name="cuisine_type"
+          value={formState.cuisine_type}
+          onChange={handleFormChange}
+          placeholder="Cuisine Type"
+          className="p-2 mt-1 w-full rounded border"
+        />
+      </div>
+      <div className="flex justify-end mt-4 space-x-2">
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => setShowRecipeForm(false)}
+        >
+          Cancel
+        </Button>
+        <Button type="submit" variant="default">
+          {editingRecipe ? "Update" : "Add"}
+        </Button>
+      </div>
+    </form>
   );
 }

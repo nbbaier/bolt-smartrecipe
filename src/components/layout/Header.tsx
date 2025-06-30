@@ -1,5 +1,6 @@
 import { ChefHat, LogOut, Menu, Sparkles } from "lucide-react";
 import React from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { Button } from "../ui/button";
 
@@ -64,9 +65,13 @@ export function HeaderRaw({ onMenuClick }: HeaderProps) {
                       .slice(0, 2)
                   : user?.email?.charAt(0).toUpperCase() || "U"}
               </div>
-              <span className="truncate max-w-32 sm:max-w-none">
+              <Link
+                to="/settings"
+                className="underline truncate rounded transition-colors max-w-32 sm:max-w-none text-primary hover:text-primary-700 focus:outline-none focus:ring-2 focus:ring-primary"
+                style={{ textDecoration: "underline" }}
+              >
                 {user?.user_metadata?.full_name || user?.email}
-              </span>
+              </Link>
             </div>
             <Button
               variant="ghost"

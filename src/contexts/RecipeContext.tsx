@@ -51,7 +51,11 @@ export const RecipeProvider: React.FC<{ children: React.ReactNode }> = ({
     setLoading(true);
     try {
       const data = await recipeService.getAll();
-      setRecipes(data);
+      // Only show public (user_id is null) or current user's recipes
+      const filtered = data.filter(
+        (r) => r.user_id === null || (user && r.user_id === user.id),
+      );
+      setRecipes(filtered);
       if (user) {
         const bookmarks = await bookmarkService.getUserBookmarks(user.id);
         setBookmarkedRecipes(bookmarks);

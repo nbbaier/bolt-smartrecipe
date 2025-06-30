@@ -43,6 +43,8 @@ interface RecipeDetailModalProps {
   createLeftoverFromRecipe: () => void;
   creatingLeftover: boolean;
   getMissingIngredients: () => RecipeIngredient[];
+  currentUserId?: string;
+  onDelete?: () => void;
 }
 
 const RecipeDetailModalRaw: React.FC<RecipeDetailModalProps> = ({
@@ -59,12 +61,26 @@ const RecipeDetailModalRaw: React.FC<RecipeDetailModalProps> = ({
   setShowAddToShoppingModal,
   setShowCreateLeftoverModal,
   getMissingIngredients,
+  currentUserId,
+  onDelete,
 }) => {
+  React.useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open, onClose]);
   if (!open || !recipe) return null;
   const missingIngredients = getMissingIngredients();
   return (
-    <div className="flex fixed inset-0 z-50 justify-center items-center p-4 bg-black/50">
-      <Card className="max-w-4xl w-full max-h-[90vh] overflow-hidden">
+    <div className="flex fixed inset-0 z-50 justify-center items-center p-4">
+      <Card className="max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         <CardHeader className="relative pb-3 sm:pb-4">
           <Button
             variant="ghost"
@@ -283,7 +299,21 @@ const RecipeDetailModalRaw: React.FC<RecipeDetailModalProps> = ({
             )}
           </CardContent>
         </ScrollArea>
-        {/* Add to Shopping List Modal and Create Leftover Modal would go here, or could be extracted further */}
+        {/* Delete button for user-defined recipes */}
+        {recipe &&
+          currentUserId &&
+          recipe.user_id === currentUserId &&
+          onDelete && (
+            <div className="flex justify-end p-4 bg-red-50 border-t">
+              <Button
+                variant="destructive"
+                onClick={onDelete}
+                className="w-full sm:w-auto"
+              >
+                Delete Recipe
+              </Button>
+            </div>
+          )}
       </Card>
     </div>
   );

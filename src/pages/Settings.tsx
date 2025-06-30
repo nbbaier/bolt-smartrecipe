@@ -100,8 +100,6 @@ export function Settings() {
   const [_profile, setProfile] = useState<UserProfile | null>(null);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
-  const [uploading, setUploading] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
 
   const [profileForm, setProfileForm] = useState({
     full_name: "",
@@ -130,12 +128,6 @@ export function Settings() {
       });
     }
   }, [user]);
-
-  useEffect(() => {
-    if (_profile?.avatar_url) {
-      setAvatarUrl(_profile.avatar_url);
-    }
-  }, [_profile]);
 
   const [preferencesForm, setPreferencesForm] = useState<
     Partial<UserPreferences>
@@ -173,30 +165,6 @@ export function Settings() {
       .join("")
       .toUpperCase()
       .slice(0, 2);
-  };
-
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!user || !e.target.files || e.target.files.length === 0) return;
-    const file = e.target.files[0];
-    setUploading(true);
-    try {
-      const fileExt = file.name.split(".").pop();
-      const filePath = `${user.id}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(filePath, file, { upsert: true });
-      if (uploadError) throw uploadError;
-      const { data } = supabase.storage.from("avatars").getPublicUrl(filePath);
-      const publicUrl = data.publicUrl;
-      setAvatarUrl(publicUrl);
-      await userProfileService.updateProfile(user.id, {
-        avatar_url: publicUrl,
-      });
-    } catch {
-      alert("Failed to upload avatar image");
-    } finally {
-      setUploading(false);
-    }
   };
 
   if (loading) {
@@ -261,45 +229,15 @@ export function Settings() {
               <User className="w-5 h-5" />
               <span>Profile Information</span>
             </CardTitle>
-            <CardDescription>
-              Manage your personal information and avatar
-            </CardDescription>
+            <CardDescription>Manage your personal information</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex items-center space-x-4">
-              {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt="Profile avatar"
-                  className="object-cover w-16 h-16 rounded-full border"
-                />
-              ) : (
-                <div
-                  className="flex justify-center items-center w-16 h-16 text-xl font-bold text-white rounded-full"
-                  style={{ backgroundColor: profileForm.avatar_color }}
-                >
-                  {getInitials(profileForm.full_name || user?.email || "U")}
-                </div>
-              )}
-              <div className="flex-1">
-                <h3 className="font-medium text-secondary-900">
-                  Profile Image
-                </h3>
-                <p className="mb-2 text-sm text-secondary-600">
-                  Upload a profile photo (optional)
-                </p>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarUpload}
-                  disabled={uploading}
-                  className="block w-full text-sm text-secondary-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/80"
-                />
-                {uploading && (
-                  <p className="mt-1 text-xs text-secondary-500">
-                    Uploading...
-                  </p>
-                )}
+              <div
+                className="flex justify-center items-center w-16 h-16 text-xl font-bold text-white rounded-full"
+                style={{ backgroundColor: profileForm.avatar_color }}
+              >
+                {getInitials(profileForm.full_name || user?.email || "U")}
               </div>
             </div>
             <Separator />

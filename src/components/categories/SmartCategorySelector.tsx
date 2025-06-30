@@ -101,33 +101,47 @@ export function SmartCategorySelectorRaw({
     setSuggestion(null);
   };
 
-  // Auto-analyze when ingredient name changes
-  useEffect(() => {
-    if (ingredientName.trim() && ingredientName.length > 2) {
-      const timeoutId = setTimeout(() => {
-        analyzeCategory();
-      }, 1000); // Debounce for 1 second
-
-      return () => clearTimeout(timeoutId);
-    }
-  }, [ingredientName, analyzeCategory]);
-
   return (
-    <div className="space-y-3">
-      <div className="flex justify-between items-center">
-        <label className="block text-sm font-medium text-secondary-700">
-          Category
-        </label>
+    <div className="flex flex-col w-full">
+      <label className="block mb-1 text-sm font-medium text-secondary-700">
+        Category
+      </label>
+      <div className="flex flex-row gap-2 w-full">
+        <select
+          value={currentCategory}
+          onChange={(e) => onCategoryChange(e.target.value)}
+          disabled={disabled}
+          className="flex-1 px-3 h-10 text-sm rounded-lg border border-secondary-300 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {CATEGORIES.map((category) => (
+            <option key={category} value={category}>
+              {category}
+            </option>
+          ))}
+        </select>
         <Button
           type="button"
-          variant="ghost"
-          size="sm"
+          variant="outline"
+          size={undefined}
           onClick={analyzeCategory}
           disabled={!ingredientName.trim() || isAnalyzing || disabled}
-          className="text-xs"
+          className="flex items-center px-3 h-10 text-sm border shadow-none border-secondary-300"
+          title="Suggest category based on ingredient name"
         >
-          <Wand2 className="mr-1 w-3 h-3" />
-          {isAnalyzing ? "Analyzing..." : "Smart Suggest"}
+          {isAnalyzing ? (
+            <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24">
+              <circle
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+                fill="none"
+              />
+            </svg>
+          ) : (
+            <Wand2 className="w-4 h-4" />
+          )}
         </Button>
       </div>
 
@@ -177,20 +191,6 @@ export function SmartCategorySelectorRaw({
             </div>
           </div>
         )}
-
-      {/* Category Selector */}
-      <select
-        value={currentCategory}
-        onChange={(e) => onCategoryChange(e.target.value)}
-        disabled={disabled}
-        className="px-3 w-full h-10 text-sm rounded-lg border border-secondary-300 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {CATEGORIES.map((category) => (
-          <option key={category} value={category}>
-            {category}
-          </option>
-        ))}
-      </select>
     </div>
   );
 }
