@@ -213,7 +213,7 @@
           2,
           6
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -221,7 +221,7 @@
             "description": "Develop an Edge Function to handle AI-powered pantry input processing",
             "dependencies": [],
             "details": "Set up a new Edge Function in the project, configure necessary environment variables, and create the basic structure to receive and process pantry input requests",
-            "status": "in-progress",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -232,7 +232,7 @@
               1
             ],
             "details": "Add OpenAI SDK, set up API authentication, and create functions to send pantry input to OpenAI for processing and receive structured responses",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -241,7 +241,7 @@
             "description": "Create a user-friendly frontend component for pantry input",
             "dependencies": [],
             "details": "Design and implement a React component with a text input field and submit button for users to enter pantry items in natural language",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -252,7 +252,7 @@
               3
             ],
             "details": "Develop a React component to receive and display the structured pantry items returned from the AI processing, including item names, quantities, and categories",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -266,7 +266,7 @@
               4
             ],
             "details": "Add input validation on the frontend, implement error handling in the Edge Function for API failures, and create user-friendly error messages for various scenarios",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           }
         ]
@@ -341,7 +341,7 @@
           6,
           7
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -349,7 +349,7 @@
             "description": "Create a high-level design for the Edge Function that will handle the Intelligent Categorization feature",
             "dependencies": [],
             "details": "Define input/output structure, determine necessary APIs, and outline the overall flow of the Edge Function",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -360,7 +360,7 @@
               1
             ],
             "details": "Research and implement machine learning techniques for category prediction, considering factors like transaction description, amount, and historical data",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -371,7 +371,7 @@
               1
             ],
             "details": "Develop reusable React components for category suggestion display, user selection, and feedback mechanisms",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -383,7 +383,7 @@
               2
             ],
             "details": "Design database schema for storing transaction-category mappings, implement CRUD operations, and create queries for retrieving relevant data for the suggestion algorithm",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -397,7 +397,7 @@
               4
             ],
             "details": "Integrate Edge Function with frontend and database, conduct unit and integration tests, and perform user acceptance testing for the entire feature",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           }
         ]
@@ -412,7 +412,7 @@
         "dependencies": [
           6
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -420,7 +420,7 @@
             "description": "Update the existing database schema to accommodate inventory level tracking",
             "dependencies": [],
             "details": "Add new tables and columns for inventory items, quantities, and thresholds. Ensure proper relationships with existing tables.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -431,7 +431,7 @@
               1
             ],
             "details": "Implement functions to calculate current inventory levels, reorder points, and safety stock levels based on historical data and predefined rules.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -442,7 +442,7 @@
               2
             ],
             "details": "Develop dashboard widgets, inventory level charts, and detailed item views that integrate with the new calculation logic.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -454,7 +454,7 @@
               3
             ],
             "details": "Create an alert mechanism that triggers notifications when inventory levels fall below thresholds, and suggests reorder quantities based on calculated data.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           }
         ]
@@ -681,7 +681,7 @@
           11,
           13
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -689,7 +689,7 @@
             "description": "Create stored procedures in the database for managing shopping lists and their integration with recipes",
             "dependencies": [],
             "details": "Develop procedures for adding, updating, and deleting shopping list items. Include procedures for linking shopping list items to recipe ingredients and pantry items.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -698,7 +698,7 @@
             "description": "Create React components for displaying and interacting with shopping lists",
             "dependencies": [],
             "details": "Design and implement components for viewing, adding, editing, and removing items from shopping lists. Include functionality for marking items as purchased.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -710,7 +710,7 @@
               2
             ],
             "details": "Create a feature that allows users to add all ingredients from a selected recipe to their shopping list, taking into account existing pantry items.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -723,7 +723,7 @@
               3
             ],
             "details": "Develop features to automatically update pantry quantities when shopping list items are marked as purchased, and to suggest adding items to the shopping list when pantry quantities are low.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           }
         ]
@@ -821,7 +821,7 @@
           11,
           15
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -829,7 +829,7 @@
             "description": "Create an AI-powered algorithm to generate personalized recipe recommendations",
             "dependencies": [],
             "details": "Implement machine learning model to analyze user preferences, dietary restrictions, and past interactions to suggest relevant recipes",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -838,7 +838,7 @@
             "description": "Create visually appealing UI components to showcase recommended recipes",
             "dependencies": [],
             "details": "Develop reusable React components for recipe cards, image galleries, and detailed recipe views",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -850,7 +850,7 @@
               2
             ],
             "details": "Modify chat component to display recipe suggestions alongside text responses, ensuring a smooth user experience",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -862,7 +862,7 @@
               3
             ],
             "details": "Create buttons or gestures for saving, sharing, or starting cooking mode directly from the recommendation display",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -876,7 +876,7 @@
               4
             ],
             "details": "Conduct performance testing, implement lazy loading for images, and optimize API calls to maintain smooth user interactions",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           }
         ]
@@ -893,7 +893,7 @@
           3,
           4
         ],
-        "status": "pending",
+        "status": "in-progress",
         "subtasks": [
           {
             "id": 1,
@@ -935,6 +935,33 @@
             "details": "Implement a global state management solution for settings and apply them throughout the application",
             "status": "pending",
             "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Implement Theme Selector and Theme Switching",
+            "description": "Add a global theme selector (light/dark/system) to the settings page and implement application-wide theme switching functionality.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 17
+          },
+          {
+            "id": 6,
+            "title": "Persist Notification and Expiration Threshold Settings",
+            "description": "Enable users to save notification and expiration/inventory threshold preferences in the database and apply them throughout the app.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 17
+          },
+          {
+            "id": 7,
+            "title": "Centralize Settings with a Settings Context",
+            "description": "Create a React context/provider to manage and provide application settings globally, reducing duplication and improving consistency.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 17
           }
         ]
       },
@@ -1011,6 +1038,78 @@
             "details": "Systematically integrate error components, utilities, API error management, and graceful degradation into all relevant parts of the application",
             "status": "pending",
             "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Implement reusable error components",
+            "description": "Create a set of reusable UI components for displaying various types of errors to users. Design and implement error message, error page, and error boundary components that can be easily used across the application.",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 18
+          },
+          {
+            "id": 7,
+            "title": "Develop error handling utilities",
+            "description": "Create a set of utility functions for standardized error handling and logging. Implement functions for error categorization, logging, and formatting that can be used throughout the application.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 18
+          },
+          {
+            "id": 8,
+            "title": "Implement API error management",
+            "description": "Develop a system for handling and responding to API errors. Create middleware or interceptors to catch API errors, format them consistently, and trigger appropriate responses or retries.",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 18
+          },
+          {
+            "id": 9,
+            "title": "Implement graceful degradation for AI features",
+            "description": "Develop fallback mechanisms for AI-powered features in case of errors or unavailability. Create alternative flows or simplified versions of AI features that can be activated when the primary AI functionality fails.",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 18
+          },
+          {
+            "id": 10,
+            "title": "Create offline detection and messaging",
+            "description": "Implement offline detection and display appropriate messaging to users when the application is offline.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 18
+          },
+          {
+            "id": 11,
+            "title": "Implement form validation error handling",
+            "description": "Ensure all forms display validation errors clearly and handle invalid input gracefully.",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 18
+          },
+          {
+            "id": 12,
+            "title": "Add global error notification system",
+            "description": "Add a global notification system to surface errors to users across the application.",
+            "details": "",
+            "status": "in-progress",
+            "dependencies": [],
+            "parentTaskId": 18
+          },
+          {
+            "id": 13,
+            "title": "Create error logging to Supabase for monitoring",
+            "description": "Implement error logging to Supabase or another monitoring service for centralized error tracking.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 18
           }
         ]
       },
@@ -1028,7 +1127,7 @@
           13,
           15
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1036,7 +1135,7 @@
             "description": "Ensure all interactive elements are accessible via keyboard",
             "dependencies": [],
             "details": "Add focus indicators, implement proper tabbing order, and ensure all functionality is operable through keyboard commands",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -1047,7 +1146,7 @@
               1
             ],
             "details": "Review and update HTML elements with appropriate ARIA attributes to improve screen reader compatibility",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -1056,7 +1155,7 @@
             "description": "Ensure sufficient color contrast ratios for all text and UI elements",
             "dependencies": [],
             "details": "Audit current color scheme, adjust colors to meet WCAG 2.1 AA contrast requirements, and update CSS accordingly",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -1067,7 +1166,7 @@
               2
             ],
             "details": "Test with popular screen readers, add descriptive alt text for images, and ensure proper heading structure and content order",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -1081,7 +1180,7 @@
               4
             ],
             "details": "Test and adjust accessibility improvements on various screen sizes, ensure text resizing and zooming functionality, and maintain readability on small screens",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           }
         ]
@@ -1170,11 +1269,85 @@
             "testStrategy": ""
           }
         ]
+      },
+      {
+        "id": 21,
+        "title": "Testing Framework and Quality Assurance Implementation",
+        "description": "Implement comprehensive testing and quality assurance processes to ensure application reliability, including unit testing framework, integration tests, E2E tests, CI setup, and test coverage monitoring.",
+        "details": "1. Set up Jest and React Testing Library as the primary testing framework:\n   ```bash\n   npm install --save-dev jest @testing-library/react @testing-library/jest-dom @testing-library/user-event jest-environment-jsdom\n   ```\n\n2. Configure Jest in package.json:\n   ```json\n   {\n     \"jest\": {\n       \"testEnvironment\": \"jsdom\",\n       \"setupFilesAfterEnv\": [\"<rootDir>/src/setupTests.js\"],\n       \"moduleNameMapper\": {\n         \"\\\\.(css|less|scss)$\": \"identity-obj-proxy\"\n       },\n       \"collectCoverageFrom\": [\n         \"src/**/*.{js,jsx,ts,tsx}\",\n         \"!src/**/*.d.ts\",\n         \"!src/index.tsx\"\n       ]\n     },\n     \"scripts\": {\n       \"test\": \"jest\",\n       \"test:watch\": \"jest --watch\",\n       \"test:coverage\": \"jest --coverage\"\n     }\n   }\n   ```\n\n3. Create setupTests.js file:\n   ```javascript\n   import '@testing-library/jest-dom';\n   ```\n\n4. Implement unit tests for core components:\n   - Create test files with naming convention `*.test.tsx` or `*.spec.tsx`\n   - Write tests for context providers (AuthContext, PantryContext, etc.)\n   - Test utility functions and hooks\n   - Test UI components with various states and props\n\n5. Implement integration tests for key features:\n   - Authentication flows (registration, login, password reset)\n   - Pantry management (adding, editing, deleting items)\n   - Shopping list functionality\n   - Recipe management\n   - AI assistant interactions\n\n6. Set up Cypress for E2E testing:\n   ```bash\n   npm install --save-dev cypress\n   ```\n\n7. Configure Cypress and create E2E tests for critical user flows:\n   - User registration and login\n   - Complete pantry management workflow\n   - Shopping list creation and management\n   - Recipe browsing and interaction\n   - Settings configuration\n\n8. Set up GitHub Actions for CI:\n   Create `.github/workflows/ci.yml`:\n   ```yaml\n   name: CI\n   \n   on:\n     push:\n       branches: [ main, develop ]\n     pull_request:\n       branches: [ main, develop ]\n   \n   jobs:\n     test:\n       runs-on: ubuntu-latest\n       steps:\n         - uses: actions/checkout@v3\n         - name: Use Node.js\n           uses: actions/setup-node@v3\n           with:\n             node-version: '18.x'\n         - name: Install dependencies\n           run: npm ci\n         - name: Run linting\n           run: npm run lint\n         - name: Run unit and integration tests\n           run: npm test -- --coverage\n         - name: Run E2E tests\n           run: npm run cy:run\n         - name: Upload coverage reports\n           uses: codecov/codecov-action@v3\n   ```\n\n9. Implement test mocks for Supabase and external services:\n   ```javascript\n   // src/mocks/supabaseMock.js\n   export const supabaseMock = {\n     auth: {\n       signUp: jest.fn(),\n       signIn: jest.fn(),\n       signOut: jest.fn(),\n       resetPasswordForEmail: jest.fn()\n     },\n     from: jest.fn().mockReturnThis(),\n     select: jest.fn().mockReturnThis(),\n     insert: jest.fn().mockReturnThis(),\n     update: jest.fn().mockReturnThis(),\n     delete: jest.fn().mockReturnThis(),\n     eq: jest.fn().mockReturnThis(),\n     single: jest.fn(),\n     order: jest.fn().mockReturnThis()\n   };\n   ```\n\n10. Set up test coverage monitoring with codecov or similar service:\n    - Configure coverage thresholds in Jest config\n    - Integrate with CI to track coverage over time\n    - Set up alerts for coverage drops\n\n11. Implement snapshot testing for UI components:\n    ```javascript\n    test('renders correctly', () => {\n      const { container } = render(<ComponentToTest />);\n      expect(container).toMatchSnapshot();\n    });\n    ```\n\n12. Create testing documentation and guidelines for the team:\n    - Document testing approach and standards\n    - Provide examples for different types of tests\n    - Define coverage requirements for new features",
+        "testStrategy": "1. Verify Jest and React Testing Library setup:\n   - Run `npm test` to ensure the testing environment is properly configured\n   - Check that test files are correctly discovered and executed\n\n2. Validate unit tests for core components:\n   - Run tests for context providers and verify they pass\n   - Check test coverage for utility functions and hooks\n   - Ensure UI component tests cover different states (loading, error, success)\n\n3. Verify integration tests:\n   - Run integration tests for authentication flows and verify they pass\n   - Test pantry management operations end-to-end within the test environment\n   - Verify shopping list and recipe integration tests\n\n4. Test Cypress E2E setup:\n   - Run `npx cypress open` to verify Cypress is correctly configured\n   - Execute E2E tests for critical user flows and verify they pass\n   - Check that tests run successfully in headless mode for CI\n\n5. Validate CI configuration:\n   - Push a test commit to trigger the GitHub Actions workflow\n   - Verify that all test stages (unit, integration, E2E) run successfully\n   - Check that test coverage reports are generated and uploaded\n\n6. Test coverage assessment:\n   - Run `npm test -- --coverage` and verify coverage meets minimum thresholds\n   - Check coverage reports for areas needing additional tests\n   - Verify codecov integration is working correctly\n\n7. Validate test mocks:\n   - Run tests that use Supabase mocks and verify they correctly simulate API behavior\n   - Check that tests are isolated from actual external services\n\n8. Review testing documentation:\n   - Ensure documentation is clear and comprehensive\n   - Verify examples are accurate and follow best practices\n   - Check that coverage requirements are clearly defined\n\n9. Perform cross-browser testing:\n   - Run E2E tests in multiple browsers to ensure compatibility\n   - Verify that tests pass consistently across different environments",
+        "status": "pending",
+        "dependencies": [
+          2,
+          3,
+          6,
+          11,
+          13,
+          16,
+          18
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Set Up Unit Testing Framework",
+            "description": "Install and configure a unit testing framework (Vitest) and supporting libraries for React and TypeScript.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 21
+          },
+          {
+            "id": 2,
+            "title": "Write Unit Tests for Core Logic",
+            "description": "Write unit tests for core business logic, utility functions, and critical React components.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 21
+          },
+          {
+            "id": 3,
+            "title": "Implement Integration Tests",
+            "description": "Write integration tests to verify interactions between components and services, including database and API integration.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 21
+          },
+          {
+            "id": 4,
+            "title": "Add E2E Tests for Critical Flows",
+            "description": "Set up and implement end-to-end (E2E) tests for critical user workflows using Playwright or Cypress.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 21
+          },
+          {
+            "id": 5,
+            "title": "Set Up Continuous Integration (CI)",
+            "description": "Configure a CI workflow to automatically run tests and checks on every push and pull request.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 21
+          },
+          {
+            "id": 6,
+            "title": "Monitor Test Coverage",
+            "description": "Set up test coverage reporting and enforce minimum coverage thresholds.",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 21
+          }
+        ]
       }
     ],
     "metadata": {
       "created": "2025-06-29T22:44:32.785Z",
-      "updated": "2025-06-30T04:17:35.621Z",
+      "updated": "2025-06-30T04:46:06.397Z",
       "description": "Tasks for master context"
     }
   }
