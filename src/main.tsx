@@ -20,6 +20,20 @@ class ErrorBoundary extends React.Component<
 
   componentDidCatch(error: unknown, errorInfo: ErrorInfo) {
     console.error("React Error Boundary caught an error:", error, errorInfo);
+    // Trigger global notification if available
+    if (
+      typeof window !== "undefined" &&
+      typeof (window as unknown as { notify?: Function }).notify === "function"
+    ) {
+      (
+        window as unknown as { notify: (msg: string, opts?: unknown) => void }
+      ).notify(
+        error instanceof Error
+          ? error.message
+          : "An unexpected error occurred.",
+        { type: "error", description: "A critical error occurred in the app." },
+      );
+    }
   }
 
   render() {
@@ -73,7 +87,7 @@ try {
   console.error("Failed to render app:", error);
   rootElement.innerHTML = `
     <div style="padding: 20px; text-align: center; font-family: system-ui, sans-serif; color: #dc2626;">
-      <h1>Failed to load SmartRecipe</h1>
+      <h1>Failed to load Appetite</h1>
       <p>Check the browser console for error details.</p>
     </div>
   `;

@@ -36,7 +36,7 @@ export function HeaderRaw({ onMenuClick }: HeaderProps) {
               <div className="flex flex-col">
                 <div className="flex items-center space-x-1">
                   <h1 className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-emerald-700 sm:text-xl">
-                    SmartRecipe
+                    Appetite
                   </h1>
                   <span className="hidden sm:inline-block px-2 py-0.5 text-xs font-medium bg-emerald-100 text-emerald-700 rounded-full">
                     Beta

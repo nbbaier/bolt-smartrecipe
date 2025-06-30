@@ -1,5 +1,7 @@
 import { Plus, Wand2, X } from "lucide-react";
 import React, { useState } from "react";
+import { useNotification } from "../../contexts/NotificationContext";
+import { handleApiError } from "../../lib/errorUtils";
 import { Button } from "../ui/button";
 import {
   Card,
@@ -57,6 +59,7 @@ function NaturalLanguagePantryInputRaw({
   const [isParsingText, setIsParsingText] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { notify } = useNotification();
 
   const resetForm = () => {
     setNaturalLanguageText("");
@@ -90,11 +93,8 @@ function NaturalLanguagePantryInputRaw({
       }
       setParsedIngredients(data.ingredients || []);
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message || "Failed to parse ingredients.");
-      } else {
-        setError("Failed to parse ingredients.");
-      }
+      setError(handleApiError(err));
+      notify(handleApiError(err), { type: "error" });
       setParsedIngredients([]);
     } finally {
       setIsParsingText(false);
@@ -128,6 +128,7 @@ function NaturalLanguagePantryInputRaw({
       } else {
         setError("Failed to add ingredients.");
       }
+      notify(handleApiError(err), { type: "error" });
     } finally {
       setIsAdding(false);
     }
