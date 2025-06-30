@@ -11,6 +11,14 @@ import type {
 } from "../types";
 import { supabase } from "./supabase";
 
+// Type for Supabase function result
+export type RecipeMatchResult = {
+   recipe_id: string;
+   recipe_title: string;
+   match_percentage: number;
+   missing_ingredients: string[];
+};
+
 // Ingredient operations
 export const ingredientService = {
    async getAll(userId: string): Promise<Ingredient[]> {
@@ -84,14 +92,6 @@ export const ingredientService = {
       unit: string,
       category: string = "Other",
    ): Promise<Ingredient> {
-      console.log("addOrUpdateFromShopping called with:", {
-         userId,
-         itemName,
-         quantity,
-         unit,
-         category,
-      });
-
       // First, check if an ingredient with similar name already exists
       const { data: existingIngredients, error: searchError } = await supabase
          .from("ingredients")
@@ -100,11 +100,6 @@ export const ingredientService = {
          .ilike("name", `%${itemName}%`);
 
       if (searchError) throw searchError;
-
-      console.log(
-         "Existing ingredients found:",
-         existingIngredients?.length || 0,
-      );
 
       // Find exact or close match
       const existingIngredient = existingIngredients?.find(
@@ -115,22 +110,14 @@ export const ingredientService = {
       );
 
       if (existingIngredient) {
-         console.log("Found existing ingredient:", existingIngredient.name);
          // Update existing ingredient quantity
          const newQuantity = (existingIngredient.quantity || 0) + quantity;
-         console.log(
-            "Updating quantity from",
-            existingIngredient.quantity,
-            "to",
-            newQuantity,
-         );
 
          return await this.update(existingIngredient.id, {
             quantity: newQuantity,
             unit: unit || existingIngredient.unit, // Keep existing unit if new one is empty
          });
       } else {
-         console.log("Creating new ingredient:", itemName);
          // Create new ingredient
          return await this.create({
             user_id: userId,
@@ -269,6 +256,70 @@ export const recipeService = {
          ) || [];
 
       return canCookRecipes;
+   },
+
+   async create(
+      recipe: Omit<Recipe, "id" | "created_at" | "updated_at">,
+   ): Promise<Recipe> {
+      const { data, error } = await supabase
+         .from("recipes")
+         .insert([recipe])
+         .select()
+         .single();
+
+      if (error) throw error;
+      return data;
+   },
+
+   async update(id: string, updates: Partial<Recipe>): Promise<Recipe> {
+      const { data, error } = await supabase
+         .from("recipes")
+         .update(updates)
+         .eq("id", id)
+         .select()
+         .single();
+
+      if (error) throw error;
+      return data;
+   },
+
+   async delete(id: string): Promise<void> {
+      const { error } = await supabase.from("recipes").delete().eq("id", id);
+
+      if (error) throw error;
+   },
+
+   async getRecipeMatchesForPantry(
+      userId: string,
+      options?: {
+         minMatchPercentage?: number;
+         maxMissingIngredients?: number;
+         limit?: number;
+         offset?: number;
+      },
+   ): Promise<RecipeMatchResult[]> {
+      const {
+         minMatchPercentage = 0,
+         maxMissingIngredients = null,
+         limit = 50,
+         offset = 0,
+      } = options || {};
+      const { data, error } = await supabase.rpc("match_recipes_to_pantry", {
+         user_id: userId,
+         min_match_percentage: minMatchPercentage,
+         max_missing_ingredients: maxMissingIngredients,
+         limit_count: limit,
+         offset_count: offset,
+      });
+      if (error) throw error;
+      return (data || []).map((row: RecipeMatchResult) => ({
+         recipe_id: row.recipe_id,
+         recipe_title: row.recipe_title,
+         match_percentage: Number(row.match_percentage),
+         missing_ingredients: Array.isArray(row.missing_ingredients)
+            ? row.missing_ingredients
+            : [],
+      }));
    },
 };
 
@@ -428,11 +479,8 @@ export const shoppingListService = {
       recipeId: string,
       userIngredients: Ingredient[],
    ): Promise<ShoppingListItem[]> {
-      console.log("Creating items from recipe:", recipeId, "for list:", listId);
-
       // Get recipe ingredients
       const recipeIngredients = await recipeService.getIngredients(recipeId);
-      console.log("Recipe ingredients found:", recipeIngredients.length);
 
       // Filter out ingredients the user already has
       const neededIngredients = recipeIngredients.filter((recipeIng) => {
@@ -446,10 +494,6 @@ export const shoppingListService = {
                   .includes(userIng.name.toLowerCase()),
          );
       });
-      console.log(
-         "Needed ingredients after filtering:",
-         neededIngredients.length,
-      );
 
       // Create shopping list items
       const items = neededIngredients.map((ingredient) => ({
@@ -464,13 +508,8 @@ export const shoppingListService = {
       }));
 
       if (items.length === 0) {
-         console.log(
-            "No new ingredients needed - user already has everything!",
-         );
          return [];
       }
-
-      console.log("Inserting items:", items);
 
       const { data, error } = await supabase
          .from("shopping_list_items")
@@ -478,11 +517,9 @@ export const shoppingListService = {
          .select();
 
       if (error) {
-         console.error("Database error inserting shopping items:", error);
          throw error;
       }
 
-      console.log("Successfully inserted shopping items:", data?.length);
       return data || [];
    },
    async addToPantryFromShopping(
@@ -492,26 +529,13 @@ export const shoppingListService = {
       unit: string,
       category: string = "Other",
    ): Promise<void> {
-      console.log("Adding to pantry from shopping:", {
+      await ingredientService.addOrUpdateFromShopping(
+         userId,
          itemName,
          quantity,
          unit,
          category,
-      });
-
-      try {
-         await ingredientService.addOrUpdateFromShopping(
-            userId,
-            itemName,
-            quantity,
-            unit,
-            category,
-         );
-         console.log("Successfully added to pantry:", itemName);
-      } catch (error) {
-         console.error("Failed to add to pantry:", error);
-         // Don't throw error - shopping list update should still succeed
-      }
+      );
    },
 };
 
