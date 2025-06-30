@@ -982,7 +982,7 @@
           13,
           15
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -990,7 +990,7 @@
             "description": "Create a set of reusable UI components for displaying various types of errors to users",
             "dependencies": [],
             "details": "Design and implement error message, error page, and error boundary components that can be easily used across the application",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -999,7 +999,7 @@
             "description": "Create a set of utility functions for standardized error handling and logging",
             "dependencies": [],
             "details": "Implement functions for error categorization, logging, and formatting that can be used throughout the application",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -1010,7 +1010,7 @@
               2
             ],
             "details": "Create middleware or interceptors to catch API errors, format them consistently, and trigger appropriate responses or retries",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -1022,7 +1022,7 @@
               2
             ],
             "details": "Create alternative flows or simplified versions of AI features that can be activated when the primary AI functionality fails",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -1036,14 +1036,14 @@
               4
             ],
             "details": "Systematically integrate error components, utilities, API error management, and graceful degradation into all relevant parts of the application",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
             "id": 6,
             "title": "Implement reusable error components",
             "description": "Create a set of reusable UI components for displaying various types of errors to users. Design and implement error message, error page, and error boundary components that can be easily used across the application.",
-            "details": "",
+            "details": "<info added on 2025-06-30T17:56:28.039Z>\nImplemented a global NotificationContext and provider with a notify function for displaying success, error, info, and warning notifications using the sonner toast system. Wrapped the application in NotificationProvider to make notifications accessible throughout the app. Bridged legacy error handling by setting window.notify to the context's notify function, enabling logError and other legacy code to trigger user-facing toasts. Memoized the notify function with useCallback to prevent unnecessary re-renders.\n\nNext steps include:\n1. Updating error boundaries to trigger global notifications when React errors are caught\n2. Modifying API error handling to use the notify function directly via useNotification\n3. Migrating local error toasts to the global notification system for consistency\n</info added on 2025-06-30T17:56:28.039Z>",
             "status": "done",
             "dependencies": [],
             "parentTaskId": 18
@@ -1053,7 +1053,7 @@
             "title": "Develop error handling utilities",
             "description": "Create a set of utility functions for standardized error handling and logging. Implement functions for error categorization, logging, and formatting that can be used throughout the application.",
             "details": "",
-            "status": "pending",
+            "status": "done",
             "dependencies": [],
             "parentTaskId": 18
           },
@@ -1080,7 +1080,7 @@
             "title": "Create offline detection and messaging",
             "description": "Implement offline detection and display appropriate messaging to users when the application is offline.",
             "details": "",
-            "status": "pending",
+            "status": "done",
             "dependencies": [],
             "parentTaskId": 18
           },
@@ -1098,7 +1098,7 @@
             "title": "Add global error notification system",
             "description": "Add a global notification system to surface errors to users across the application.",
             "details": "",
-            "status": "in-progress",
+            "status": "done",
             "dependencies": [],
             "parentTaskId": 18
           },
@@ -1107,7 +1107,7 @@
             "title": "Create error logging to Supabase for monitoring",
             "description": "Implement error logging to Supabase or another monitoring service for centralized error tracking.",
             "details": "",
-            "status": "pending",
+            "status": "done",
             "dependencies": [],
             "parentTaskId": 18
           }
@@ -1201,7 +1201,7 @@
           13,
           15
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1229,7 +1229,7 @@
               1
             ],
             "details": "Use React.memo for functional components, implement shouldComponentUpdate for class components, and optimize list rendering with virtualization techniques.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -1241,7 +1241,7 @@
               2
             ],
             "details": "Add loading skeletons, implement progressive loading, and use prefetching techniques for anticipated user actions.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -1250,7 +1250,7 @@
             "description": "Reduce the size and improve loading of static assets",
             "dependencies": [],
             "details": "Compress images, implement lazy loading for images and videos, and optimize CSS and JavaScript files through minification and tree shaking.",
-            "status": "deferred",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -1265,7 +1265,7 @@
               5
             ],
             "details": "Set up performance tracking tools, establish performance budgets, and create a process for regular performance audits and optimizations.",
-            "status": "deferred",
+            "status": "done",
             "testStrategy": ""
           }
         ]
@@ -1276,7 +1276,7 @@
         "description": "Implement comprehensive testing and quality assurance processes to ensure application reliability, including unit testing framework, integration tests, E2E tests, CI setup, and test coverage monitoring.",
         "details": "1. Set up Jest and React Testing Library as the primary testing framework:\n   ```bash\n   npm install --save-dev jest @testing-library/react @testing-library/jest-dom @testing-library/user-event jest-environment-jsdom\n   ```\n\n2. Configure Jest in package.json:\n   ```json\n   {\n     \"jest\": {\n       \"testEnvironment\": \"jsdom\",\n       \"setupFilesAfterEnv\": [\"<rootDir>/src/setupTests.js\"],\n       \"moduleNameMapper\": {\n         \"\\\\.(css|less|scss)$\": \"identity-obj-proxy\"\n       },\n       \"collectCoverageFrom\": [\n         \"src/**/*.{js,jsx,ts,tsx}\",\n         \"!src/**/*.d.ts\",\n         \"!src/index.tsx\"\n       ]\n     },\n     \"scripts\": {\n       \"test\": \"jest\",\n       \"test:watch\": \"jest --watch\",\n       \"test:coverage\": \"jest --coverage\"\n     }\n   }\n   ```\n\n3. Create setupTests.js file:\n   ```javascript\n   import '@testing-library/jest-dom';\n   ```\n\n4. Implement unit tests for core components:\n   - Create test files with naming convention `*.test.tsx` or `*.spec.tsx`\n   - Write tests for context providers (AuthContext, PantryContext, etc.)\n   - Test utility functions and hooks\n   - Test UI components with various states and props\n\n5. Implement integration tests for key features:\n   - Authentication flows (registration, login, password reset)\n   - Pantry management (adding, editing, deleting items)\n   - Shopping list functionality\n   - Recipe management\n   - AI assistant interactions\n\n6. Set up Cypress for E2E testing:\n   ```bash\n   npm install --save-dev cypress\n   ```\n\n7. Configure Cypress and create E2E tests for critical user flows:\n   - User registration and login\n   - Complete pantry management workflow\n   - Shopping list creation and management\n   - Recipe browsing and interaction\n   - Settings configuration\n\n8. Set up GitHub Actions for CI:\n   Create `.github/workflows/ci.yml`:\n   ```yaml\n   name: CI\n   \n   on:\n     push:\n       branches: [ main, develop ]\n     pull_request:\n       branches: [ main, develop ]\n   \n   jobs:\n     test:\n       runs-on: ubuntu-latest\n       steps:\n         - uses: actions/checkout@v3\n         - name: Use Node.js\n           uses: actions/setup-node@v3\n           with:\n             node-version: '18.x'\n         - name: Install dependencies\n           run: npm ci\n         - name: Run linting\n           run: npm run lint\n         - name: Run unit and integration tests\n           run: npm test -- --coverage\n         - name: Run E2E tests\n           run: npm run cy:run\n         - name: Upload coverage reports\n           uses: codecov/codecov-action@v3\n   ```\n\n9. Implement test mocks for Supabase and external services:\n   ```javascript\n   // src/mocks/supabaseMock.js\n   export const supabaseMock = {\n     auth: {\n       signUp: jest.fn(),\n       signIn: jest.fn(),\n       signOut: jest.fn(),\n       resetPasswordForEmail: jest.fn()\n     },\n     from: jest.fn().mockReturnThis(),\n     select: jest.fn().mockReturnThis(),\n     insert: jest.fn().mockReturnThis(),\n     update: jest.fn().mockReturnThis(),\n     delete: jest.fn().mockReturnThis(),\n     eq: jest.fn().mockReturnThis(),\n     single: jest.fn(),\n     order: jest.fn().mockReturnThis()\n   };\n   ```\n\n10. Set up test coverage monitoring with codecov or similar service:\n    - Configure coverage thresholds in Jest config\n    - Integrate with CI to track coverage over time\n    - Set up alerts for coverage drops\n\n11. Implement snapshot testing for UI components:\n    ```javascript\n    test('renders correctly', () => {\n      const { container } = render(<ComponentToTest />);\n      expect(container).toMatchSnapshot();\n    });\n    ```\n\n12. Create testing documentation and guidelines for the team:\n    - Document testing approach and standards\n    - Provide examples for different types of tests\n    - Define coverage requirements for new features",
         "testStrategy": "1. Verify Jest and React Testing Library setup:\n   - Run `npm test` to ensure the testing environment is properly configured\n   - Check that test files are correctly discovered and executed\n\n2. Validate unit tests for core components:\n   - Run tests for context providers and verify they pass\n   - Check test coverage for utility functions and hooks\n   - Ensure UI component tests cover different states (loading, error, success)\n\n3. Verify integration tests:\n   - Run integration tests for authentication flows and verify they pass\n   - Test pantry management operations end-to-end within the test environment\n   - Verify shopping list and recipe integration tests\n\n4. Test Cypress E2E setup:\n   - Run `npx cypress open` to verify Cypress is correctly configured\n   - Execute E2E tests for critical user flows and verify they pass\n   - Check that tests run successfully in headless mode for CI\n\n5. Validate CI configuration:\n   - Push a test commit to trigger the GitHub Actions workflow\n   - Verify that all test stages (unit, integration, E2E) run successfully\n   - Check that test coverage reports are generated and uploaded\n\n6. Test coverage assessment:\n   - Run `npm test -- --coverage` and verify coverage meets minimum thresholds\n   - Check coverage reports for areas needing additional tests\n   - Verify codecov integration is working correctly\n\n7. Validate test mocks:\n   - Run tests that use Supabase mocks and verify they correctly simulate API behavior\n   - Check that tests are isolated from actual external services\n\n8. Review testing documentation:\n   - Ensure documentation is clear and comprehensive\n   - Verify examples are accurate and follow best practices\n   - Check that coverage requirements are clearly defined\n\n9. Perform cross-browser testing:\n   - Run E2E tests in multiple browsers to ensure compatibility\n   - Verify that tests pass consistently across different environments",
-        "status": "in-progress",
+        "status": "done",
         "dependencies": [
           2,
           3,
@@ -1311,7 +1311,7 @@
             "title": "Implement Integration Tests",
             "description": "Write integration tests to verify interactions between components and services, including database and API integration.",
             "details": "",
-            "status": "deferred",
+            "status": "done",
             "dependencies": [],
             "parentTaskId": 21
           },
@@ -1320,7 +1320,7 @@
             "title": "Add E2E Tests for Critical Flows",
             "description": "Set up and implement end-to-end (E2E) tests for critical user workflows using Playwright or Cypress.",
             "details": "",
-            "status": "deferred",
+            "status": "done",
             "dependencies": [],
             "parentTaskId": 21
           },
@@ -1329,7 +1329,7 @@
             "title": "Set Up Continuous Integration (CI)",
             "description": "Configure a CI workflow to automatically run tests and checks on every push and pull request.",
             "details": "",
-            "status": "deferred",
+            "status": "done",
             "dependencies": [],
             "parentTaskId": 21
           },
@@ -1338,16 +1338,144 @@
             "title": "Monitor Test Coverage",
             "description": "Set up test coverage reporting and enforce minimum coverage thresholds.",
             "details": "",
-            "status": "deferred",
+            "status": "done",
             "dependencies": [],
             "parentTaskId": 21
+          }
+        ]
+      },
+      {
+        "id": 22,
+        "title": "Pre-Deployment Checklist Implementation",
+        "description": "Create a comprehensive pre-deployment checklist system to ensure all critical requirements are met before the application is deployed to production.",
+        "details": "1. Create a PreDeploymentContext to manage the checklist state and validation:\n   ```typescript\n   interface ChecklistItem {\n     id: string;\n     title: string;\n     description: string;\n     status: 'pending' | 'completed' | 'failed';\n     validator?: () => Promise<boolean>;\n     manualCheck: boolean;\n   }\n   ```\n\n2. Implement the following checklist components:\n   - DeploymentChecklist: Main component displaying all checklist items\n   - ChecklistItem: Individual item with status indicator and action buttons\n   - ChecklistProgress: Visual progress indicator for overall completion\n   - ValidationReport: Detailed report of validation results\n\n3. Create automated validators for technical requirements:\n   - validateDatabaseMigrations(): Verify all migrations run successfully\n   - validateAPIEndpoints(): Test critical API endpoints\n   - validateAuthFlow(): Verify authentication flows\n   - validateCriticalUserJourneys(): Test key user flows\n   - validatePerformanceMetrics(): Check performance meets requirements\n\n4. Implement manual checklist items for non-automated checks:\n   - Security review completion\n   - Content and copy review\n   - Accessibility compliance verification\n   - Legal and compliance approval\n   - Stakeholder sign-off\n\n5. Create a deployment approval workflow:\n   - All automated checks must pass\n   - All manual checks must be marked as completed\n   - Required approvers must sign off\n   - Generate deployment approval report\n\n6. Implement checklist persistence in Supabase:\n   - Create deployment_checklists table\n   - Create deployment_checklist_items table\n   - Create deployment_approvals table\n\n7. Add pre-deployment environment configuration validation:\n   - Environment variables check\n   - API keys and secrets verification\n   - Service dependencies availability check\n   - Database backup confirmation",
+        "testStrategy": "1. Unit test all validator functions with both passing and failing scenarios:\n   - Mock API responses for endpoint validation\n   - Create test fixtures for database migration tests\n   - Simulate authentication flows with test accounts\n\n2. Integration test the checklist system:\n   - Verify checklist items are correctly loaded and displayed\n   - Test status updates for both automated and manual checks\n   - Verify persistence of checklist state in the database\n   - Test the approval workflow with different user roles\n\n3. End-to-end test the deployment approval process:\n   - Create a test deployment scenario with a mix of passing and failing checks\n   - Verify that deployment cannot proceed with failing checks\n   - Test the approval workflow with required approvers\n   - Verify the generated deployment report contains accurate information\n\n4. Performance test the validation process:\n   - Measure execution time of all validators\n   - Ensure validators don't impact application performance\n   - Test with realistic data volumes\n\n5. Manual testing of the checklist interface:\n   - Verify usability of the checklist interface\n   - Test responsive design on different devices\n   - Verify accessibility of the checklist components",
+        "status": "pending",
+        "dependencies": [
+          1,
+          2,
+          3,
+          5,
+          18,
+          20,
+          21
+        ],
+        "priority": "high",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Screenshots",
+            "description": "Take and prepare high-quality screenshots of the app for documentation, marketing, and the app store.",
+            "details": "Create screenshots showing key features: dashboard, recipe search, pantry management, shopping lists, AI chat assistant",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 22
+          },
+          {
+            "id": 2,
+            "title": "Fix sidebar",
+            "description": "Address sidebar navigation issues and improve functionality",
+            "details": "Fix any layout, responsiveness, or navigation issues with the sidebar component",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 22
+          },
+          {
+            "id": 3,
+            "title": "Visual polish",
+            "description": "Apply final visual improvements and UI refinements",
+            "details": "Polish animations, spacing, colors, typography, and overall visual consistency throughout the app",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 22
+          },
+          {
+            "id": 4,
+            "title": "Add badge",
+            "description": "Add appropriate badges to UI elements",
+            "details": "Implement notification badges, status indicators, and other visual badges throughout the interface",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 22
+          },
+          {
+            "id": 5,
+            "title": "One liner elevator pitch",
+            "description": "Create compelling one-sentence description of the app",
+            "details": "Craft a concise, memorable elevator pitch that captures the app's core value proposition",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 22
+          },
+          {
+            "id": 6,
+            "title": "Description of the app",
+            "description": "Write comprehensive app description",
+            "details": "Create detailed description explaining features, benefits, and use cases for marketing and documentation",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 22
+          },
+          {
+            "id": 7,
+            "title": "Better app name",
+            "description": "Consider and implement better app name",
+            "details": "Research and brainstorm a more compelling, memorable, and marketable app name",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 22
+          },
+          {
+            "id": 8,
+            "title": "Landing page",
+            "description": "Create or improve landing page",
+            "details": "Design and implement an attractive, informative landing page that showcases the app's features and benefits\n<info added on 2025-06-30T19:03:06.946Z>\n# Landing Page Implementation Guidelines\n\n## Content Structure\n- Create a compelling hero section with a clear headline, subheadline, brief description, and prominent CTA button (\"Get Started\" or \"Try for Free\")\n- Develop a features section highlighting: smart recipe suggestions, pantry management, shopping lists, AI chat assistant, and food waste reduction\n- Include a testimonial/social proof section (placeholders acceptable for initial implementation)\n- Design a footer with documentation, support, and social media links\n\n## Design Requirements\n- Ensure responsive design across all device sizes\n- Maintain visual consistency with the app's established style guide\n- Use engaging visuals including screenshots, icons, and illustrations that demonstrate functionality\n- Keep copy concise, benefit-focused, and conversational in tone\n\n## Technical Implementation\n- Create a new React component (LandingPage.tsx)\n- Leverage existing UI components where possible for consistency\n- Optimize images and assets for fast loading\n- Ensure accessibility compliance\n\n## Success Criteria\n- Clear communication of value proposition\n- Intuitive navigation\n- Visually appealing presentation of features and benefits\n- Effective call-to-action placement\n</info added on 2025-06-30T19:03:06.946Z>",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 22
+          },
+          {
+            "id": 9,
+            "title": "Video",
+            "description": "Create demo video showcasing features",
+            "details": "Produce a high-quality demo video that demonstrates key app features and user workflows",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 22
+          },
+          {
+            "id": 10,
+            "title": "Deploy",
+            "description": "Deploy application to production",
+            "details": "Execute final deployment to production environment with proper configuration and monitoring",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 22
+          },
+          {
+            "id": 11,
+            "title": "Readme",
+            "description": "Create comprehensive README documentation",
+            "details": "Write detailed README with setup instructions, features overview, and usage examples",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 22
+          },
+          {
+            "id": 12,
+            "title": "Remove avatar upload",
+            "description": "Remove avatar upload functionality",
+            "details": "Clean up any avatar upload UI components and related functionality that are not needed",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 22
           }
         ]
       }
     ],
     "metadata": {
       "created": "2025-06-29T22:44:32.785Z",
-      "updated": "2025-06-30T16:14:44.938Z",
+      "updated": "2025-06-30T19:09:32.998Z",
       "description": "Tasks for master context"
     }
   }
