@@ -10,7 +10,6 @@ import {
   Utensils,
   X,
 } from "lucide-react";
-import React from "react";
 import { NavLink } from "react-router-dom";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/Button";
@@ -31,18 +30,18 @@ interface SidebarProps {
 
 export function Sidebar({ onClose }: SidebarProps) {
   return (
-    <div className="flex h-full w-64 flex-col bg-background border-r border-border">
+    <div className="flex flex-col w-64 h-full border-r bg-background border-border">
       {/* Enhanced Sidebar Header with Branding */}
-      <div className="flex items-center justify-between p-4 border-b border-border bg-gradient-to-r from-emerald-50 to-emerald-100/50">
+      <div className="flex justify-between items-center p-4 bg-gradient-to-r from-emerald-50 border-b border-border to-emerald-100/50">
         <div className="flex items-center space-x-3">
           <div className="relative">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg">
-              <ChefHat className="h-4 w-4 text-white" />
+            <div className="flex justify-center items-center w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg">
+              <ChefHat className="w-4 h-4 text-white" />
               <Sparkles className="absolute -top-1 -right-1 h-2.5 w-2.5 text-yellow-300 animate-pulse" />
             </div>
           </div>
           <div className="flex flex-col">
-            <h2 className="text-sm font-bold bg-gradient-to-r from-emerald-600 to-emerald-700 bg-clip-text text-transparent">
+            <h2 className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-emerald-700">
               SmartRecipe
             </h2>
             <p className="text-xs text-muted-foreground">Smart Cooking</p>
@@ -56,13 +55,13 @@ export function Sidebar({ onClose }: SidebarProps) {
             onClick={onClose}
             className="lg:hidden"
           >
-            <X className="h-5 w-5" />
+            <X className="w-5 h-5" />
           </Button>
         )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 p-4">
+      <nav className="flex-1 p-4 space-y-1">
         {navigation.map((item) => (
           <NavLink
             key={item.name}
@@ -79,7 +78,7 @@ export function Sidebar({ onClose }: SidebarProps) {
           >
             <item.icon
               className={cn(
-                "mr-3 h-5 w-5 flex-shrink-0 transition-all duration-200",
+                "flex-shrink-0 mr-3 w-5 h-5 transition-all duration-200",
                 "group-hover:scale-110",
               )}
             />
@@ -91,10 +90,10 @@ export function Sidebar({ onClose }: SidebarProps) {
       {/* Footer Branding */}
       <div className="p-4 border-t border-border bg-muted/30">
         <div className="text-center">
-          <p className="text-xs text-muted-foreground mb-1">
+          <p className="mb-1 text-xs text-muted-foreground">
             Powered by AI • Made with ❤️
           </p>
-          <div className="flex items-center justify-center space-x-1 text-xs text-muted-foreground">
+          <div className="flex justify-center items-center space-x-1 text-xs text-muted-foreground">
             <span>Version 1.0</span>
             <span>•</span>
             <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded-full font-medium">

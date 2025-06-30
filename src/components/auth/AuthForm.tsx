@@ -29,7 +29,6 @@ const signUpSchema = signInSchema
     path: ["confirmPassword"],
   });
 
-// type SignInFormData = z.infer<typeof signInSchema>;
 type SignUpFormData = z.infer<typeof signUpSchema>;
 
 export function AuthForm() {

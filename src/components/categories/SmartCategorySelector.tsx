@@ -3,8 +3,8 @@
 import React from "react";
 import { AlertCircle, Check, Wand2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { Button } from "./Button";
-import { Badge } from "./badge";
+import { Button } from "../ui/Button";
+import { Badge } from "../ui/badge";
 
 interface SmartCategorySelectorProps {
   ingredientName: string;

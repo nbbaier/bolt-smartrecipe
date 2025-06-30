@@ -2,14 +2,14 @@ import { Clock, Heart, Info, Sparkles, Users } from "lucide-react";
 import React from "react";
 import type { RecipeMatchResult } from "../../lib/database";
 import type { Recipe } from "../../types";
-import { Badge } from "./badge";
+import { Badge } from "../ui/badge";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "./Card";
+} from "../ui/Card";
 
 interface RecipeCardProps {
   recipe: Recipe | RecipeMatchResult;

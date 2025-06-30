@@ -16,10 +16,10 @@ import type {
   RecipeInstruction,
   ShoppingList,
 } from "../../types";
-import { Button } from "./Button";
-import { Badge } from "./badge";
-import { Card, CardContent, CardHeader } from "./Card";
-import { ScrollArea } from "./scroll-area";
+import { Button } from "../ui/Button";
+import { Badge } from "../ui/badge";
+import { Card, CardContent, CardHeader } from "../ui/Card";
+import { ScrollArea } from "../ui/scroll-area";
 
 interface RecipeDetailModalProps {
   open: boolean;
