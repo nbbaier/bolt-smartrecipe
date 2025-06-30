@@ -1,19 +1,6 @@
-import {
-   BookOpen,
-   ChefHat,
-   Clock,
-   Filter,
-   Heart,
-   Plus,
-   Search,
-   ShoppingCart,
-   Sparkles,
-   Timer,
-   Users,
-   Utensils,
-   X,
-} from "lucide-react";
+import { BookOpen, Plus, Sparkles, Utensils, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/badge";
 import {
@@ -23,45 +10,42 @@ import {
    CardHeader,
    CardTitle,
 } from "../components/ui/Card";
-import { Input } from "../components/ui/Input";
-import { ScrollArea } from "../components/ui/scroll-area";
+import { RecipeDetailModal } from "../components/ui/RecipeDetailModal";
+import { RecipeFilters } from "../components/ui/RecipeFilters";
+import { RecipeList } from "../components/ui/RecipeList";
 import { useAuth } from "../contexts/AuthContext";
+import { useRecipe } from "../contexts/RecipeContext";
+import type { RecipeMatchResult } from "../lib/database";
 import {
-   bookmarkService,
    ingredientService,
    leftoverService,
    recipeService,
    shoppingListService,
 } from "../lib/database";
-import type {
-   Ingredient,
-   Recipe,
-   RecipeIngredient,
-   RecipeInstruction,
-   ShoppingList,
-} from "../types";
+import type { Ingredient, Recipe, ShoppingList } from "../types";
 
 export function Recipes() {
    const { user } = useAuth();
-   const [recipes, setRecipes] = useState<Recipe[]>([]);
-   const [canCookRecipes, setCanCookRecipes] = useState<Recipe[]>([]);
+   const {
+      recipes,
+      loading,
+      bookmarkedRecipes,
+      selectedRecipe,
+      recipeIngredients,
+      recipeInstructions,
+      loadRecipeDetails,
+      toggleBookmark,
+      setSelectedRecipe,
+      addRecipe,
+      updateRecipe,
+   } = useRecipe();
    const [userIngredients, setUserIngredients] = useState<Ingredient[]>([]);
-   const [bookmarkedRecipes, setBookmarkedRecipes] = useState<string[]>([]);
    const [userShoppingLists, setUserShoppingLists] = useState<ShoppingList[]>(
       [],
    );
-   const [loading, setLoading] = useState(true);
    const [searchTerm, setSearchTerm] = useState("");
    const [selectedDifficulty, setSelectedDifficulty] = useState<string>("All");
    const [showCanCookOnly, setShowCanCookOnly] = useState(false);
-   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
-   const [recipeIngredients, setRecipeIngredients] = useState<
-      RecipeIngredient[]
-   >([]);
-   const [recipeInstructions, setRecipeInstructions] = useState<
-      RecipeInstruction[]
-   >([]);
-   const [loadingRecipeDetails, setLoadingRecipeDetails] = useState(false);
    const [showAddToShoppingModal, setShowAddToShoppingModal] = useState(false);
    const [selectedShoppingListId, setSelectedShoppingListId] =
       useState<string>("");
@@ -69,102 +53,68 @@ export function Recipes() {
    const [showCreateLeftoverModal, setShowCreateLeftoverModal] =
       useState(false);
    const [creatingLeftover, setCreatingLeftover] = useState(false);
+   const [sortKey, setSortKey] = useState("recent");
+   const [itemsToShow, setItemsToShow] = useState(12);
+   const [showRecipeForm, setShowRecipeForm] = useState(false);
+   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
+   const [formState, setFormState] = useState<
+      Omit<Recipe, "id" | "created_at" | "updated_at">
+   >({
+      user_id: user?.id || "",
+      title: "",
+      description: "",
+      image_url: "",
+      prep_time: 0,
+      cook_time: 0,
+      servings: 1,
+      difficulty: "Easy",
+      cuisine_type: "",
+   });
+   const [canCookMatches, setCanCookMatches] = useState<RecipeMatchResult[]>(
+      [],
+   );
+   const [minMatch, setMinMatch] = useState(70); // Default: show recipes with at least 70% match
+   const [maxMissing, setMaxMissing] = useState(3); // Default: show recipes with at most 3 missing ingredients
+   const [canCookSortKey, setCanCookSortKey] = useState<
+      | "match"
+      | "missing"
+      | "cook_time_asc"
+      | "cook_time_desc"
+      | "difficulty_asc"
+      | "difficulty_desc"
+   >("match");
 
    const loadData = useCallback(async () => {
       if (!user) return;
 
       try {
-         setLoading(true);
-         const [
-            recipesData,
-            ingredientsData,
-            bookmarksData,
-            shoppingListsData,
-         ] = await Promise.all([
-            recipeService.getAll(),
+         const [ingredientsData, shoppingListsData] = await Promise.all([
             ingredientService.getAll(user.id),
-            bookmarkService.getUserBookmarks(user.id),
             shoppingListService.getAllLists(user.id),
          ]);
 
-         setRecipes(recipesData);
          setUserIngredients(ingredientsData);
-         setBookmarkedRecipes(bookmarksData);
          setUserShoppingLists(shoppingListsData);
 
-         // Calculate recipes that can be cooked
-         const ingredientNames = ingredientsData.map((ing) => ing.name);
-         const canCook = await recipeService.getCanCook(ingredientNames);
-         setCanCookRecipes(canCook);
+         // Fetch can cook matches with server-side filtering and pagination
+         const matches = await recipeService.getRecipeMatchesForPantry(
+            user.id,
+            {
+               minMatchPercentage: minMatch,
+               maxMissingIngredients: maxMissing,
+               limit: itemsToShow,
+               offset: 0,
+            },
+         );
+         setCanCookMatches(matches);
       } catch (error) {
          console.error("Error loading data:", error);
-      } finally {
-         setLoading(false);
       }
-   }, [user]);
+   }, [user, minMatch, maxMissing, itemsToShow]);
 
    useEffect(() => {
       loadData();
    }, [loadData]);
-
-   const loadRecipeDetails = async (recipe: Recipe) => {
-      setSelectedRecipe(recipe);
-      setLoadingRecipeDetails(true);
-
-      try {
-         const [ingredients, instructions] = await Promise.all([
-            recipeService.getIngredients(recipe.id),
-            recipeService.getInstructions(recipe.id),
-         ]);
-
-         setRecipeIngredients(ingredients);
-         setRecipeInstructions(instructions);
-      } catch (error) {
-         console.error("Error loading recipe details:", error);
-      } finally {
-         setLoadingRecipeDetails(false);
-      }
-   };
-
-   const toggleBookmark = async (recipeId: string) => {
-      if (!user) return;
-
-      try {
-         if (bookmarkedRecipes.includes(recipeId)) {
-            await bookmarkService.removeBookmark(user.id, recipeId);
-            setBookmarkedRecipes((prev) =>
-               prev.filter((id) => id !== recipeId),
-            );
-         } else {
-            const wasAdded = await bookmarkService.addBookmark(
-               user.id,
-               recipeId,
-            );
-            if (wasAdded) {
-               setBookmarkedRecipes((prev) => [...prev, recipeId]);
-            } else {
-               setBookmarkedRecipes((prev) =>
-                  prev.includes(recipeId) ? prev : [...prev, recipeId],
-               );
-            }
-         }
-      } catch (error) {
-         console.error("Error toggling bookmark:", error);
-      }
-   };
-
-   const getDifficultyColor = (difficulty: string) => {
-      switch (difficulty) {
-         case "Easy":
-            return "bg-green-100 text-green-800 border-green-200";
-         case "Medium":
-            return "bg-orange-100 text-orange-800 border-orange-200";
-         case "Hard":
-            return "bg-red-100 text-red-800 border-red-200";
-         default:
-            return "bg-gray-100 text-gray-800 border-gray-200";
-      }
-   };
 
    const checkIngredientAvailability = (ingredientName: string) => {
       return userIngredients.some(
@@ -201,13 +151,14 @@ export function Recipes() {
          setShowAddToShoppingModal(false);
          setSelectedShoppingListId("");
 
-         // Show success message
-         alert(
+         toast.success(
             `Added missing ingredients from "${selectedRecipe.title}" to your shopping list!`,
          );
       } catch (error) {
          console.error("Error adding to shopping list:", error);
-         alert("Failed to add ingredients to shopping list. Please try again.");
+         toast.error(
+            "Failed to add ingredients to shopping list. Please try again.",
+         );
       } finally {
          setAddingToShopping(false);
       }
@@ -229,18 +180,68 @@ export function Recipes() {
 
          setShowCreateLeftoverModal(false);
 
-         // Show success message
-         alert(`Created leftover entry for "${selectedRecipe.title}"!`);
+         toast.success(`Created leftover entry for "${selectedRecipe.title}"!`);
       } catch (error) {
          console.error("Error creating leftover:", error);
-         alert("Failed to create leftover. Please try again.");
+         toast.error("Failed to create leftover. Please try again.");
       } finally {
          setCreatingLeftover(false);
       }
    };
 
-   const filteredRecipes = (showCanCookOnly ? canCookRecipes : recipes).filter(
-      (recipe) => {
+   const openAddRecipe = () => {
+      setEditingRecipe(null);
+      setFormState({
+         user_id: user?.id || "",
+         title: "",
+         description: "",
+         image_url: "",
+         prep_time: 0,
+         cook_time: 0,
+         servings: 1,
+         difficulty: "Easy",
+         cuisine_type: "",
+      });
+      setShowRecipeForm(true);
+   };
+
+   const handleFormChange = (
+      e: React.ChangeEvent<
+         HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+      >,
+   ) => {
+      const { name, value } = e.target;
+      setFormState((prev) => ({
+         ...prev,
+         [name]:
+            name === "prep_time" || name === "cook_time" || name === "servings"
+               ? Number(value)
+               : value,
+      }));
+   };
+
+   const handleRecipeFormSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (editingRecipe) {
+         await updateRecipe(editingRecipe.id, formState);
+      } else {
+         await addRecipe(formState);
+      }
+      setShowRecipeForm(false);
+      setEditingRecipe(null);
+   };
+
+   let filteredRecipes: (Recipe | RecipeMatchResult)[];
+   if (showCanCookOnly) {
+      filteredRecipes = canCookMatches.filter((match) => {
+         const matchesSearch = match.recipe_title
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase());
+         // Difficulty filter is not available directly, so skip for now or join with recipes if needed
+         return matchesSearch;
+      });
+   } else {
+      filteredRecipes = recipes.filter((recipe) => {
          const matchesSearch =
             recipe.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             recipe.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -248,8 +249,74 @@ export function Recipes() {
             selectedDifficulty === "All" ||
             recipe.difficulty === selectedDifficulty;
          return matchesSearch && matchesDifficulty;
-      },
-   );
+      });
+   }
+
+   const sortedRecipes = [...filteredRecipes].sort((a, b) => {
+      if (showCanCookOnly) {
+         const aMatch = a as RecipeMatchResult;
+         const bMatch = b as RecipeMatchResult;
+         switch (canCookSortKey) {
+            case "match":
+               return bMatch.match_percentage - aMatch.match_percentage;
+            case "missing":
+               return (
+                  (aMatch.missing_ingredients?.length ?? 0) -
+                  (bMatch.missing_ingredients?.length ?? 0)
+               );
+            case "cook_time_asc":
+               // No cook_time in RecipeMatchResult, so skip or use 0
+               return 0;
+            case "cook_time_desc":
+               return 0;
+            case "difficulty_asc":
+               return 0;
+            case "difficulty_desc":
+               return 0;
+            default:
+               return 0;
+         }
+      }
+      // Type guard for Recipe
+      const aRecipe = a as Recipe;
+      const bRecipe = b as Recipe;
+      switch (sortKey) {
+         case "cook_time_asc":
+            return (
+               aRecipe.prep_time +
+               aRecipe.cook_time -
+               (bRecipe.prep_time + bRecipe.cook_time)
+            );
+         case "cook_time_desc":
+            return (
+               bRecipe.prep_time +
+               bRecipe.cook_time -
+               (aRecipe.prep_time + aRecipe.cook_time)
+            );
+         case "difficulty_asc": {
+            const diffOrder = { Easy: 1, Medium: 2, Hard: 3 };
+            return (
+               (diffOrder[aRecipe.difficulty as keyof typeof diffOrder] || 0) -
+               (diffOrder[bRecipe.difficulty as keyof typeof diffOrder] || 0)
+            );
+         }
+         case "difficulty_desc": {
+            const diffOrder = { Easy: 1, Medium: 2, Hard: 3 };
+            return (
+               (diffOrder[bRecipe.difficulty as keyof typeof diffOrder] || 0) -
+               (diffOrder[aRecipe.difficulty as keyof typeof diffOrder] || 0)
+            );
+         }
+         case "recent":
+         default:
+            return (
+               new Date(bRecipe.created_at).getTime() -
+               new Date(aRecipe.created_at).getTime()
+            );
+      }
+   });
+
+   const visibleRecipes = sortedRecipes.slice(0, itemsToShow);
 
    if (loading) {
       return (
@@ -276,49 +343,94 @@ export function Recipes() {
                   variant="secondary"
                   className="text-green-800 bg-green-100"
                >
-                  {canCookRecipes.length} recipes
+                  {canCookMatches.length} recipes
                </Badge>
-            </div>
-         </div>
-
-         {/* Search and Filter */}
-         <div className="flex flex-col space-y-3 lg:space-y-0 lg:flex-row lg:gap-4">
-            <div className="relative flex-1">
-               <Search className="absolute left-3 top-1/2 w-4 h-4 text-gray-400 transform -translate-y-1/2" />
-               <Input
-                  placeholder="Search recipes..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 text-sm sm:text-base"
-               />
-            </div>
-            <div className="flex flex-col items-stretch space-y-3 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-4">
-               <div className="flex items-center space-x-2">
-                  <Filter className="flex-shrink-0 w-4 h-4 text-gray-600" />
-                  <select
-                     value={selectedDifficulty}
-                     onChange={(e) => setSelectedDifficulty(e.target.value)}
-                     className="flex-1 px-3 py-2 text-sm rounded-md border border-gray-300 sm:flex-none focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  >
-                     <option value="All">All Difficulties</option>
-                     <option value="Easy">Easy</option>
-                     <option value="Medium">Medium</option>
-                     <option value="Hard">Hard</option>
-                  </select>
-               </div>
                <Button
-                  variant={showCanCookOnly ? "default" : "outline"}
-                  onClick={() => setShowCanCookOnly(!showCanCookOnly)}
-                  className="flex justify-center items-center space-x-2 text-sm sm:text-base"
+                  onClick={openAddRecipe}
+                  className="ml-4"
+                  variant="default"
                >
-                  <Sparkles className="w-4 h-4" />
-                  <span>Can Cook</span>
+                  <Plus className="mr-1 w-4 h-4" /> Add Recipe
                </Button>
             </div>
          </div>
 
+         {/* Search and Filter */}
+         <RecipeFilters
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            selectedDifficulty={selectedDifficulty}
+            onDifficultyChange={setSelectedDifficulty}
+            showCanCookOnly={showCanCookOnly}
+            onToggleCanCook={() => setShowCanCookOnly((v) => !v)}
+            sortKey={sortKey}
+            onSortKeyChange={setSortKey}
+         />
+
+         {/* Advanced Filters for Can Cook */}
+         {showCanCookOnly && (
+            <div className="flex flex-col p-3 mb-2 bg-gray-50 rounded-lg border border-gray-200 sm:flex-row sm:items-center sm:space-x-6">
+               <div className="flex items-center mb-2 space-x-2 sm:mb-0">
+                  <label
+                     htmlFor="min-match"
+                     className="text-sm font-medium text-gray-700"
+                  >
+                     Min Match %:
+                  </label>
+                  <input
+                     id="min-match"
+                     type="number"
+                     min={0}
+                     max={100}
+                     value={minMatch}
+                     onChange={(e) => setMinMatch(Number(e.target.value))}
+                     className="px-2 py-1 w-16 text-sm rounded border"
+                  />
+               </div>
+               <div className="flex items-center mb-2 space-x-2 sm:mb-0">
+                  <label
+                     htmlFor="max-missing"
+                     className="text-sm font-medium text-gray-700"
+                  >
+                     Max Missing:
+                  </label>
+                  <input
+                     id="max-missing"
+                     type="number"
+                     min={0}
+                     max={20}
+                     value={maxMissing}
+                     onChange={(e) => setMaxMissing(Number(e.target.value))}
+                     className="px-2 py-1 w-16 text-sm rounded border"
+                  />
+               </div>
+               <div className="flex items-center space-x-2">
+                  <label
+                     htmlFor="can-cook-sort"
+                     className="text-sm font-medium text-gray-700"
+                  >
+                     Sort by:
+                  </label>
+                  <select
+                     id="can-cook-sort"
+                     value={canCookSortKey}
+                     onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                        setCanCookSortKey(
+                           e.target.value as typeof canCookSortKey,
+                        )
+                     }
+                     className="px-2 py-1 text-sm rounded border"
+                  >
+                     <option value="match">Match % (high → low)</option>
+                     <option value="missing">Fewest Missing</option>
+                     {/* Optionally add more when RecipeMatchResult includes cook_time/difficulty */}
+                  </select>
+               </div>
+            </div>
+         )}
+
          {/* Can Cook Banner */}
-         {canCookRecipes.length > 0 && !showCanCookOnly && (
+         {canCookMatches.length > 0 && !showCanCookOnly && (
             <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
                <CardContent className="p-4 sm:p-6">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -328,7 +440,7 @@ export function Recipes() {
                         </div>
                         <div className="min-w-0">
                            <h3 className="text-sm font-semibold text-green-900 sm:text-base">
-                              You can cook {canCookRecipes.length} recipes with
+                              You can cook {canCookMatches.length} recipes with
                               your current ingredients!
                            </h3>
                            <p className="text-xs text-green-700 sm:text-sm">
@@ -363,374 +475,67 @@ export function Recipes() {
                </CardContent>
             </Card>
          ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 sm:gap-6">
-               {filteredRecipes.map((recipe) => (
-                  <Card
-                     key={recipe.id}
-                     className="overflow-hidden transition-all duration-200 cursor-pointer group hover:shadow-lg"
-                     onClick={() => loadRecipeDetails(recipe)}
-                  >
-                     <div className="relative">
-                        <img
-                           src={
-                              recipe.image_url ||
-                              "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg"
-                           }
-                           alt={recipe.title}
-                           className="object-cover w-full h-40 sm:h-48"
-                        />
-                        <button
-                           onClick={(e) => {
-                              e.stopPropagation();
-                              toggleBookmark(recipe.id);
-                           }}
-                           className={`absolute top-2 sm:top-3 right-2 sm:right-3 p-2 rounded-full transition-colors ${
-                              bookmarkedRecipes.includes(recipe.id)
-                                 ? "bg-red-500 text-white"
-                                 : "bg-white/80 text-gray-600 hover:bg-white"
-                           }`}
-                        >
-                           <Heart
-                              className={`h-3 w-3 sm:h-4 sm:w-4 ${bookmarkedRecipes.includes(recipe.id) ? "fill-current" : ""}`}
-                           />
-                        </button>
-                        {canCookRecipes.some((r) => r.id === recipe.id) && (
-                           <Badge className="absolute top-2 left-2 text-xs bg-green-600 sm:top-3 sm:left-3 hover:bg-green-700">
-                              <Sparkles className="mr-1 w-2 h-2 sm:h-3 sm:w-3" />
-                              Can Cook
-                           </Badge>
-                        )}
-                     </div>
-                     <CardHeader className="pb-2">
-                        <CardTitle className="text-base sm:text-lg line-clamp-1">
-                           {recipe.title}
-                        </CardTitle>
-                        <CardDescription className="text-sm line-clamp-2">
-                           {recipe.description}
-                        </CardDescription>
-                     </CardHeader>
-                     <CardContent className="pt-0">
-                        <div className="flex justify-between items-center mb-3 text-xs text-gray-600 sm:text-sm">
-                           <div className="flex items-center space-x-1">
-                              <Clock className="flex-shrink-0 w-3 h-3 sm:h-4 sm:w-4" />
-                              <span>
-                                 {recipe.prep_time + recipe.cook_time} min
-                              </span>
-                           </div>
-                           <div className="flex items-center space-x-1">
-                              <Users className="flex-shrink-0 w-3 h-3 sm:h-4 sm:w-4" />
-                              <span>{recipe.servings}</span>
-                           </div>
-                           <Badge
-                              variant="outline"
-                              className={`${getDifficultyColor(recipe.difficulty)} text-xs`}
-                           >
-                              {recipe.difficulty}
-                           </Badge>
-                        </div>
-                        {recipe.cuisine_type && (
-                           <Badge variant="secondary" className="text-xs">
-                              {recipe.cuisine_type}
-                           </Badge>
-                        )}
-                     </CardContent>
-                  </Card>
-               ))}
+            <RecipeList
+               recipes={visibleRecipes}
+               bookmarkedRecipes={bookmarkedRecipes}
+               onBookmark={toggleBookmark}
+               onSelectRecipe={loadRecipeDetails}
+               canCookMatches={
+                  showCanCookOnly ? (visibleRecipes as RecipeMatchResult[]) : []
+               }
+            />
+         )}
+
+         {itemsToShow < sortedRecipes.length && (
+            <div className="flex justify-center mt-6">
+               <Button onClick={() => setItemsToShow(itemsToShow + 12)}>
+                  Load More
+               </Button>
             </div>
          )}
 
          {/* Recipe Detail Modal */}
          {selectedRecipe && (
-            <div className="flex fixed inset-0 z-50 justify-center items-center p-4 bg-black/50">
-               <Card className="max-w-4xl w-full max-h-[90vh] overflow-hidden">
-                  <CardHeader className="relative pb-3 sm:pb-4">
-                     <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                           setSelectedRecipe(null);
-                           setRecipeIngredients([]);
-                           setRecipeInstructions([]);
-                        }}
-                        className="absolute top-2 right-2 z-10 sm:right-4 sm:top-4"
-                     >
-                        <X className="w-4 h-4" />
-                     </Button>
-
-                     <div className="relative">
-                        <img
-                           src={
-                              selectedRecipe.image_url ||
-                              "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg"
-                           }
-                           alt={selectedRecipe.title}
-                           className="object-cover w-full h-48 rounded-lg sm:h-64"
-                        />
-                        <div className="absolute right-3 bottom-3 left-3 sm:bottom-4 sm:left-4 sm:right-4">
-                           <div className="p-3 rounded-lg backdrop-blur-sm bg-white/95 sm:p-4">
-                              <div className="flex justify-between items-start">
-                                 <div className="flex-1 min-w-0">
-                                    <h2 className="mb-1 text-lg font-bold text-gray-900 sm:text-2xl sm:mb-2 line-clamp-2">
-                                       {selectedRecipe.title}
-                                    </h2>
-                                    <p className="mb-2 text-sm text-gray-600 sm:text-base sm:mb-3 line-clamp-2">
-                                       {selectedRecipe.description}
-                                    </p>
-                                    <div className="flex flex-wrap gap-2 items-center">
-                                       <Badge
-                                          variant="outline"
-                                          className={`${getDifficultyColor(selectedRecipe.difficulty)} text-xs`}
-                                       >
-                                          {selectedRecipe.difficulty}
-                                       </Badge>
-                                       {selectedRecipe.cuisine_type && (
-                                          <Badge
-                                             variant="secondary"
-                                             className="text-xs"
-                                          >
-                                             {selectedRecipe.cuisine_type}
-                                          </Badge>
-                                       )}
-                                       {canCookRecipes.some(
-                                          (r) => r.id === selectedRecipe.id,
-                                       ) && (
-                                          <Badge className="text-xs bg-green-600">
-                                             <Sparkles className="mr-1 w-2 h-2 sm:h-3 sm:w-3" />
-                                             Can Cook
-                                          </Badge>
-                                       )}
-                                    </div>
-                                 </div>
-                                 <button
-                                    onClick={(e) => {
-                                       e.stopPropagation();
-                                       toggleBookmark(selectedRecipe.id);
-                                    }}
-                                    className={`p-2 rounded-full transition-colors ml-2 flex-shrink-0 ${
-                                       bookmarkedRecipes.includes(
-                                          selectedRecipe.id,
-                                       )
-                                          ? "bg-red-500 text-white"
-                                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                                    }`}
-                                 >
-                                    <Heart
-                                       className={`h-4 w-4 sm:h-5 sm:w-5 ${bookmarkedRecipes.includes(selectedRecipe.id) ? "fill-current" : ""}`}
-                                    />
-                                 </button>
-                              </div>
-                           </div>
-                        </div>
-                     </div>
-                  </CardHeader>
-
-                  <ScrollArea className="h-[calc(90vh-300px)]">
-                     <CardContent className="p-4 sm:p-6">
-                        {loadingRecipeDetails ? (
-                           <div className="flex justify-center items-center py-8">
-                              <div className="w-8 h-8 rounded-full border-b-2 animate-spin border-primary"></div>
-                           </div>
-                        ) : (
-                           <div className="space-y-6">
-                              {/* Recipe Stats */}
-                              <div className="grid grid-cols-3 gap-2 text-center sm:gap-4">
-                                 <div className="p-3 bg-gray-50 rounded-lg sm:p-4">
-                                    <div className="flex justify-center items-center mb-1 sm:mb-2">
-                                       <Timer className="w-4 h-4 text-blue-600 sm:h-5 sm:w-5" />
-                                    </div>
-                                    <div className="text-lg font-bold text-gray-900 sm:text-2xl">
-                                       {selectedRecipe.prep_time}
-                                    </div>
-                                    <div className="text-xs text-gray-600 sm:text-sm">
-                                       Prep Time
-                                    </div>
-                                 </div>
-                                 <div className="p-3 bg-gray-50 rounded-lg sm:p-4">
-                                    <div className="flex justify-center items-center mb-1 sm:mb-2">
-                                       <ChefHat className="w-4 h-4 text-orange-600 sm:h-5 sm:w-5" />
-                                    </div>
-                                    <div className="text-lg font-bold text-gray-900 sm:text-2xl">
-                                       {selectedRecipe.cook_time}
-                                    </div>
-                                    <div className="text-xs text-gray-600 sm:text-sm">
-                                       Cook Time
-                                    </div>
-                                 </div>
-                                 <div className="p-3 bg-gray-50 rounded-lg sm:p-4">
-                                    <div className="flex justify-center items-center mb-1 sm:mb-2">
-                                       <Users className="w-4 h-4 text-green-600 sm:h-5 sm:w-5" />
-                                    </div>
-                                    <div className="text-lg font-bold text-gray-900 sm:text-2xl">
-                                       {selectedRecipe.servings}
-                                    </div>
-                                    <div className="text-xs text-gray-600 sm:text-sm">
-                                       Servings
-                                    </div>
-                                 </div>
-                              </div>
-
-                              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 sm:gap-8">
-                                 {/* Ingredients */}
-                                 <div>
-                                    <div className="flex items-center mb-3 space-x-2 sm:mb-4">
-                                       <Utensils className="w-4 h-4 text-gray-600 sm:h-5 sm:w-5" />
-                                       <h3 className="text-base font-semibold text-gray-900 sm:text-lg">
-                                          Ingredients
-                                       </h3>
-                                    </div>
-
-                                    {/* Add to Shopping List Button */}
-                                    {getMissingIngredients().length > 0 &&
-                                       userShoppingLists.length > 0 && (
-                                          <div className="mb-4">
-                                             <Button
-                                                onClick={() =>
-                                                   setShowAddToShoppingModal(
-                                                      true,
-                                                   )
-                                                }
-                                                variant="outline"
-                                                className="flex items-center space-x-2 text-sm"
-                                             >
-                                                <ShoppingCart className="w-4 h-4" />
-                                                <span>
-                                                   Add Missing to Shopping List
-                                                   (
-                                                   {
-                                                      getMissingIngredients()
-                                                         .length
-                                                   }
-                                                   )
-                                                </span>
-                                             </Button>
-                                          </div>
-                                       )}
-
-                                    {/* Create Leftover Button */}
-                                    <div className="mb-4">
-                                       <Button
-                                          onClick={() =>
-                                             setShowCreateLeftoverModal(true)
-                                          }
-                                          variant="outline"
-                                          className="flex items-center space-x-2 text-sm"
-                                       >
-                                          <Utensils className="w-4 h-4" />
-                                          <span>Create Leftover</span>
-                                       </Button>
-                                    </div>
-
-                                    {recipeIngredients.length > 0 ? (
-                                       <div className="space-y-2 sm:space-y-3">
-                                          {recipeIngredients.map(
-                                             (ingredient, index) => {
-                                                const isAvailable =
-                                                   checkIngredientAvailability(
-                                                      ingredient.ingredient_name,
-                                                   );
-                                                return (
-                                                   <div
-                                                      key={index}
-                                                      className={`flex items-center justify-between p-2 sm:p-3 rounded-lg border transition-colors ${
-                                                         isAvailable
-                                                            ? "text-green-900 bg-green-50 border-green-200"
-                                                            : "text-orange-900 bg-orange-50 border-orange-200"
-                                                      }`}
-                                                   >
-                                                      <div className="flex flex-1 items-center space-x-2 min-w-0">
-                                                         <div
-                                                            className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full flex-shrink-0 ${
-                                                               isAvailable
-                                                                  ? "bg-green-500"
-                                                                  : "bg-orange-500"
-                                                            }`}
-                                                         />
-                                                         <div className="flex items-center space-x-1">
-                                                            <span className="text-sm font-medium truncate sm:text-base">
-                                                               {
-                                                                  ingredient.ingredient_name
-                                                               }
-                                                            </span>
-                                                            {!isAvailable && (
-                                                               <span className="text-xs bg-orange-200 text-orange-800 px-1.5 py-0.5 rounded-full">
-                                                                  Need
-                                                               </span>
-                                                            )}
-                                                         </div>
-                                                      </div>
-                                                      <div className="flex-shrink-0 ml-2 text-xs sm:text-sm">
-                                                         {ingredient.quantity}{" "}
-                                                         {ingredient.unit}
-                                                         {ingredient.notes && (
-                                                            <span className="hidden ml-1 text-gray-500 sm:inline">
-                                                               (
-                                                               {
-                                                                  ingredient.notes
-                                                               }
-                                                               )
-                                                            </span>
-                                                         )}
-                                                      </div>
-                                                   </div>
-                                                );
-                                             },
-                                          )}
-                                       </div>
-                                    ) : (
-                                       <p className="text-sm italic text-gray-500 sm:text-base">
-                                          No ingredients listed for this recipe.
-                                       </p>
-                                    )}
-                                 </div>
-
-                                 {/* Instructions */}
-                                 <div>
-                                    <div className="flex items-center mb-3 space-x-2 sm:mb-4">
-                                       <BookOpen className="w-4 h-4 text-gray-600 sm:h-5 sm:w-5" />
-                                       <h3 className="text-base font-semibold text-gray-900 sm:text-lg">
-                                          Instructions
-                                       </h3>
-                                    </div>
-                                    {recipeInstructions.length > 0 ? (
-                                       <div className="space-y-3 sm:space-y-4">
-                                          {recipeInstructions.map(
-                                             (instruction, index) => (
-                                                <div
-                                                   key={index}
-                                                   className="flex space-x-3 sm:space-x-4"
-                                                >
-                                                   <div className="flex-shrink-0">
-                                                      <div className="flex justify-center items-center w-6 h-6 text-xs font-medium text-white rounded-full sm:w-8 sm:h-8 bg-primary sm:text-sm">
-                                                         {
-                                                            instruction.step_number
-                                                         }
-                                                      </div>
-                                                   </div>
-                                                   <div className="flex-1 min-w-0">
-                                                      <p className="text-sm leading-relaxed text-gray-700 sm:text-base">
-                                                         {
-                                                            instruction.instruction
-                                                         }
-                                                      </p>
-                                                   </div>
-                                                </div>
-                                             ),
-                                          )}
-                                       </div>
-                                    ) : (
-                                       <p className="text-sm italic text-gray-500 sm:text-base">
-                                          No instructions available for this
-                                          recipe.
-                                       </p>
-                                    )}
-                                 </div>
-                              </div>
-                           </div>
-                        )}
-                     </CardContent>
-                  </ScrollArea>
-               </Card>
-            </div>
+            <RecipeDetailModal
+               open={!!selectedRecipe}
+               recipe={selectedRecipe}
+               ingredients={recipeIngredients}
+               instructions={recipeInstructions}
+               loading={loading}
+               onClose={() => {
+                  setSelectedRecipe(null);
+                  setShowAddToShoppingModal(false);
+                  setShowCreateLeftoverModal(false);
+                  setSelectedShoppingListId("");
+               }}
+               isBookmarked={
+                  selectedRecipe
+                     ? bookmarkedRecipes.includes(selectedRecipe.id)
+                     : false
+               }
+               onBookmark={toggleBookmark}
+               canCook={
+                  selectedRecipe && showCanCookOnly
+                     ? canCookMatches.some(
+                          (r) =>
+                             r.recipe_id === selectedRecipe.id &&
+                             r.match_percentage >= minMatch,
+                       )
+                     : false
+               }
+               userShoppingLists={userShoppingLists}
+               showAddToShoppingModal={showAddToShoppingModal}
+               setShowAddToShoppingModal={setShowAddToShoppingModal}
+               selectedShoppingListId={selectedShoppingListId}
+               setSelectedShoppingListId={setSelectedShoppingListId}
+               addMissingToShoppingList={addMissingToShoppingList}
+               addingToShopping={addingToShopping}
+               showCreateLeftoverModal={showCreateLeftoverModal}
+               setShowCreateLeftoverModal={setShowCreateLeftoverModal}
+               createLeftoverFromRecipe={createLeftoverFromRecipe}
+               creatingLeftover={creatingLeftover}
+               getMissingIngredients={getMissingIngredients}
+            />
          )}
 
          {/* Add to Shopping List Modal */}
@@ -926,6 +731,104 @@ export function Recipes() {
                      </div>
                   </CardContent>
                </Card>
+            </div>
+         )}
+
+         {/* Recipe Add/Edit Modal */}
+         {showRecipeForm && (
+            <div className="flex fixed inset-0 z-50 justify-center items-center bg-black/40">
+               <form
+                  className="p-6 space-y-4 w-full max-w-md bg-white rounded-lg shadow-lg"
+                  onSubmit={handleRecipeFormSubmit}
+               >
+                  <h2 className="mb-2 text-lg font-bold">
+                     {editingRecipe ? "Edit Recipe" : "Add Recipe"}
+                  </h2>
+                  <input
+                     name="title"
+                     value={formState.title}
+                     onChange={handleFormChange}
+                     placeholder="Title"
+                     className="p-2 w-full rounded border"
+                     required
+                  />
+                  <textarea
+                     name="description"
+                     value={formState.description}
+                     onChange={handleFormChange}
+                     placeholder="Description"
+                     className="p-2 w-full rounded border"
+                     required
+                  />
+                  <input
+                     name="image_url"
+                     value={formState.image_url}
+                     onChange={handleFormChange}
+                     placeholder="Image URL"
+                     className="p-2 w-full rounded border"
+                  />
+                  <div className="flex space-x-2">
+                     <input
+                        name="prep_time"
+                        type="number"
+                        value={formState.prep_time}
+                        onChange={handleFormChange}
+                        placeholder="Prep Time (min)"
+                        className="p-2 w-1/3 rounded border"
+                        min={0}
+                        required
+                     />
+                     <input
+                        name="cook_time"
+                        type="number"
+                        value={formState.cook_time}
+                        onChange={handleFormChange}
+                        placeholder="Cook Time (min)"
+                        className="p-2 w-1/3 rounded border"
+                        min={0}
+                        required
+                     />
+                     <input
+                        name="servings"
+                        type="number"
+                        value={formState.servings}
+                        onChange={handleFormChange}
+                        placeholder="Servings"
+                        className="p-2 w-1/3 rounded border"
+                        min={1}
+                        required
+                     />
+                  </div>
+                  <select
+                     name="difficulty"
+                     value={formState.difficulty}
+                     onChange={handleFormChange}
+                     className="p-2 w-full rounded border"
+                  >
+                     <option value="Easy">Easy</option>
+                     <option value="Medium">Medium</option>
+                     <option value="Hard">Hard</option>
+                  </select>
+                  <input
+                     name="cuisine_type"
+                     value={formState.cuisine_type}
+                     onChange={handleFormChange}
+                     placeholder="Cuisine Type"
+                     className="p-2 w-full rounded border"
+                  />
+                  <div className="flex justify-end mt-4 space-x-2">
+                     <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => setShowRecipeForm(false)}
+                     >
+                        Cancel
+                     </Button>
+                     <Button type="submit" variant="default">
+                        {editingRecipe ? "Update" : "Add"}
+                     </Button>
+                  </div>
+               </form>
             </div>
          )}
       </div>
