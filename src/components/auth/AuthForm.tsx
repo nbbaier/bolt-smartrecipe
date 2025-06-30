@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertCircle, ChefHat, Sparkles } from "lucide-react";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useAuth } from "../../contexts/AuthContext";
 import { handleApiError } from "../../lib/errorUtils";
@@ -41,6 +42,7 @@ function AuthFormRaw({ initialMode }: AuthFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { signIn, signUp, isSupabaseConnected } = useAuth();
+  const navigate = useNavigate();
 
   const { register, handleSubmit, reset } = useForm<SignUpFormData>({
     resolver: zodResolver(isSignUp ? signUpSchema : signInSchema),
@@ -58,9 +60,11 @@ function AuthFormRaw({ initialMode }: AuthFormProps) {
           data.fullName,
         );
         if (error) throw error;
+        navigate("/");
       } else {
         const { error } = await signIn(data.email, data.password);
         if (error) throw error;
+        navigate("/");
       }
     } catch (err: unknown) {
       setError(handleApiError(err));
