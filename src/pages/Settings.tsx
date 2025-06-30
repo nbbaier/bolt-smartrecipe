@@ -9,10 +9,13 @@ import {
   Users,
   Utensils,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
+import { ExpirationThresholdInput } from "../components/settings/ExpirationThresholdInput";
+import { InventoryThresholdInput } from "../components/settings/InventoryThresholdInput";
+import { NotificationToggle } from "../components/settings/NotificationToggle";
 import { Button } from "../components/ui/button";
 import {
   Card,
@@ -20,11 +23,12 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "../components/ui/Card";
+} from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Separator } from "../components/ui/separator";
 import { useAuth } from "../contexts/AuthContext";
-import { userPreferencesService, userProfileService } from "../lib/database";
+import { useSettings } from "../contexts/SettingsContext";
+import { userProfileService } from "../lib/database";
 import { supabase } from "../lib/supabase";
 import type { UserPreferences, UserProfile } from "../types";
 
@@ -82,132 +86,48 @@ const KITCHEN_EQUIPMENT = [
   "Rice Cooker",
 ];
 
-type CookingSkillLevel = "Beginner" | "Intermediate" | "Advanced" | "Expert";
-type MeasurementUnits = "Metric" | "Imperial";
-
-// Zod schemas
 const profileSchema = z.object({
   full_name: z.string().min(2, "Full name is required"),
   bio: z.string().max(300, "Bio must be 300 characters or less").optional(),
   avatar_color: z.string().min(1),
 });
 
-const preferencesSchema = z.object({
-  dietary_restrictions: z.array(z.string()),
-  allergies: z.array(z.string()),
-  preferred_cuisines: z.array(z.string()),
-  cooking_skill_level: z.enum([
-    "Beginner",
-    "Intermediate",
-    "Advanced",
-    "Expert",
-  ]),
-  measurement_units: z.enum(["Metric", "Imperial"]),
-  family_size: z.number().min(1, "Family size must be at least 1"),
-  kitchen_equipment: z.array(z.string()),
-});
-
 export function Settings() {
   const { user } = useAuth();
+  const { settings, loading, updateSettings } = useSettings();
   const [_profile, setProfile] = useState<UserProfile | null>(null);
-  const [_preferences, setPreferences] = useState<UserPreferences | null>(null);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
   const [uploading, setUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
 
-  // Form states
   const [profileForm, setProfileForm] = useState({
     full_name: "",
     bio: "",
     avatar_color: "#10B981",
   });
 
-  const [preferencesForm, setPreferencesForm] = useState<{
-    dietary_restrictions: string[];
-    allergies: string[];
-    preferred_cuisines: string[];
-    cooking_skill_level: CookingSkillLevel;
-    measurement_units: MeasurementUnits;
-    family_size: number;
-    kitchen_equipment: string[];
-  }>({
-    dietary_restrictions: [],
-    allergies: [],
-    preferred_cuisines: [],
-    cooking_skill_level: "Beginner",
-    measurement_units: "Metric",
-    family_size: 2,
-    kitchen_equipment: [],
-  });
-
-  // Replace local state with useForm for profile
   const {
-    register: registerProfile,
-    handleSubmit: handleProfileSubmit,
-    setValue: _setProfileValue,
-    formState: { errors: profileErrors },
-    control: profileControl,
+    formState: { errors: _profileErrors },
   } = useForm({
     resolver: zodResolver(profileSchema),
     defaultValues: profileForm,
   });
 
-  // Replace local state with useForm for preferences
-  const {
-    handleSubmit: handlePreferencesSubmit,
-    setValue: setPreferencesValue,
-    formState: { errors: preferencesErrors },
-    control: preferencesControl,
-  } = useForm({
-    resolver: zodResolver(preferencesSchema),
-    defaultValues: preferencesForm,
-  });
-
-  const loadUserData = useCallback(async () => {
-    if (!user) return;
-
-    try {
-      setLoading(true);
-      const [profileData, preferencesData] = await Promise.all([
-        userProfileService.getProfile(user.id),
-        userPreferencesService.getPreferences(user.id),
-      ]);
-
-      if (profileData) {
-        setProfile(profileData);
-        setProfileForm({
-          full_name: profileData.full_name,
-          bio: profileData.bio,
-          avatar_color: profileData.avatar_color,
-        });
-      }
-
-      if (preferencesData) {
-        setPreferences(preferencesData);
-        setPreferencesForm({
-          dietary_restrictions: preferencesData.dietary_restrictions,
-          allergies: preferencesData.allergies,
-          preferred_cuisines: preferencesData.preferred_cuisines,
-          cooking_skill_level: preferencesData.cooking_skill_level,
-          measurement_units: preferencesData.measurement_units,
-          family_size: preferencesData.family_size,
-          kitchen_equipment: preferencesData.kitchen_equipment,
-        });
-      }
-    } catch (error) {
-      console.error("Error loading user data:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
-
   useEffect(() => {
     if (user) {
-      loadUserData();
+      userProfileService.getProfile(user.id).then((profileData) => {
+        if (profileData) {
+          setProfile(profileData);
+          setProfileForm({
+            full_name: profileData.full_name,
+            bio: profileData.bio,
+            avatar_color: profileData.avatar_color,
+          });
+        }
+      });
     }
-  }, [user, loadUserData]);
+  }, [user]);
 
   useEffect(() => {
     if (_profile?.avatar_url) {
@@ -215,45 +135,32 @@ export function Settings() {
     }
   }, [_profile]);
 
-  const saveProfile = async () => {
-    if (!user) return;
-    try {
-      setSaving(true);
-      await userProfileService.updateProfile(user.id, profileForm);
-      await loadUserData();
-      toast.success("Profile saved successfully!");
-    } catch (error) {
-      toast.error("Failed to save profile. Please try again.");
-      console.error("Error saving profile:", error);
-    } finally {
-      setSaving(false);
+  const [preferencesForm, setPreferencesForm] = useState<
+    Partial<UserPreferences>
+  >({});
+  useEffect(() => {
+    if (settings) {
+      setPreferencesForm({ ...settings });
     }
+  }, [settings]);
+
+  const handlePreferencesChange = (
+    field: keyof UserPreferences,
+    value: unknown,
+  ) => {
+    setPreferencesForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const savePreferences = async () => {
-    if (!user) return;
+    if (!settings) return;
     try {
       setSaving(true);
-      await userPreferencesService.updatePreferences(user.id, preferencesForm);
-      await loadUserData();
+      await updateSettings(preferencesForm);
       toast.success("Preferences saved successfully!");
-    } catch (error) {
+    } catch {
       toast.error("Failed to save preferences. Please try again.");
-      console.error("Error saving preferences:", error);
     } finally {
       setSaving(false);
-    }
-  };
-
-  const toggleArrayItem = (
-    array: string[],
-    item: string,
-    setter: (value: string[]) => void,
-  ) => {
-    if (array.includes(item)) {
-      setter(array.filter((i) => i !== item));
-    } else {
-      setter([...array, item]);
     }
   };
 
@@ -283,42 +190,12 @@ export function Settings() {
       await userProfileService.updateProfile(user.id, {
         avatar_url: publicUrl,
       });
-      await loadUserData();
-    } catch (_error) {
+    } catch {
       alert("Failed to upload avatar image");
     } finally {
       setUploading(false);
     }
   };
-
-  // Profile completion calculation
-  function getProfileCompletion(
-    profile: UserProfile | null,
-    preferences: UserPreferences | null,
-  ) {
-    if (!profile || !preferences) return 0;
-    let filled = 0;
-    const total = 8;
-    if (profile.full_name && profile.full_name.trim().length > 1) filled++;
-    if (profile.bio && profile.bio.trim().length > 0) filled++;
-    if (profile.avatar_color || profile.avatar_url) filled++;
-    if (
-      preferences.dietary_restrictions &&
-      preferences.dietary_restrictions.length > 0
-    )
-      filled++;
-    if (preferences.allergies && preferences.allergies.length > 0) filled++;
-    if (preferences.cooking_skill_level) filled++;
-    if (preferences.measurement_units) filled++;
-    if (
-      preferences.kitchen_equipment &&
-      preferences.kitchen_equipment.length > 0
-    )
-      filled++;
-    return Math.round((filled / total) * 100);
-  }
-
-  const completion = getProfileCompletion(_profile, _preferences);
 
   if (loading) {
     return (
@@ -333,28 +210,24 @@ export function Settings() {
     { id: "dietary", label: "Dietary", icon: Heart },
     { id: "cooking", label: "Cooking", icon: ChefHat },
     { id: "equipment", label: "Equipment", icon: Utensils },
+    { id: "alerts", label: "Alerts", icon: AlertTriangle },
   ];
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Profile Completion Bar */}
       <div className="flex items-center mb-2 space-x-4">
         <div className="flex-1">
           <div className="mb-1 text-xs font-medium text-secondary-700">
-            Profile {completion}% complete
+            Profile {getInitials(profileForm.full_name)}
           </div>
           <div className="overflow-hidden w-full h-2 rounded-full bg-secondary-200">
             <div
               className="h-2 rounded-full transition-all bg-primary"
-              style={{ width: `${completion}%` }}
+              style={{ width: `100%` }}
             />
           </div>
         </div>
-        {completion === 100 && (
-          <span className="ml-2 text-xs font-bold text-green-600">✓</span>
-        )}
       </div>
-
       <div className="text-center sm:text-left">
         <h1 className="text-xl font-bold sm:text-2xl text-secondary-900">
           Settings
@@ -363,8 +236,6 @@ export function Settings() {
           Customize your cooking preferences and profile
         </p>
       </div>
-
-      {/* Tabs */}
       <div className="flex flex-wrap gap-2">
         {tabs.map((tab) => (
           <button
@@ -381,8 +252,6 @@ export function Settings() {
           </button>
         ))}
       </div>
-
-      {/* Profile Tab */}
       {activeTab === "profile" && (
         <Card>
           <CardHeader>
@@ -395,7 +264,6 @@ export function Settings() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Avatar Section */}
             <div className="flex items-center space-x-4">
               {avatarUrl ? (
                 <img
@@ -406,13 +274,9 @@ export function Settings() {
               ) : (
                 <div
                   className="flex justify-center items-center w-16 h-16 text-xl font-bold text-white rounded-full"
-                  style={{
-                    backgroundColor: profileControl._formValues.avatar_color,
-                  }}
+                  style={{ backgroundColor: profileForm.avatar_color }}
                 >
-                  {getInitials(
-                    profileControl._formValues.full_name || user?.email || "U",
-                  )}
+                  {getInitials(profileForm.full_name || user?.email || "U")}
                 </div>
               )}
               <div className="flex-1">
@@ -436,230 +300,164 @@ export function Settings() {
                 )}
               </div>
             </div>
-
             <Separator />
-
-            {/* Form Fields */}
-            <form
-              onSubmit={handleProfileSubmit(saveProfile)}
-              className="space-y-4"
-            >
-              <Input
-                label="Full Name"
-                {...registerProfile("full_name")}
-                error={profileErrors.full_name?.message}
-                placeholder="Enter your full name"
-              />
-
-              <div>
-                <label className="block mb-1 text-sm font-medium text-secondary-700">
-                  Bio (Optional)
-                </label>
-                <textarea
-                  {...registerProfile("bio")}
-                  placeholder="Tell us about your cooking journey..."
-                  className="px-3 py-2 w-full h-20 text-sm rounded-lg border resize-none border-secondary-300 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                />
-                {profileErrors.bio && (
-                  <p className="mt-1 text-xs text-red-600">
-                    {profileErrors.bio.message}
-                  </p>
-                )}
-              </div>
-
-              <Button
-                type="submit"
-                disabled={saving}
-                className="w-full sm:w-auto"
-              >
-                <Save className="mr-2 w-4 h-4" />
-                {saving ? "Saving..." : "Save Profile"}
-              </Button>
-            </form>
           </CardContent>
         </Card>
       )}
-
-      {/* Dietary Tab */}
-      {activeTab === "dietary" && (
+      {(activeTab === "dietary" ||
+        activeTab === "cooking" ||
+        activeTab === "equipment" ||
+        activeTab === "alerts") && (
         <form
-          onSubmit={handlePreferencesSubmit(savePreferences)}
+          onSubmit={(e) => {
+            e.preventDefault();
+            savePreferences();
+          }}
           className="space-y-6"
         >
-          {/* Dietary Restrictions */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Heart className="w-5 h-5" />
-                <span>Dietary Restrictions</span>
-              </CardTitle>
-              <CardDescription>
-                Select any dietary restrictions you follow
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {DIETARY_RESTRICTIONS.map((restriction) => (
-                  <button
-                    key={restriction}
-                    type="button"
-                    onClick={() => {
-                      const current =
-                        preferencesControl._formValues.dietary_restrictions;
-                      setPreferencesValue(
-                        "dietary_restrictions",
-                        current.includes(restriction)
-                          ? current.filter((r: string) => r !== restriction)
-                          : [...current, restriction],
-                      );
-                    }}
-                    className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                      preferencesControl._formValues.dietary_restrictions.includes(
-                        restriction,
-                      )
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                    }`}
-                  >
-                    {restriction}
-                  </button>
-                ))}
-              </div>
-              {preferencesErrors.dietary_restrictions && (
-                <p className="mt-1 text-xs text-red-600">
-                  {preferencesErrors.dietary_restrictions.message}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Allergies */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <AlertTriangle className="w-5 h-5" />
-                <span>Allergies</span>
-              </CardTitle>
-              <CardDescription>
-                Select any food allergies you have
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {COMMON_ALLERGIES.map((allergy) => (
-                  <button
-                    key={allergy}
-                    type="button"
-                    onClick={() => {
-                      const current = preferencesControl._formValues.allergies;
-                      setPreferencesValue(
-                        "allergies",
-                        current.includes(allergy)
-                          ? current.filter((a: string) => a !== allergy)
-                          : [...current, allergy],
-                      );
-                    }}
-                    className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                      preferencesControl._formValues.allergies.includes(allergy)
-                        ? "bg-red-500 text-white"
-                        : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                    }`}
-                  >
-                    {allergy}
-                  </button>
-                ))}
-              </div>
-              {preferencesErrors.allergies && (
-                <p className="mt-1 text-xs text-red-600">
-                  {preferencesErrors.allergies.message}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Preferred Cuisines */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Globe className="w-5 h-5" />
-                <span>Preferred Cuisines</span>
-              </CardTitle>
-              <CardDescription>
-                Select the types of cuisine you enjoy
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {CUISINE_TYPES.map((cuisine) => (
-                  <button
-                    key={cuisine}
-                    type="button"
-                    onClick={() => {
-                      const current =
-                        preferencesControl._formValues.preferred_cuisines;
-                      setPreferencesValue(
-                        "preferred_cuisines",
-                        current.includes(cuisine)
-                          ? current.filter((c: string) => c !== cuisine)
-                          : [...current, cuisine],
-                      );
-                    }}
-                    className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                      preferencesControl._formValues.preferred_cuisines.includes(
-                        cuisine,
-                      )
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                    }`}
-                  >
-                    {cuisine}
-                  </button>
-                ))}
-              </div>
-              {preferencesErrors.preferred_cuisines && (
-                <p className="mt-1 text-xs text-red-600">
-                  {preferencesErrors.preferred_cuisines.message}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
-          <Button type="submit" disabled={saving} className="w-full sm:w-auto">
-            <Save className="mr-2 w-4 h-4" />
-            {saving ? "Saving..." : "Save Dietary Preferences"}
-          </Button>
-        </form>
-      )}
-
-      {/* Cooking Tab */}
-      {activeTab === "cooking" && (
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <ChefHat className="w-5 h-5" />
-                <span>Cooking Preferences</span>
-              </CardTitle>
-              <CardDescription>
-                Tell us about your cooking experience and preferences
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Cooking Skill Level */}
-              <div>
-                <label className="block mb-2 text-sm font-medium text-secondary-700">
-                  Cooking Skill Level
-                </label>
+          {activeTab === "dietary" && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Heart className="w-5 h-5" />
+                  <span>Dietary Restrictions</span>
+                </CardTitle>
+                <CardDescription>
+                  Select any dietary restrictions you follow
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {DIETARY_RESTRICTIONS.map((restriction) => (
+                    <button
+                      key={restriction}
+                      type="button"
+                      onClick={() => {
+                        const current =
+                          preferencesForm.dietary_restrictions || [];
+                        handlePreferencesChange(
+                          "dietary_restrictions",
+                          current.includes(restriction)
+                            ? current.filter((r: string) => r !== restriction)
+                            : [...current, restriction],
+                        );
+                      }}
+                      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                        (preferencesForm.dietary_restrictions || []).includes(
+                          restriction,
+                        )
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                      }`}
+                    >
+                      {restriction}
+                    </button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          {activeTab === "dietary" && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <AlertTriangle className="w-5 h-5" />
+                  <span>Allergies</span>
+                </CardTitle>
+                <CardDescription>
+                  Select any food allergies you have
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {COMMON_ALLERGIES.map((allergy) => (
+                    <button
+                      key={allergy}
+                      type="button"
+                      onClick={() => {
+                        const current = preferencesForm.allergies || [];
+                        handlePreferencesChange(
+                          "allergies",
+                          current.includes(allergy)
+                            ? current.filter((a: string) => a !== allergy)
+                            : [...current, allergy],
+                        );
+                      }}
+                      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                        (preferencesForm.allergies || []).includes(allergy)
+                          ? "bg-red-500 text-white"
+                          : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                      }`}
+                    >
+                      {allergy}
+                    </button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          {activeTab === "dietary" && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Globe className="w-5 h-5" />
+                  <span>Preferred Cuisines</span>
+                </CardTitle>
+                <CardDescription>
+                  Select the types of cuisine you enjoy
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {CUISINE_TYPES.map((cuisine) => (
+                    <button
+                      key={cuisine}
+                      type="button"
+                      onClick={() => {
+                        const current =
+                          preferencesForm.preferred_cuisines || [];
+                        handlePreferencesChange(
+                          "preferred_cuisines",
+                          current.includes(cuisine)
+                            ? current.filter((c: string) => c !== cuisine)
+                            : [...current, cuisine],
+                        );
+                      }}
+                      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                        (preferencesForm.preferred_cuisines || []).includes(
+                          cuisine,
+                        )
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                      }`}
+                    >
+                      {cuisine}
+                    </button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          {activeTab === "cooking" && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <ChefHat className="w-5 h-5" />
+                  <span>Cooking Skill Level</span>
+                </CardTitle>
+                <CardDescription>
+                  Select your cooking skill level
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                   {["Beginner", "Intermediate", "Advanced", "Expert"].map(
                     (level) => (
                       <button
                         key={level}
+                        type="button"
                         onClick={() =>
-                          setPreferencesForm({
-                            ...preferencesForm,
-                            cooking_skill_level: level as CookingSkillLevel,
-                          })
+                          handlePreferencesChange("cooking_skill_level", level)
                         }
                         className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                           preferencesForm.cooking_skill_level === level
@@ -672,24 +470,28 @@ export function Settings() {
                     ),
                   )}
                 </div>
-              </div>
-
-              <Separator />
-
-              {/* Measurement Units */}
-              <div>
-                <label className="block mb-2 text-sm font-medium text-secondary-700">
-                  Preferred Measurement Units
-                </label>
+              </CardContent>
+            </Card>
+          )}
+          {activeTab === "cooking" && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Globe className="w-5 h-5" />
+                  <span>Preferred Measurement Units</span>
+                </CardTitle>
+                <CardDescription>
+                  Choose your preferred measurement system
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
                 <div className="flex gap-2">
                   {["Metric", "Imperial"].map((unit) => (
                     <button
                       key={unit}
+                      type="button"
                       onClick={() =>
-                        setPreferencesForm({
-                          ...preferencesForm,
-                          measurement_units: unit as MeasurementUnits,
-                        })
+                        handlePreferencesChange("measurement_units", unit)
                       }
                       className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                         preferencesForm.measurement_units === unit
@@ -706,27 +508,32 @@ export function Settings() {
                     ? "Grams, kilograms, milliliters, liters, Celsius"
                     : "Ounces, pounds, cups, tablespoons, Fahrenheit"}
                 </p>
-              </div>
-
-              <Separator />
-
-              {/* Family Size */}
-              <div>
-                <label className="block mb-2 text-sm font-medium text-secondary-700">
-                  Family Size
-                </label>
+              </CardContent>
+            </Card>
+          )}
+          {activeTab === "cooking" && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Users className="w-5 h-5" />
+                  <span>Family Size</span>
+                </CardTitle>
+                <CardDescription>
+                  Set your household size for recipe scaling
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
                 <div className="flex items-center space-x-2">
-                  <Users className="w-4 h-4 text-secondary-600" />
-                  <input
+                  <Input
                     type="number"
-                    min="1"
-                    max="20"
-                    value={preferencesForm.family_size}
+                    min={1}
+                    max={20}
+                    value={preferencesForm.family_size || 1}
                     onChange={(e) =>
-                      setPreferencesForm({
-                        ...preferencesForm,
-                        family_size: parseInt(e.target.value) || 1,
-                      })
+                      handlePreferencesChange(
+                        "family_size",
+                        parseInt(e.target.value) || 1,
+                      )
                     }
                     className="px-3 py-2 w-20 text-sm rounded-lg border border-secondary-300 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                   />
@@ -734,73 +541,91 @@ export function Settings() {
                     people (affects recipe serving suggestions)
                   </span>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Button
-            onClick={savePreferences}
-            disabled={saving}
-            className="w-full sm:w-auto"
-          >
-            <Save className="mr-2 w-4 h-4" />
-            {saving ? "Saving..." : "Save Cooking Preferences"}
-          </Button>
-        </div>
-      )}
-
-      {/* Equipment Tab */}
-      {activeTab === "equipment" && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Utensils className="w-5 h-5" />
-              <span>Kitchen Equipment</span>
-            </CardTitle>
-            <CardDescription>
-              Select the kitchen equipment you have available (this helps us
-              suggest appropriate recipes)
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-wrap gap-2">
-              {KITCHEN_EQUIPMENT.map((equipment) => (
-                <button
-                  key={equipment}
-                  onClick={() =>
-                    toggleArrayItem(
-                      preferencesForm.kitchen_equipment,
-                      equipment,
-                      (newEquipment) =>
-                        setPreferencesForm({
-                          ...preferencesForm,
-                          kitchen_equipment: newEquipment,
-                        }),
-                    )
+              </CardContent>
+            </Card>
+          )}
+          {activeTab === "equipment" && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Utensils className="w-5 h-5" />
+                  <span>Kitchen Equipment</span>
+                </CardTitle>
+                <CardDescription>
+                  Select the kitchen equipment you have available
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {KITCHEN_EQUIPMENT.map((equipment) => (
+                    <button
+                      key={equipment}
+                      type="button"
+                      onClick={() => {
+                        const current = preferencesForm.kitchen_equipment || [];
+                        handlePreferencesChange(
+                          "kitchen_equipment",
+                          current.includes(equipment)
+                            ? current.filter((e: string) => e !== equipment)
+                            : [...current, equipment],
+                        );
+                      }}
+                      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                        (preferencesForm.kitchen_equipment || []).includes(
+                          equipment,
+                        )
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                      }`}
+                    >
+                      {equipment}
+                    </button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          {activeTab === "alerts" && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <AlertTriangle className="w-5 h-5" />
+                  <span>Notifications & Alerts</span>
+                </CardTitle>
+                <CardDescription>
+                  Manage notification and alert preferences
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <NotificationToggle
+                  value={!!preferencesForm.notification_enabled}
+                  onChange={(val) =>
+                    handlePreferencesChange("notification_enabled", val)
                   }
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    preferencesForm.kitchen_equipment.includes(equipment)
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                  }`}
-                >
-                  {equipment}
-                </button>
-              ))}
-            </div>
-
-            <div className="mt-6">
-              <Button
-                onClick={savePreferences}
-                disabled={saving}
-                className="w-full sm:w-auto"
-              >
-                <Save className="mr-2 w-4 h-4" />
-                {saving ? "Saving..." : "Save Equipment"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+                  loading={saving}
+                />
+                <ExpirationThresholdInput
+                  value={preferencesForm.expiration_threshold_days || 3}
+                  onChange={(val) =>
+                    handlePreferencesChange("expiration_threshold_days", val)
+                  }
+                  loading={saving}
+                />
+                <InventoryThresholdInput
+                  value={preferencesForm.inventory_threshold || 1}
+                  onChange={(val) =>
+                    handlePreferencesChange("inventory_threshold", val)
+                  }
+                  loading={saving}
+                />
+              </CardContent>
+            </Card>
+          )}
+          <Button type="submit" disabled={saving} className="w-full sm:w-auto">
+            <Save className="mr-2 w-4 h-4" />
+            {saving ? "Saving..." : "Save Preferences"}
+          </Button>
+        </form>
       )}
     </div>
   );

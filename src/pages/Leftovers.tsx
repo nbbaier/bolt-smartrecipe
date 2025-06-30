@@ -10,6 +10,7 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { LeftoverCard } from "../components/leftovers/LeftoverCard";
+import { LeftoverForm } from "../components/leftovers/LeftoverForm";
 import { Button } from "../components/ui/button";
 import {
   Card,
@@ -17,13 +18,13 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "../components/ui/Card";
+} from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { useAuth } from "../contexts/AuthContext";
+import { useSettings } from "../contexts/SettingsContext";
 import { leftoverService } from "../lib/database";
 import { checkExpiringItems } from "../lib/notificationService";
 import type { Leftover } from "../types";
-import { LeftoverForm } from "../components/leftovers/LeftoverForm";
 
 export function Leftovers() {
   const { user } = useAuth();
@@ -33,6 +34,7 @@ export function Leftovers() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingLeftover, setEditingLeftover] = useState<Leftover | null>(null);
   const [saving, setSaving] = useState(false);
+  const { settings } = useSettings();
 
   const loadLeftovers = useCallback(async () => {
     if (!user) return;
@@ -56,10 +58,13 @@ export function Leftovers() {
 
   // Notification integration
   useEffect(() => {
-    if (!user || loading || !leftovers.length) return;
+    if (!user || loading || !leftovers.length || !settings) return;
     checkExpiringItems({
-      ingredients: [], // Leftovers page only
+      ingredients: [],
       leftovers,
+      criticalDays: settings.expiration_threshold_days,
+      warningDays: Math.max(settings.expiration_threshold_days + 4, 7),
+      notificationEnabled: settings.notification_enabled,
       onNotify: ({ item, notificationType, message }) => {
         toast(message, {
           description: `${item.type === "ingredient" ? "Ingredient" : "Leftover"}: ${item.name}`,
@@ -81,7 +86,7 @@ export function Leftovers() {
         });
       },
     });
-  }, [user, loading, leftovers]);
+  }, [user, loading, leftovers, settings]);
 
   const handleSubmit = async (
     data: Omit<Leftover, "id" | "created_at" | "updated_at">,

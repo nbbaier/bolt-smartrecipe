@@ -11,7 +11,7 @@ import { SearchAndFilterBar } from "../components/shopping/SearchAndFilterBar";
 import { ShoppingListItems } from "../components/shopping/ShoppingListItems";
 import { ShoppingListsTabs } from "../components/shopping/ShoppingListsTabs";
 import { Button } from "../components/ui/button";
-import { Card, CardContent } from "../components/ui/Card";
+import { Card, CardContent } from "../components/ui/card";
 import { useAuth } from "../contexts/AuthContext";
 import {
   ingredientService,

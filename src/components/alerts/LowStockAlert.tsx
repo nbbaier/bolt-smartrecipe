@@ -4,7 +4,8 @@ import React from "react";
 import { AlertTriangle, Package, TrendingDown } from "lucide-react";
 import type { Ingredient } from "../../types";
 import { Badge } from "../ui/badge";
-import { Card, CardContent } from "../ui/Card";
+import { Card, CardContent } from "../ui/card";
+import { useSettings } from "../../contexts/SettingsContext";
 
 interface LowStockAlertProps {
   ingredients: Ingredient[];
@@ -17,12 +18,15 @@ export function LowStockAlert({
   onViewPantry,
   className,
 }: LowStockAlertProps) {
+  const { settings } = useSettings();
+  const defaultThreshold = settings?.inventory_threshold ?? 1;
   if (ingredients.length === 0) return null;
 
   const outOfStock = ingredients.filter((item) => item.quantity <= 0);
   const lowStock = ingredients.filter(
     (item) =>
-      item.quantity > 0 && item.quantity <= (item.low_stock_threshold || 1),
+      item.quantity > 0 &&
+      item.quantity <= (item.low_stock_threshold ?? defaultThreshold),
   );
 
   return (

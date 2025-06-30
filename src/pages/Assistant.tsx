@@ -1,11 +1,10 @@
-import React from "react";
-import { AIChat } from "../components/ai/AIChat";
+import AIChatWithProvider from "../components/ai/AIChat";
 
 export function Assistant() {
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="text-center sm:text-left">
-        <h1 className="text-xl sm:text-2xl font-bold text-secondary-900">
+        <h1 className="text-xl font-bold sm:text-2xl text-secondary-900">
           AI Cooking Assistant
         </h1>
         <p className="text-sm sm:text-base text-secondary-600">
@@ -13,7 +12,7 @@ export function Assistant() {
         </p>
       </div>
 
-      <AIChat />
+      <AIChatWithProvider />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import React from "react";
-import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
+import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 import { supabase } from "../lib/supabase";
 import { AuthProvider, useAuth } from "./AuthContext";
 

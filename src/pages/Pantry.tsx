@@ -26,10 +26,11 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "../components/ui/Card";
+} from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { useAuth } from "../contexts/AuthContext";
 import { usePantry } from "../contexts/PantryContext";
+import { useSettings } from "../contexts/SettingsContext";
 import { useIngredientHistory } from "../hooks/useIngredientHistory";
 import { checkExpiringItems } from "../lib/notificationService";
 import type { Ingredient } from "../types";
@@ -127,13 +128,18 @@ export function Pantry() {
         low_stock_threshold: undefined,
       },
     });
+  const { settings } = useSettings();
+  const defaultInventoryThreshold = settings?.inventory_threshold ?? 1;
 
   // Notification integration
   useEffect(() => {
-    if (!user || loading || !ingredients.length) return;
+    if (!user || loading || !ingredients.length || !settings) return;
     checkExpiringItems({
       ingredients,
-      leftovers: [], // Pantry page only
+      leftovers: [],
+      criticalDays: settings.expiration_threshold_days,
+      warningDays: Math.max(settings.expiration_threshold_days + 4, 7),
+      notificationEnabled: settings.notification_enabled,
       onNotify: ({ item, notificationType, message }) => {
         toast(message, {
           description: `${item.type === "ingredient" ? "Ingredient" : "Leftover"}: ${item.name}`,
@@ -155,7 +161,7 @@ export function Pantry() {
         });
       },
     });
-  }, [user, loading, ingredients]);
+  }, [user, loading, ingredients, settings]);
 
   const onSubmit = async (data: IngredientFormData) => {
     if (!user) return;
@@ -312,7 +318,7 @@ export function Pantry() {
 
   const isLowStock = (ingredient: Ingredient) => {
     const threshold =
-      ingredient.low_stock_threshold || getDefaultThreshold(ingredient.unit);
+      ingredient.low_stock_threshold ?? defaultInventoryThreshold;
     return ingredient.quantity > 0 && ingredient.quantity <= threshold;
   };
 
@@ -797,13 +803,7 @@ export function Pantry() {
 
       {/* Expiration Monitor */}
       {showExpirationMonitor && ingredientsWithExpiration.length > 0 && (
-        <ExpirationMonitor
-          ingredients={ingredientsWithExpiration}
-          onUpdateSettings={(settings) => {
-            console.log("Expiration settings updated:", settings);
-            // Could save to user preferences in the future
-          }}
-        />
+        <ExpirationMonitor ingredients={ingredientsWithExpiration} />
       )}
 
       {/* Ingredients Grid */}
@@ -894,7 +894,7 @@ export function Pantry() {
                     <span className="truncate">
                       {isOutOfStock(ingredient)
                         ? "Out of stock - reorder needed"
-                        : `Low stock - below ${ingredient.low_stock_threshold || 1} ${ingredient.unit}`}
+                        : `Low stock - below ${ingredient.low_stock_threshold ?? defaultInventoryThreshold} ${ingredient.unit}`}
                     </span>
                   </div>
                 )}

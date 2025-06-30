@@ -1,43 +1,32 @@
 // biome-ignore-all assist/source/organizeImports: needed for testing
 // @ts-nocheck
 import React from "react";
-import { AlertTriangle, Calendar, Clock, Settings } from "lucide-react";
+import { AlertTriangle, Calendar, Clock } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { Ingredient } from "../../types";
-import { Button } from "../ui/button";
+import { useSettings } from "../../contexts/SettingsContext";
 import { Badge } from "../ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
 interface ExpirationMonitorProps {
   ingredients: Ingredient[];
-  onUpdateSettings?: (settings: ExpirationSettings) => void;
   className?: string;
-}
-
-interface ExpirationSettings {
-  warningDays: number;
-  criticalDays: number;
-  enableNotifications: boolean;
 }
 
 interface ExpirationGroup {
   expired: Ingredient[];
-  critical: Ingredient[]; // 1-3 days
-  warning: Ingredient[]; // 4-7 days
-  upcoming: Ingredient[]; // 8-14 days
+  critical: Ingredient[];
+  warning: Ingredient[];
+  upcoming: Ingredient[];
 }
 
 export function ExpirationMonitor({
   ingredients,
-  onUpdateSettings,
   className,
 }: ExpirationMonitorProps) {
-  const [settings, setSettings] = useState<ExpirationSettings>({
-    warningDays: 7,
-    criticalDays: 3,
-    enableNotifications: true,
-  });
-  const [showSettings, setShowSettings] = useState(false);
+  const { settings } = useSettings();
+  const criticalDays = settings?.expiration_threshold_days ?? 3;
+  const warningDays = Math.max(criticalDays + 4, 7); // warning = critical+4 or 7
   const [groups, setGroups] = useState<ExpirationGroup>({
     expired: [],
     critical: [],
@@ -48,35 +37,29 @@ export function ExpirationMonitor({
   const categorizeByExpiration = useCallback(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
     const newGroups: ExpirationGroup = {
       expired: [],
       critical: [],
       warning: [],
       upcoming: [],
     };
-
     ingredients
       .filter((ingredient) => ingredient.expiration_date)
       .forEach((ingredient) => {
         const expDate = new Date(ingredient.expiration_date!);
         expDate.setHours(0, 0, 0, 0);
-
         const diffTime = expDate.getTime() - today.getTime();
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
         if (diffDays < 0) {
           newGroups.expired.push(ingredient);
-        } else if (diffDays <= settings.criticalDays) {
+        } else if (diffDays <= criticalDays) {
           newGroups.critical.push(ingredient);
-        } else if (diffDays <= settings.warningDays) {
+        } else if (diffDays <= warningDays) {
           newGroups.warning.push(ingredient);
         } else if (diffDays <= 14) {
           newGroups.upcoming.push(ingredient);
         }
       });
-
-    // Sort each group by expiration date
     Object.values(newGroups).forEach((group) => {
       group.sort(
         (a: Ingredient, b: Ingredient) =>
@@ -84,9 +67,8 @@ export function ExpirationMonitor({
           new Date(b.expiration_date!).getTime(),
       );
     });
-
     setGroups(newGroups);
-  }, [ingredients, settings]);
+  }, [ingredients, criticalDays, warningDays]);
 
   useEffect(() => {
     categorizeByExpiration();
@@ -97,7 +79,6 @@ export function ExpirationMonitor({
     today.setHours(0, 0, 0, 0);
     const expDate = new Date(expirationDate);
     expDate.setHours(0, 0, 0, 0);
-
     const diffTime = expDate.getTime() - today.getTime();
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
@@ -145,82 +126,9 @@ export function ExpirationMonitor({
               {totalExpiringItems !== 1 ? "s" : ""}
             </Badge>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowSettings(!showSettings)}
-          >
-            <Settings className="w-4 h-4" />
-          </Button>
         </div>
       </CardHeader>
-
       <CardContent className="pt-0 space-y-4">
-        {/* Settings Panel */}
-        {showSettings && (
-          <div className="p-3 space-y-3 bg-gray-50 rounded-lg">
-            <h4 className="text-sm font-medium text-gray-900">
-              Alert Settings
-            </h4>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label
-                  htmlFor="warning-days"
-                  className="block mb-1 text-xs font-medium text-gray-700"
-                >
-                  Warning (days)
-                </label>
-                <input
-                  id="warning-days"
-                  type="number"
-                  min="1"
-                  max="30"
-                  value={settings.warningDays}
-                  onChange={(e) =>
-                    setSettings((prev) => ({
-                      ...prev,
-                      warningDays: parseInt(e.target.value) || 7,
-                    }))
-                  }
-                  className="px-2 py-1 w-full text-sm rounded-md border border-gray-300"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="critical-days"
-                  className="block mb-1 text-xs font-medium text-gray-700"
-                >
-                  Critical (days)
-                </label>
-                <input
-                  id="critical-days"
-                  type="number"
-                  min="1"
-                  max="7"
-                  value={settings.criticalDays}
-                  onChange={(e) =>
-                    setSettings((prev) => ({
-                      ...prev,
-                      criticalDays: parseInt(e.target.value) || 3,
-                    }))
-                  }
-                  className="px-2 py-1 w-full text-sm rounded-md border border-gray-300"
-                />
-              </div>
-            </div>
-            {onUpdateSettings && (
-              <Button
-                size="sm"
-                onClick={() => onUpdateSettings(settings)}
-                className="w-full"
-              >
-                Save Settings
-              </Button>
-            )}
-          </div>
-        )}
-
-        {/* Expired Items */}
         {groups.expired.length > 0 && (
           <div>
             <h4 className="flex items-center mb-2 text-sm font-medium text-red-900">
@@ -253,8 +161,6 @@ export function ExpirationMonitor({
             </div>
           </div>
         )}
-
-        {/* Critical Items */}
         {groups.critical.length > 0 && (
           <div>
             <h4 className="flex items-center mb-2 text-sm font-medium text-red-800">
@@ -287,8 +193,6 @@ export function ExpirationMonitor({
             </div>
           </div>
         )}
-
-        {/* Warning Items */}
         {groups.warning.length > 0 && (
           <div>
             <h4 className="flex items-center mb-2 text-sm font-medium text-orange-800">
@@ -321,8 +225,6 @@ export function ExpirationMonitor({
             </div>
           </div>
         )}
-
-        {/* Upcoming Items (collapsed by default) */}
         {groups.upcoming.length > 0 && (
           <details className="group">
             <summary className="flex items-center text-sm font-medium text-blue-800 cursor-pointer">

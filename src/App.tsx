@@ -11,6 +11,7 @@ import { Layout } from "./components/layout/Layout";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { PantryProvider } from "./contexts/PantryContext";
 import { RecipeProvider } from "./contexts/RecipeContext";
+import { SettingsProvider } from "./contexts/SettingsContext";
 import { Assistant } from "./pages/Assistant";
 import { Dashboard } from "./pages/Dashboard";
 import { Leftovers } from "./pages/Leftovers";
@@ -123,14 +124,16 @@ function App() {
   try {
     return (
       <AuthProvider>
-        <PantryProvider>
-          <RecipeProvider>
-            <Router>
-              <Toaster position="top-right" richColors />
-              <AppRoutes />
-            </Router>
-          </RecipeProvider>
-        </PantryProvider>
+        <SettingsProvider>
+          <PantryProvider>
+            <RecipeProvider>
+              <Router>
+                <Toaster position="top-right" richColors />
+                <AppRoutes />
+              </Router>
+            </RecipeProvider>
+          </PantryProvider>
+        </SettingsProvider>
       </AuthProvider>
     );
   } catch (error) {

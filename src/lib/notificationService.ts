@@ -27,12 +27,15 @@ export interface NotificationServiceOptions {
 export function checkExpiringItems({
   ingredients,
   leftovers,
-  criticalDays = 3,
-  warningDays = 7,
+  criticalDays,
+  warningDays,
+  notificationEnabled = true,
   onNotify,
-}: NotificationServiceOptions) {
+}: NotificationServiceOptions & { notificationEnabled?: boolean }) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const crit = typeof criticalDays === "number" ? criticalDays : 3;
+  const warn = typeof warningDays === "number" ? warningDays : 7;
 
   // Helper to process a list
   function processItems(
@@ -50,14 +53,14 @@ export function checkExpiringItems({
       if (daysLeft < 0) {
         notificationType = "expired";
         message = `${item.name} expired ${Math.abs(daysLeft)} day${Math.abs(daysLeft) !== 1 ? "s" : ""} ago.`;
-      } else if (daysLeft <= criticalDays) {
+      } else if (daysLeft <= crit) {
         notificationType = "critical";
         message = `${item.name} expires in ${daysLeft} day${daysLeft !== 1 ? "s" : ""} (critical).`;
-      } else if (daysLeft <= warningDays) {
+      } else if (daysLeft <= warn) {
         notificationType = "warning";
         message = `${item.name} expires in ${daysLeft} day${daysLeft !== 1 ? "s" : ""} (warning).`;
       }
-      if (notificationType) {
+      if (notificationType && notificationEnabled) {
         onNotify({
           item: {
             id: item.id,

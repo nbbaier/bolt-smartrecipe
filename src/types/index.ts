@@ -99,6 +99,9 @@ export interface UserPreferences {
   kitchen_equipment: string[];
   created_at: string;
   updated_at: string;
+  notification_enabled: boolean;
+  expiration_threshold_days: number;
+  inventory_threshold: number;
 }
 
 export interface Leftover {
