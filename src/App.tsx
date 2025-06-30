@@ -9,9 +9,11 @@ import { Toaster } from "sonner";
 import { AuthForm } from "./components/auth/AuthForm";
 import { Layout } from "./components/layout/Layout";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { NotificationProvider } from "./contexts/NotificationContext";
 import { PantryProvider } from "./contexts/PantryContext";
 import { RecipeProvider } from "./contexts/RecipeContext";
 import { SettingsProvider } from "./contexts/SettingsContext";
+import LandingPage from "./pages/LandingPage";
 
 // Add lazy imports for pages with correct default export
 const Assistant = lazy(() =>
@@ -35,6 +37,8 @@ const Settings = lazy(() =>
 const Shopping = lazy(() =>
   import("./pages/Shopping").then((m) => ({ default: m.Shopping })),
 );
+const Signup = lazy(() => import("./pages/Signup"));
+const Signin = lazy(() => import("./pages/Signin"));
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, isSupabaseConnected } = useAuth();
@@ -59,18 +63,35 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function AppRoutes() {
+  const { user, loading, isSupabaseConnected } = useAuth();
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-background">
+        <div className="text-center">
+          <div className="mx-auto w-8 h-8 rounded-full border-b-2 animate-spin border-primary"></div>
+          <p className="mt-2 text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
   return (
     <Routes>
       <Route
         path="/"
         element={
-          <ProtectedRoute>
-            <Layout>
-              <Dashboard />
-            </Layout>
-          </ProtectedRoute>
+          user && isSupabaseConnected ? (
+            <ProtectedRoute>
+              <Layout>
+                <Dashboard />
+              </Layout>
+            </ProtectedRoute>
+          ) : (
+            <LandingPage />
+          )
         }
       />
+      <Route path="/signup" element={<Signup />} />
+      <Route path="/signin" element={<Signin />} />
       <Route
         path="/assistant"
         element={
@@ -143,21 +164,25 @@ function App() {
         <SettingsProvider>
           <PantryProvider>
             <RecipeProvider>
-              <Router>
-                <Toaster position="top-right" richColors />
-                <Suspense
-                  fallback={
-                    <div className="flex justify-center items-center min-h-screen bg-background">
-                      <div className="text-center">
-                        <div className="mx-auto w-8 h-8 rounded-full border-b-2 animate-spin border-primary"></div>
-                        <p className="mt-2 text-muted-foreground">Loading...</p>
+              <NotificationProvider>
+                <Router>
+                  <Toaster position="top-right" richColors />
+                  <Suspense
+                    fallback={
+                      <div className="flex justify-center items-center min-h-screen bg-background">
+                        <div className="text-center">
+                          <div className="mx-auto w-8 h-8 rounded-full border-b-2 animate-spin border-primary"></div>
+                          <p className="mt-2 text-muted-foreground">
+                            Loading...
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  }
-                >
-                  <AppRoutes />
-                </Suspense>
-              </Router>
+                    }
+                  >
+                    <AppRoutes />
+                  </Suspense>
+                </Router>
+              </NotificationProvider>
             </RecipeProvider>
           </PantryProvider>
         </SettingsProvider>
