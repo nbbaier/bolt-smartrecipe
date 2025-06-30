@@ -1,34 +1,24 @@
-import {
-   Check,
-   ChefHat,
-   Clock,
-   Edit3,
-   Filter,
-   ListPlus,
-   Package,
-   Plus,
-   Search,
-   ShoppingCart,
-   Trash2,
-   X,
-} from "lucide-react";
+import { ListPlus, Plus, ShoppingCart } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+import { z } from "zod";
+import { AddEditItemForm } from "../components/shopping/AddEditItemForm";
+import { AddFromRecipeModal } from "../components/shopping/AddFromRecipeModal";
+import { CreateListForm } from "../components/shopping/CreateListForm";
+import { EmptyState } from "../components/shopping/EmptyState";
+import { ListHeaderWithStats } from "../components/shopping/ListHeaderWithStats";
+import { SearchAndFilterBar } from "../components/shopping/SearchAndFilterBar";
+import { ShoppingListItems } from "../components/shopping/ShoppingListItems";
+import { ShoppingListsTabs } from "../components/shopping/ShoppingListsTabs";
 import { Button } from "../components/ui/Button";
-import { Badge } from "../components/ui/badge";
-import {
-   Card,
-   CardContent,
-   CardDescription,
-   CardHeader,
-   CardTitle,
-} from "../components/ui/Card";
-import { Input } from "../components/ui/Input";
+import { Card, CardContent } from "../components/ui/Card";
 import { useAuth } from "../contexts/AuthContext";
 import {
    ingredientService,
    recipeService,
    shoppingListService,
 } from "../lib/database";
+import { supabase } from "../lib/supabase";
 import type {
    Ingredient,
    Recipe,
@@ -59,6 +49,19 @@ const UNITS = [
    "cans",
    "bottles",
 ];
+
+// Add Zod schema for item form validation
+const ItemFormSchema = z.object({
+   name: z.string().min(1, "Item name is required."),
+   quantity: z
+      .string()
+      .refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
+         message: "Quantity must be a positive number.",
+      }),
+   unit: z.string().min(1, "Unit is required."),
+   category: z.string().min(1, "Category is required."),
+   notes: z.string().optional(),
+});
 
 export function Shopping() {
    const { user } = useAuth();
@@ -139,6 +142,52 @@ export function Shopping() {
       }
    }, [selectedList, loadListItems]);
 
+   useEffect(() => {
+      if (!user) return;
+      // Real-time subscription for shopping_lists
+      const channel = supabase
+         .channel("shopping-lists-changes")
+         .on(
+            "postgres_changes",
+            {
+               event: "*",
+               schema: "public",
+               table: "shopping_lists",
+               filter: `user_id=eq.${user.id}`,
+            },
+            (_payload) => {
+               loadData();
+            },
+         )
+         .subscribe();
+      return () => {
+         channel.unsubscribe();
+      };
+   }, [user, loadData]);
+
+   useEffect(() => {
+      if (!selectedList) return;
+      // Real-time subscription for shopping_list_items in the selected list
+      const channel = supabase
+         .channel(`shopping-list-items-changes-${selectedList.id}`)
+         .on(
+            "postgres_changes",
+            {
+               event: "*",
+               schema: "public",
+               table: "shopping_list_items",
+               filter: `shopping_list_id=eq.${selectedList.id}`,
+            },
+            (_payload) => {
+               loadListItems();
+            },
+         )
+         .subscribe();
+      return () => {
+         channel.unsubscribe();
+      };
+   }, [selectedList, loadListItems]);
+
    const createList = async (e: React.FormEvent) => {
       e.preventDefault();
       if (!user) return;
@@ -180,6 +229,13 @@ export function Shopping() {
    const createItem = async (e: React.FormEvent) => {
       e.preventDefault();
       if (!selectedList) return;
+
+      // Zod validation
+      const result = ItemFormSchema.safeParse(itemFormData);
+      if (!result.success) {
+         toast.error(result.error.errors[0].message);
+         return;
+      }
 
       try {
          const itemData = {
@@ -374,304 +430,74 @@ export function Shopping() {
 
          {/* Shopping Lists Tabs */}
          {shoppingLists.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-               {shoppingLists.map((list) => (
-                  <button
-                     key={list.id}
-                     onClick={() => setSelectedList(list)}
-                     className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        selectedList?.id === list.id
-                           ? "bg-primary text-primary-foreground"
-                           : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                     }`}
-                  >
-                     <ShoppingCart className="w-4 h-4" />
-                     <span>{list.name}</span>
-                     {selectedList?.id === list.id && (
-                        <button
-                           onClick={(e) => {
-                              e.stopPropagation();
-                              deleteList(list.id);
-                           }}
-                           className="ml-1 p-0.5 hover:bg-primary-foreground/20 rounded"
-                        >
-                           <X className="w-3 h-3" />
-                        </button>
-                     )}
-                  </button>
-               ))}
-            </div>
+            <ShoppingListsTabs
+               shoppingLists={shoppingLists}
+               selectedList={selectedList}
+               onSelect={setSelectedList}
+               onDelete={deleteList}
+            />
          )}
 
          {/* Create List Form */}
-         {showListForm && (
-            <Card>
-               <CardHeader className="pb-3 sm:pb-6">
-                  <CardTitle className="text-lg sm:text-xl">
-                     Create New Shopping List
-                  </CardTitle>
-               </CardHeader>
-               <CardContent>
-                  <form onSubmit={createList} className="space-y-4">
-                     <Input
-                        label="List Name"
-                        value={listFormData.name}
-                        onChange={(e) =>
-                           setListFormData({
-                              ...listFormData,
-                              name: e.target.value,
-                           })
-                        }
-                        required
-                        placeholder="e.g., Weekly Groceries"
-                     />
-                     <Input
-                        label="Description (Optional)"
-                        value={listFormData.description}
-                        onChange={(e) =>
-                           setListFormData({
-                              ...listFormData,
-                              description: e.target.value,
-                           })
-                        }
-                        placeholder="e.g., Ingredients for this week's meal prep"
-                     />
-                     <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
-                        <Button type="submit" className="text-sm sm:text-base">
-                           Create List
-                        </Button>
-                        <Button
-                           type="button"
-                           variant="outline"
-                           onClick={resetListForm}
-                           className="text-sm sm:text-base"
-                        >
-                           Cancel
-                        </Button>
-                     </div>
-                  </form>
-               </CardContent>
-            </Card>
-         )}
+         <CreateListForm
+            visible={showListForm}
+            onSubmit={createList}
+            onCancel={resetListForm}
+            formData={listFormData}
+            setFormData={setListFormData}
+         />
 
          {selectedList ? (
             <>
-               {/* List Header with Stats */}
-               <Card>
-                  <CardContent className="p-4 sm:p-6">
-                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                           <h2 className="text-lg font-semibold sm:text-xl text-secondary-900">
-                              {selectedList.name}
-                           </h2>
-                           {selectedList.description && (
-                              <p className="text-sm text-secondary-600">
-                                 {selectedList.description}
-                              </p>
-                           )}
-                        </div>
-                        <div className="flex items-center space-x-4 text-sm">
-                           <div className="flex items-center space-x-1">
-                              <Package className="w-4 h-4 text-secondary-600" />
-                              <span>{totalCount} items</span>
-                           </div>
-                           <div className="flex items-center space-x-1">
-                              <Check className="w-4 h-4 text-green-600" />
-                              <span>{purchasedCount} purchased</span>
-                           </div>
-                           {totalCount > 0 && (
-                              <Badge variant="secondary">
-                                 {Math.round(
-                                    (purchasedCount / totalCount) * 100,
-                                 )}
-                                 % complete
-                              </Badge>
-                           )}
-                        </div>
-                     </div>
-
-                     {/* Quick Actions */}
-                     <div className="flex flex-col gap-2 mt-4 sm:flex-row">
-                        <Button
-                           onClick={() => setShowRecipeModal(true)}
-                           variant="outline"
-                           className="flex justify-center items-center space-x-2 text-sm"
-                        >
-                           <ChefHat className="w-4 h-4" />
-                           <span>Add from Recipe</span>
-                        </Button>
-                        <Button
-                           onClick={() => setShowAddForm(true)}
-                           variant="outline"
-                           className="flex justify-center items-center space-x-2 text-sm"
-                        >
-                           <Plus className="w-4 h-4" />
-                           <span>Add Item</span>
-                        </Button>
-                     </div>
-                  </CardContent>
-               </Card>
+               <ListHeaderWithStats
+                  selectedList={selectedList}
+                  totalCount={totalCount}
+                  purchasedCount={purchasedCount}
+                  onAddFromRecipe={() => setShowRecipeModal(true)}
+                  onAddItem={() => setShowAddForm(true)}
+               />
 
                {/* Search and Filter */}
-               <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:gap-4">
-                  <div className="relative flex-1">
-                     <Search className="absolute left-3 top-1/2 w-4 h-4 transform -translate-y-1/2 text-secondary-400" />
-                     <Input
-                        placeholder="Search items..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 text-sm sm:text-base"
-                     />
-                  </div>
-                  <div className="flex items-center space-x-2">
-                     <Filter className="flex-shrink-0 w-4 h-4 text-secondary-600" />
-                     <select
-                        value={selectedCategory}
-                        onChange={(e) => setSelectedCategory(e.target.value)}
-                        className="flex-1 px-3 py-2 text-sm rounded-lg border sm:flex-none border-secondary-300 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                     >
-                        <option value="All">All Categories</option>
-                        {CATEGORIES.map((category) => (
-                           <option key={category} value={category}>
-                              {category} ({categoryCounts[category] || 0})
-                           </option>
-                        ))}
-                     </select>
-                  </div>
-               </div>
+               <SearchAndFilterBar
+                  searchTerm={searchTerm}
+                  onSearchChange={(e) => setSearchTerm(e.target.value)}
+                  selectedCategory={selectedCategory}
+                  onCategoryChange={(e) => setSelectedCategory(e.target.value)}
+                  categories={CATEGORIES}
+                  categoryCounts={categoryCounts}
+               />
 
                {/* Add/Edit Item Form */}
-               {showAddForm && (
-                  <Card>
-                     <CardHeader className="pb-3 sm:pb-6">
-                        <CardTitle className="text-lg sm:text-xl">
-                           {editingItem ? "Edit Item" : "Add New Item"}
-                        </CardTitle>
-                     </CardHeader>
-                     <CardContent>
-                        <form onSubmit={createItem} className="space-y-4">
-                           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                              <div className="sm:col-span-2">
-                                 <Input
-                                    label="Item Name"
-                                    value={itemFormData.name}
-                                    onChange={(e) =>
-                                       setItemFormData({
-                                          ...itemFormData,
-                                          name: e.target.value,
-                                       })
-                                    }
-                                    required
-                                 />
-                              </div>
-                              <div className="flex space-x-2">
-                                 <div className="flex-1">
-                                    <Input
-                                       label="Quantity"
-                                       type="number"
-                                       step="0.1"
-                                       value={itemFormData.quantity}
-                                       onChange={(e) =>
-                                          setItemFormData({
-                                             ...itemFormData,
-                                             quantity: e.target.value,
-                                          })
-                                       }
-                                    />
-                                 </div>
-                                 <div className="w-20 sm:w-24">
-                                    <label className="block mb-1 text-sm font-medium text-secondary-700">
-                                       Unit
-                                    </label>
-                                    <select
-                                       value={itemFormData.unit}
-                                       onChange={(e) =>
-                                          setItemFormData({
-                                             ...itemFormData,
-                                             unit: e.target.value,
-                                          })
-                                       }
-                                       className="px-2 w-full h-10 text-sm rounded-lg border border-secondary-300 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                                    >
-                                       {UNITS.map((unit) => (
-                                          <option key={unit} value={unit}>
-                                             {unit}
-                                          </option>
-                                       ))}
-                                    </select>
-                                 </div>
-                              </div>
-                              <div>
-                                 <label className="block mb-1 text-sm font-medium text-secondary-700">
-                                    Category
-                                 </label>
-                                 <select
-                                    value={itemFormData.category}
-                                    onChange={(e) =>
-                                       setItemFormData({
-                                          ...itemFormData,
-                                          category: e.target.value,
-                                       })
-                                    }
-                                    className="px-3 w-full h-10 text-sm rounded-lg border border-secondary-300 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                                 >
-                                    {CATEGORIES.map((category) => (
-                                       <option key={category} value={category}>
-                                          {category}
-                                       </option>
-                                    ))}
-                                 </select>
-                              </div>
-                           </div>
-                           <Input
-                              label="Notes (Optional)"
-                              value={itemFormData.notes}
-                              onChange={(e) =>
-                                 setItemFormData({
-                                    ...itemFormData,
-                                    notes: e.target.value,
-                                 })
-                              }
-                              placeholder="Any additional notes..."
-                           />
-                           <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
-                              <Button
-                                 type="submit"
-                                 className="text-sm sm:text-base"
-                              >
-                                 {editingItem ? "Update Item" : "Add Item"}
-                              </Button>
-                              <Button
-                                 type="button"
-                                 variant="outline"
-                                 onClick={resetItemForm}
-                                 className="text-sm sm:text-base"
-                              >
-                                 Cancel
-                              </Button>
-                           </div>
-                        </form>
-                     </CardContent>
-                  </Card>
-               )}
+               <AddEditItemForm
+                  visible={showAddForm}
+                  onSubmit={createItem}
+                  onCancel={resetItemForm}
+                  formData={itemFormData}
+                  setFormData={setItemFormData}
+                  editingItem={editingItem}
+                  categories={CATEGORIES}
+                  units={UNITS}
+               />
 
                {/* Shopping List Items */}
                {filteredItems.length === 0 ? (
-                  <Card>
-                     <CardContent className="py-8 text-center sm:py-12">
+                  <EmptyState
+                     icon={
                         <ShoppingCart className="mx-auto mb-4 w-10 h-10 sm:h-12 sm:w-12 text-secondary-400" />
-                        <h3 className="mb-2 text-base font-medium sm:text-lg text-secondary-900">
-                           {searchTerm || selectedCategory !== "All"
-                              ? "No items found"
-                              : "No items in this list"}
-                        </h3>
-                        <p className="px-4 mb-4 text-sm sm:text-base text-secondary-600">
-                           {searchTerm || selectedCategory !== "All"
-                              ? "Try adjusting your search or filter criteria"
-                              : "Add items to start building your shopping list"}
-                        </p>
-                        {!searchTerm && selectedCategory === "All" && (
-                           <div className="flex flex-col gap-2 justify-center sm:flex-row">
+                     }
+                     message={
+                        searchTerm || selectedCategory !== "All"
+                           ? "No items found"
+                           : "No items in this list"
+                     }
+                     subMessage={
+                        searchTerm || selectedCategory !== "All"
+                           ? "Try adjusting your search or filter criteria"
+                           : "Add items to start building your shopping list"
+                     }
+                     actions={
+                        !searchTerm && selectedCategory === "All" ? (
+                           <>
                               <Button
                                  onClick={() => setShowAddForm(true)}
                                  className="text-sm sm:text-base"
@@ -685,154 +511,17 @@ export function Shopping() {
                               >
                                  Add from Recipe
                               </Button>
-                           </div>
-                        )}
-                     </CardContent>
-                  </Card>
+                           </>
+                        ) : null
+                     }
+                  />
                ) : (
-                  <div className="space-y-3">
-                     {/* Debug Info */}
-                     {process.env.NODE_ENV === "development" && (
-                        <Card className="bg-blue-50 border-blue-200">
-                           <CardContent className="p-3">
-                              <p className="text-xs text-blue-700">
-                                 Debug: {listItems.length} total items,{" "}
-                                 {
-                                    listItems.filter((i) => i.is_purchased)
-                                       .length
-                                 }{" "}
-                                 purchased
-                              </p>
-                           </CardContent>
-                        </Card>
-                     )}
-
-                     {/* Unpurchased Items */}
-                     <div className="grid grid-cols-1 gap-2 sm:gap-3">
-                        {filteredItems
-                           .filter((item) => !item.is_purchased)
-                           .map((item) => (
-                              <Card
-                                 key={item.id}
-                                 className="transition-shadow hover:shadow-md"
-                              >
-                                 <CardContent className="p-3 sm:p-4">
-                                    <div className="flex items-center space-x-3">
-                                       <button
-                                          onClick={() =>
-                                             togglePurchased(
-                                                item.id,
-                                                item.is_purchased,
-                                             )
-                                          }
-                                          className="flex-shrink-0 w-5 h-5 rounded-full border-2 transition-colors sm:w-6 sm:h-6 border-secondary-300 hover:border-primary"
-                                       />
-                                       <div className="flex-1 min-w-0">
-                                          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
-                                             <div className="flex-1 min-w-0">
-                                                <h4 className="text-sm font-medium truncate text-secondary-900 sm:text-base">
-                                                   {item.name}
-                                                </h4>
-                                                <p className="text-xs sm:text-sm text-secondary-600">
-                                                   {item.quantity} {item.unit}
-                                                   {item.notes &&
-                                                      ` • ${item.notes}`}
-                                                </p>
-                                             </div>
-                                             <div className="flex flex-shrink-0 items-center space-x-2">
-                                                <Badge
-                                                   variant="outline"
-                                                   className="text-xs"
-                                                >
-                                                   {item.category}
-                                                </Badge>
-                                                <button
-                                                   onClick={() =>
-                                                      startEditItem(item)
-                                                   }
-                                                   className="p-1.5 text-secondary-400 hover:text-secondary-600 rounded"
-                                                >
-                                                   <Edit3 className="w-3 h-3 sm:h-4 sm:w-4" />
-                                                </button>
-                                                <button
-                                                   onClick={() =>
-                                                      deleteItem(item.id)
-                                                   }
-                                                   className="p-1.5 text-secondary-400 hover:text-red-600 rounded"
-                                                >
-                                                   <Trash2 className="w-3 h-3 sm:h-4 sm:w-4" />
-                                                </button>
-                                             </div>
-                                          </div>
-                                       </div>
-                                    </div>
-                                 </CardContent>
-                              </Card>
-                           ))}
-                     </div>
-
-                     {/* Purchased Items */}
-                     {filteredItems.some((item) => item.is_purchased) && (
-                        <div className="mt-6">
-                           <h3 className="flex items-center mb-3 text-sm font-medium text-secondary-600">
-                              <Check className="mr-1 w-4 h-4" />
-                              Purchased (
-                              {
-                                 filteredItems.filter(
-                                    (item) => item.is_purchased,
-                                 ).length
-                              }
-                              )
-                           </h3>
-                           <div className="grid grid-cols-1 gap-2 sm:gap-3">
-                              {filteredItems
-                                 .filter((item) => item.is_purchased)
-                                 .map((item) => (
-                                    <Card key={item.id} className="opacity-60">
-                                       <CardContent className="p-3 sm:p-4">
-                                          <div className="flex items-center space-x-3">
-                                             <button
-                                                onClick={() =>
-                                                   togglePurchased(
-                                                      item.id,
-                                                      item.is_purchased,
-                                                   )
-                                                }
-                                                className="flex flex-shrink-0 justify-center items-center w-5 h-5 bg-green-500 rounded-full border-2 border-green-500 transition-colors sm:w-6 sm:h-6 hover:bg-green-600"
-                                             >
-                                                <Check className="w-3 h-3 text-white sm:h-4 sm:w-4" />
-                                             </button>
-                                             <div className="flex-1 min-w-0">
-                                                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
-                                                   <div className="flex-1 min-w-0">
-                                                      <h4 className="text-sm font-medium line-through truncate text-secondary-900 sm:text-base">
-                                                         {item.name}
-                                                      </h4>
-                                                      <p className="text-xs sm:text-sm text-secondary-500">
-                                                         {item.quantity}{" "}
-                                                         {item.unit}
-                                                         {item.notes &&
-                                                            ` • ${item.notes}`}
-                                                      </p>
-                                                   </div>
-                                                   <button
-                                                      onClick={() =>
-                                                         deleteItem(item.id)
-                                                      }
-                                                      className="p-1.5 text-secondary-400 hover:text-red-600 rounded flex-shrink-0"
-                                                   >
-                                                      <Trash2 className="w-3 h-3 sm:h-4 sm:w-4" />
-                                                   </button>
-                                                </div>
-                                             </div>
-                                          </div>
-                                       </CardContent>
-                                    </Card>
-                                 ))}
-                           </div>
-                        </div>
-                     )}
-                  </div>
+                  <ShoppingListItems
+                     items={filteredItems}
+                     onEdit={startEditItem}
+                     onDelete={deleteItem}
+                     onTogglePurchased={togglePurchased}
+                  />
                )}
             </>
          ) : (
@@ -856,89 +545,14 @@ export function Shopping() {
             </Card>
          )}
 
-         {/* Add from Recipe Modal */}
-         {showRecipeModal && (
-            <div className="flex fixed inset-0 z-50 justify-center items-center p-4 bg-black/50">
-               <Card className="max-w-2xl w-full max-h-[90vh] overflow-hidden">
-                  <CardHeader className="pb-3 sm:pb-6">
-                     <div className="flex justify-between items-center">
-                        <CardTitle className="text-lg sm:text-xl">
-                           Add from Recipe
-                        </CardTitle>
-                        <Button
-                           variant="ghost"
-                           size="icon"
-                           onClick={() => setShowRecipeModal(false)}
-                        >
-                           <X className="w-4 h-4" />
-                        </Button>
-                     </div>
-                     <CardDescription>
-                        Select a recipe to add its ingredients to your shopping
-                        list
-                     </CardDescription>
-                  </CardHeader>
-                  <CardContent className="max-h-[60vh] overflow-y-auto">
-                     <div className="grid grid-cols-1 gap-3">
-                        {availableRecipes.map((recipe) => (
-                           <Card
-                              key={recipe.id}
-                              className="transition-shadow cursor-pointer hover:shadow-md"
-                           >
-                              <CardContent className="p-3 sm:p-4">
-                                 <div className="flex items-center space-x-3">
-                                    <img
-                                       src={
-                                          recipe.image_url ||
-                                          "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg"
-                                       }
-                                       alt={recipe.title}
-                                       className="object-cover flex-shrink-0 w-12 h-12 rounded-lg sm:w-16 sm:h-16"
-                                    />
-                                    <div className="flex-1 min-w-0">
-                                       <h4 className="text-sm font-medium truncate text-secondary-900 sm:text-base">
-                                          {recipe.title}
-                                       </h4>
-                                       <p className="text-xs sm:text-sm text-secondary-600 line-clamp-2">
-                                          {recipe.description}
-                                       </p>
-                                       <div className="flex items-center mt-1 space-x-2">
-                                          <Clock className="w-3 h-3 text-secondary-400" />
-                                          <span className="text-xs text-secondary-600">
-                                             {recipe.prep_time +
-                                                recipe.cook_time}{" "}
-                                             min
-                                          </span>
-                                          <Badge
-                                             variant="outline"
-                                             className="text-xs"
-                                          >
-                                             {recipe.difficulty}
-                                          </Badge>
-                                       </div>
-                                    </div>
-                                    <Button
-                                       onClick={async () => {
-                                          console.log(
-                                             "Button clicked for recipe:",
-                                             recipe.title,
-                                          );
-                                          await addFromRecipe(recipe.id);
-                                       }}
-                                       size="sm"
-                                       className="flex-shrink-0"
-                                    >
-                                       Add
-                                    </Button>
-                                 </div>
-                              </CardContent>
-                           </Card>
-                        ))}
-                     </div>
-                  </CardContent>
-               </Card>
-            </div>
-         )}
+         {/* Add From Recipe Modal */}
+         <AddFromRecipeModal
+            visible={showRecipeModal}
+            onClose={() => setShowRecipeModal(false)}
+            onAddFromRecipe={addFromRecipe}
+            availableRecipes={availableRecipes}
+            loading={loading}
+         />
       </div>
    );
 }

@@ -23,6 +23,7 @@ export interface Ingredient {
 
 export interface Recipe {
    id: string;
+   user_id: string;
    title: string;
    description: string;
    image_url: string;
@@ -81,6 +82,7 @@ export interface UserProfile {
    bio: string;
    avatar_color: string;
    onboarding_completed: boolean;
+   avatar_url?: string;
    created_at: string;
    updated_at: string;
 }
