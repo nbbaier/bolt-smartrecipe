@@ -10,8 +10,10 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Button } from "../components/ui/Button";
+import { ExpirationMonitor } from "../components/alerts/ExpirationMonitor";
+import { LowStockAlert } from "../components/alerts/LowStockAlert";
 import { Badge } from "../components/ui/badge";
+import { Button } from "../components/ui/button";
 import {
   Card,
   CardContent,
@@ -19,8 +21,6 @@ import {
   CardHeader,
   CardTitle,
 } from "../components/ui/Card";
-import { ExpirationMonitor } from "../components/ui/ExpirationMonitor";
-import { LowStockAlert } from "../components/ui/LowStockAlert";
 import { useAuth } from "../contexts/AuthContext";
 import {
   ingredientService,

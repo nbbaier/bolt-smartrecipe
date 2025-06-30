@@ -6,10 +6,9 @@ import {
   Edit3,
   Trash2,
 } from "lucide-react";
-import React from "react";
 import type { Leftover } from "../../types";
-import { Badge } from "./badge";
-import { Card, CardContent } from "./Card";
+import { Badge } from "../ui/badge";
+import { Card, CardContent } from "../ui/Card";
 
 interface LeftoverCardProps {
   leftover: Leftover;
@@ -71,16 +70,16 @@ export function LeftoverCard({
     <Card
       className={`relative ${
         isExpired()
-          ? "border-red-200 bg-red-50"
+          ? "bg-red-50 border-red-200"
           : isExpiringSoon()
-            ? "border-orange-200 bg-orange-50"
+            ? "bg-orange-50 border-orange-200"
             : ""
       } ${className}`}
     >
       <CardContent className="p-3 sm:p-4">
-        <div className="flex items-start justify-between mb-2">
+        <div className="flex justify-between items-start mb-2">
           <div className="flex-1 min-w-0">
-            <h3 className="font-medium text-secondary-900 text-sm sm:text-base truncate">
+            <h3 className="text-sm font-medium truncate text-secondary-900 sm:text-base">
               {leftover.name}
             </h3>
             <p className="text-xs sm:text-sm text-secondary-600">
@@ -89,11 +88,11 @@ export function LeftoverCard({
 
             {/* Source Recipe Badge */}
             {leftover.source_recipe_id && (
-              <div className="flex items-center space-x-1 mt-1">
-                <ChefHat className="h-3 w-3 text-blue-600" />
+              <div className="flex items-center mt-1 space-x-1">
+                <ChefHat className="w-3 h-3 text-blue-600" />
                 <Badge
                   variant="outline"
-                  className="text-xs bg-blue-50 text-blue-700 border-blue-200"
+                  className="text-xs text-blue-700 bg-blue-50 border-blue-200"
                 >
                   From Recipe
                 </Badge>
@@ -101,13 +100,13 @@ export function LeftoverCard({
             )}
           </div>
 
-          <div className="flex space-x-1 flex-shrink-0 ml-2">
+          <div className="flex flex-shrink-0 ml-2 space-x-1">
             {onEdit && (
               <button
                 onClick={() => onEdit(leftover)}
                 className="p-1.5 text-secondary-400 hover:text-secondary-600 rounded"
               >
-                <Edit3 className="h-3 w-3 sm:h-4 sm:w-4" />
+                <Edit3 className="w-3 h-3 sm:h-4 sm:w-4" />
               </button>
             )}
             {onDelete && (
@@ -115,7 +114,7 @@ export function LeftoverCard({
                 onClick={() => onDelete(leftover.id)}
                 className="p-1.5 text-secondary-400 hover:text-red-600 rounded"
               >
-                <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                <Trash2 className="w-3 h-3 sm:h-4 sm:w-4" />
               </button>
             )}
           </div>
@@ -124,12 +123,12 @@ export function LeftoverCard({
         {/* Expiration Info */}
         {leftover.expiration_date && (
           <div
-            className={`flex items-center space-x-1 text-xs sm:text-sm mb-2 ${getExpirationColor()}`}
+            className={`flex items-center mb-2 space-x-1 text-xs sm:text-sm ${getExpirationColor()}`}
           >
             {(isExpired() || isExpiringSoon()) && (
-              <AlertTriangle className="h-3 w-3 flex-shrink-0" />
+              <AlertTriangle className="flex-shrink-0 w-3 h-3" />
             )}
-            <Calendar className="h-3 w-3 flex-shrink-0" />
+            <Calendar className="flex-shrink-0 w-3 h-3" />
             <span className="truncate">{getExpirationText()}</span>
           </div>
         )}
@@ -142,8 +141,8 @@ export function LeftoverCard({
         )}
 
         {/* Created Date */}
-        <div className="flex items-center space-x-1 text-xs text-secondary-400 mt-2">
-          <Clock className="h-3 w-3" />
+        <div className="flex items-center mt-2 space-x-1 text-xs text-secondary-400">
+          <Clock className="w-3 h-3" />
           <span>
             Added {new Date(leftover.created_at).toLocaleDateString()}
           </span>

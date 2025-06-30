@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { cn } from "../../lib/utils";
-import { Button } from "../ui/Button";
+import { Button } from "../ui/button";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: Home },

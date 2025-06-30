@@ -4,7 +4,7 @@ import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { describe, it, expect, vi } from "vitest";
-import { Input } from "./Input";
+import { Input } from "./input";
 
 describe("Input", () => {
   it("renders with placeholder and value", () => {

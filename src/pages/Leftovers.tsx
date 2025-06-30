@@ -9,7 +9,8 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Button } from "../components/ui/Button";
+import { LeftoverCard } from "../components/leftovers/LeftoverCard";
+import { Button } from "../components/ui/button";
 import {
   Card,
   CardContent,
@@ -17,13 +18,12 @@ import {
   CardHeader,
   CardTitle,
 } from "../components/ui/Card";
-import { Input } from "../components/ui/Input";
-import { LeftoverCard } from "../components/ui/LeftoverCard";
-import { LeftoverForm } from "../components/ui/LeftoverForm";
+import { Input } from "../components/ui/input";
 import { useAuth } from "../contexts/AuthContext";
 import { leftoverService } from "../lib/database";
 import { checkExpiringItems } from "../lib/notificationService";
 import type { Leftover } from "../types";
+import { LeftoverForm } from "../components/leftovers/LeftoverForm";
 
 export function Leftovers() {
   const { user } = useAuth();

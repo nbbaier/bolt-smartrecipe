@@ -4,7 +4,7 @@ import React from "react";
 import { AlertTriangle, Calendar, Clock, Settings } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { Ingredient } from "../../types";
-import { Button } from "../ui/Button";
+import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card";
 

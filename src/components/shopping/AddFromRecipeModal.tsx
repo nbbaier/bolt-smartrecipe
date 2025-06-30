@@ -1,6 +1,6 @@
 import React from "react";
 import type { Recipe } from "../../types";
-import { Button } from "../ui/Button";
+import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card";
 
 interface AddFromRecipeModalProps {

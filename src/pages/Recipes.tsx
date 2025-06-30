@@ -1,8 +1,11 @@
 import { BookOpen, Plus, Sparkles, Utensils, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Button } from "../components/ui/Button";
+import { RecipeDetailModal } from "../components/recipes/RecipeDetailModal";
+import { RecipeFilters } from "../components/recipes/RecipeFilters";
+import { RecipeList } from "../components/recipes/RecipeList";
 import { Badge } from "../components/ui/badge";
+import { Button } from "../components/ui/button";
 import {
   Card,
   CardContent,
@@ -10,9 +13,6 @@ import {
   CardHeader,
   CardTitle,
 } from "../components/ui/Card";
-import { RecipeDetailModal } from "../components/ui/RecipeDetailModal";
-import { RecipeFilters } from "../components/ui/RecipeFilters";
-import { RecipeList } from "../components/ui/RecipeList";
 import { useAuth } from "../contexts/AuthContext";
 import { useRecipe } from "../contexts/RecipeContext";
 import type { RecipeMatchResult } from "../lib/database";

@@ -16,8 +16,10 @@ import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
+import { ExpirationMonitor } from "../components/alerts/ExpirationMonitor";
+import { SmartCategorySelector } from "../components/categories/SmartCategorySelector";
 import { AutocompleteInput } from "../components/ui/AutocompleteInput";
-import { Button } from "../components/ui/Button";
+import { Button } from "../components/ui/button";
 import {
   Card,
   CardContent,
@@ -25,9 +27,7 @@ import {
   CardHeader,
   CardTitle,
 } from "../components/ui/Card";
-import { ExpirationMonitor } from "../components/ui/ExpirationMonitor";
-import { Input } from "../components/ui/Input";
-import { SmartCategorySelector } from "../components/ui/SmartCategorySelector";
+import { Input } from "../components/ui/input";
 import { useAuth } from "../contexts/AuthContext";
 import { usePantry } from "../contexts/PantryContext";
 import { useIngredientHistory } from "../hooks/useIngredientHistory";
@@ -550,12 +550,7 @@ export function Pantry() {
                 </div>
                 <div className="flex space-x-2">
                   <div className="flex-1">
-                    <Input
-                      label="Quantity"
-                      type="number"
-                      step="0.1"
-                      {...register("quantity")}
-                    />
+                    <Input type="number" step="0.1" {...register("quantity")} />
                   </div>
                   <div className="w-20 sm:w-24">
                     <label className="block mb-1 text-sm font-medium text-secondary-700">
@@ -592,14 +587,9 @@ export function Pantry() {
                     )}
                   />
                 </div>
-                <Input
-                  label="Expiration Date (Optional)"
-                  type="date"
-                  {...register("expiration_date")}
-                />
+                <Input type="date" {...register("expiration_date")} />
                 <div className="sm:col-span-2">
                   <Input
-                    label="Low Stock Threshold (Optional)"
                     type="number"
                     step="0.1"
                     {...register("low_stock_threshold")}
@@ -612,7 +602,6 @@ export function Pantry() {
                 </div>
               </div>
               <Input
-                label="Notes (Optional)"
                 {...register("notes")}
                 placeholder="Any additional notes..."
               />

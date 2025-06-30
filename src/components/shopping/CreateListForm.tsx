@@ -1,7 +1,7 @@
 import React from "react";
-import { Button } from "../ui/Button";
+import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card";
-import { Input } from "../ui/Input";
+import { Input } from "../ui/input";
 
 interface CreateListFormProps {
   visible: boolean;

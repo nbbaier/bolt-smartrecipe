@@ -10,7 +10,7 @@ import { ListHeaderWithStats } from "../components/shopping/ListHeaderWithStats"
 import { SearchAndFilterBar } from "../components/shopping/SearchAndFilterBar";
 import { ShoppingListItems } from "../components/shopping/ShoppingListItems";
 import { ShoppingListsTabs } from "../components/shopping/ShoppingListsTabs";
-import { Button } from "../components/ui/Button";
+import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/Card";
 import { useAuth } from "../contexts/AuthContext";
 import {

@@ -3,8 +3,8 @@ import React, { useCallback, useEffect, useId, useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { recipeService } from "../../lib/database";
 import type { Leftover, Recipe } from "../../types";
-import { Button } from "../ui/Button";
-import { Input } from "../ui/Input";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
 
 interface LeftoverFormProps {
   leftover?: Leftover;

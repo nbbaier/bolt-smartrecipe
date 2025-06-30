@@ -13,7 +13,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
-import { Button } from "../components/ui/Button";
+import { Button } from "../components/ui/button";
 import {
   Card,
   CardContent,
@@ -21,7 +21,7 @@ import {
   CardHeader,
   CardTitle,
 } from "../components/ui/Card";
-import { Input } from "../components/ui/Input";
+import { Input } from "../components/ui/input";
 import { Separator } from "../components/ui/separator";
 import { useAuth } from "../contexts/AuthContext";
 import { userPreferencesService, userProfileService } from "../lib/database";

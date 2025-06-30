@@ -4,15 +4,15 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useAuth } from "../../contexts/AuthContext";
-import { Button } from "../ui/Button";
+import { Button } from "../ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "../ui/Card";
-import { Input } from "../ui/Input";
+} from "../ui/card";
+import { Input } from "../ui/input";
 
 const signInSchema = z.object({
   email: z.string().email("Please enter a valid email address"),

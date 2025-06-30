@@ -1,6 +1,6 @@
 import { ChefHat, LogOut, Menu, Sparkles } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
-import { Button } from "../ui/Button";
+import { Button } from "../ui/button";
 
 interface HeaderProps {
   onMenuClick: () => void;

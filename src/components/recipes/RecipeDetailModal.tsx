@@ -16,7 +16,7 @@ import type {
   RecipeInstruction,
   ShoppingList,
 } from "../../types";
-import { Button } from "../ui/Button";
+import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Card, CardContent, CardHeader } from "../ui/Card";
 import { ScrollArea } from "../ui/scroll-area";

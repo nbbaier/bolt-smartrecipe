@@ -32,7 +32,7 @@ import type {
   Recipe,
   UserPreferences,
 } from "../../types";
-import { Button } from "../ui/Button";
+import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { ScrollArea } from "../ui/scroll-area";
 
