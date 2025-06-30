@@ -1,3 +1,4 @@
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
    AlertTriangle,
    Calendar,
@@ -11,7 +12,10 @@ import {
    Wand2,
    X,
 } from "lucide-react";
-import React, { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
 import { AutocompleteInput } from "../components/ui/AutocompleteInput";
 import { Button } from "../components/ui/Button";
 import {
@@ -25,8 +29,9 @@ import { ExpirationMonitor } from "../components/ui/ExpirationMonitor";
 import { Input } from "../components/ui/Input";
 import { SmartCategorySelector } from "../components/ui/SmartCategorySelector";
 import { useAuth } from "../contexts/AuthContext";
+import { usePantry } from "../contexts/PantryContext";
 import { useIngredientHistory } from "../hooks/useIngredientHistory";
-import { ingredientService } from "../lib/database";
+import { checkExpiringItems } from "../lib/notificationService";
 import type { Ingredient } from "../types";
 
 const CATEGORIES = [
@@ -53,11 +58,39 @@ const UNITS = [
    "bottles",
 ];
 
+const ingredientSchema = z.object({
+   name: z.string().min(1, "Name is required"),
+   quantity: z.preprocess(
+      (val) => Number(val),
+      z.number().min(0, "Quantity must be positive"),
+   ),
+   unit: z.string().min(1, "Unit is required"),
+   category: z.string().min(1, "Category is required"),
+   expiration_date: z.string().optional(),
+   notes: z.string().optional(),
+   low_stock_threshold: z.preprocess(
+      (val) => (val === "" ? undefined : Number(val)),
+      z.number().min(0, "Threshold must be positive").optional(),
+   ),
+});
+type IngredientFormData = z.infer<typeof ingredientSchema>;
+
+const SORT_OPTIONS = [
+   { value: "name", label: "Name" },
+   { value: "expiration_date", label: "Expiration Date" },
+   { value: "quantity", label: "Quantity" },
+];
+
 export function Pantry() {
    const { user } = useAuth();
-   const { getAllIngredientNames, refreshHistory } = useIngredientHistory();
-   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
-   const [loading, setLoading] = useState(true);
+   const { getAllIngredientNames } = useIngredientHistory();
+   const {
+      ingredients,
+      loading,
+      addIngredient,
+      updateIngredient,
+      deleteIngredient,
+   } = usePantry();
    const [searchTerm, setSearchTerm] = useState("");
    const [selectedCategory, setSelectedCategory] = useState<string>("All");
    const [showAddForm, setShowAddForm] = useState(false);
@@ -77,120 +110,81 @@ export function Pantry() {
    const [isParsingText, setIsParsingText] = useState(false);
    const [isAddingToPantry, setIsAddingToPantry] = useState(false);
    const [showExpirationMonitor, setShowExpirationMonitor] = useState(false);
-   const [formData, setFormData] = useState({
-      name: "",
-      quantity: "",
-      unit: "g",
-      category: "Other",
-      expiration_date: "",
-      notes: "",
-      low_stock_threshold: "",
-   });
+   const [sortKey, setSortKey] = useState("name");
+   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+   const [itemsToShow, setItemsToShow] = useState(12);
+   const { register, handleSubmit, reset, setValue, control, getValues } =
+      useForm<IngredientFormData>({
+         resolver: zodResolver(ingredientSchema),
+         defaultValues: {
+            name: "",
+            quantity: 0,
+            unit: "g",
+            category: "Other",
+            expiration_date: "",
+            notes: "",
+            low_stock_threshold: undefined,
+         },
+      });
 
-   const loadIngredients = useCallback(async () => {
-      if (!user) return;
-
-      try {
-         setLoading(true);
-         const data = await ingredientService.getAll(user.id);
-         setIngredients(data);
-         // Refresh history when ingredients are loaded
-         refreshHistory();
-      } catch (error) {
-         console.error("Error loading ingredients:", error);
-      } finally {
-         setLoading(false);
-      }
-   }, [user, refreshHistory]);
-
+   // Notification integration
    useEffect(() => {
-      if (user) {
-         loadIngredients();
-      }
-   }, [user, loadIngredients]);
+      if (!user || loading || !ingredients.length) return;
+      checkExpiringItems({
+         ingredients,
+         leftovers: [], // Pantry page only
+         onNotify: ({ item, notificationType, message }) => {
+            toast(message, {
+               description: `${item.type === "ingredient" ? "Ingredient" : "Leftover"}: ${item.name}`,
+               duration: 8000,
+               className:
+                  notificationType === "expired"
+                     ? "bg-red-50 text-red-800 border-red-200"
+                     : notificationType === "critical"
+                       ? "bg-orange-50 text-orange-800 border-orange-200"
+                       : "bg-yellow-50 text-yellow-800 border-yellow-200",
+               icon:
+                  notificationType === "expired" ? (
+                     <AlertTriangle className="w-5 h-5 text-red-600" />
+                  ) : notificationType === "critical" ? (
+                     <AlertTriangle className="w-5 h-5 text-orange-600" />
+                  ) : (
+                     <AlertTriangle className="w-5 h-5 text-yellow-600" />
+                  ),
+            });
+         },
+      });
+   }, [user, loading, ingredients]);
 
-   const handleSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
+   const onSubmit = async (data: IngredientFormData) => {
       if (!user) return;
-
       try {
-         // Set default threshold based on unit if not provided
-         let threshold = parseFloat(formData.low_stock_threshold);
-         if (!threshold || threshold <= 0) {
-            threshold = getDefaultThreshold(formData.unit);
-         }
-
          const ingredientData = {
             user_id: user.id,
-            name: formData.name,
-            quantity: parseFloat(formData.quantity) || 0,
-            unit: formData.unit,
-            category: formData.category,
-            expiration_date: formData.expiration_date || undefined,
-            notes: formData.notes,
-            low_stock_threshold: threshold,
+            ...data,
+            expiration_date: data.expiration_date || undefined,
          };
-
          if (editingIngredient) {
-            await ingredientService.update(
-               editingIngredient.id,
-               ingredientData,
-            );
+            await updateIngredient(editingIngredient.id, ingredientData);
          } else {
-            await ingredientService.create(ingredientData);
+            await addIngredient(ingredientData);
          }
-
-         await loadIngredients();
-         refreshHistory(); // Update history after adding ingredients
-         resetForm();
+         reset();
+         setShowAddForm(false);
+         setEditingIngredient(null);
       } catch (error) {
          console.error("Error saving ingredient:", error);
       }
    };
 
-   const getDefaultThreshold = (unit: string): number => {
-      switch (unit) {
-         case "kg":
-         case "l":
-            return 0.5;
-         case "g":
-         case "ml":
-            return 100;
-         case "cups":
-            return 0.5;
-         case "tbsp":
-         case "tsp":
-            return 2;
-         case "pieces":
-         case "cans":
-         case "bottles":
-         default:
-            return 1;
-      }
-   };
    const handleDelete = async (id: string) => {
       if (!confirm("Are you sure you want to delete this ingredient?")) return;
 
       try {
-         await ingredientService.delete(id);
-         await loadIngredients();
+         await deleteIngredient(id);
       } catch (error) {
          console.error("Error deleting ingredient:", error);
       }
-   };
-
-   const resetForm = () => {
-      setFormData({
-         name: "",
-         quantity: "",
-         unit: "g",
-         category: "Other",
-         expiration_date: "",
-         notes: "",
-         low_stock_threshold: "",
-      });
-      setShowAddForm(false);
-      setEditingIngredient(null);
    };
 
    const resetNaturalLanguageForm = () => {
@@ -268,7 +262,7 @@ export function Pantry() {
 
       try {
          for (const ingredient of parsedIngredients) {
-            await ingredientService.create({
+            await addIngredient({
                user_id: user.id,
                name: ingredient.name,
                quantity: ingredient.quantity,
@@ -280,8 +274,6 @@ export function Pantry() {
             });
          }
 
-         await loadIngredients();
-         refreshHistory(); // Update history after adding parsed ingredients
          resetNaturalLanguageForm();
       } catch (error) {
          console.error("Error adding parsed ingredients:", error);
@@ -292,19 +284,14 @@ export function Pantry() {
 
    const startEdit = (ingredient: Ingredient) => {
       setEditingIngredient(ingredient);
-      setFormData({
-         name: ingredient.name,
-         quantity: ingredient.quantity.toString(),
-         unit: ingredient.unit,
-         category: ingredient.category,
-         expiration_date: ingredient.expiration_date || "",
-         notes: ingredient.notes || "",
-         low_stock_threshold: (
-            ingredient.low_stock_threshold ||
-            getDefaultThreshold(ingredient.unit)
-         ).toString(),
-      });
       setShowAddForm(true);
+      setValue("name", ingredient.name);
+      setValue("quantity", ingredient.quantity);
+      setValue("unit", ingredient.unit);
+      setValue("category", ingredient.category);
+      setValue("expiration_date", ingredient.expiration_date || "");
+      setValue("notes", ingredient.notes || "");
+      setValue("low_stock_threshold", ingredient.low_stock_threshold);
       setShowNaturalLanguageInput(false);
    };
 
@@ -333,7 +320,40 @@ export function Pantry() {
    const isOutOfStock = (ingredient: Ingredient) => {
       return ingredient.quantity <= 0;
    };
-   const filteredIngredients = ingredients.filter((ingredient) => {
+
+   // Sorting logic
+   const sortedIngredients = [...ingredients].sort((a, b) => {
+      let aValue: string | number = "";
+      let bValue: string | number = "";
+      switch (sortKey) {
+         case "name":
+            aValue = a.name;
+            bValue = b.name;
+            break;
+         case "expiration_date":
+            aValue = a.expiration_date || "9999-12-31";
+            bValue = b.expiration_date || "9999-12-31";
+            break;
+         case "quantity":
+            aValue = a.quantity;
+            bValue = b.quantity;
+            break;
+         default:
+            break;
+      }
+      if (typeof aValue === "string" && typeof bValue === "string") {
+         if (sortOrder === "asc") return aValue.localeCompare(bValue);
+         return bValue.localeCompare(aValue);
+      }
+      if (typeof aValue === "number" && typeof bValue === "number") {
+         if (sortOrder === "asc") return aValue - bValue;
+         return bValue - aValue;
+      }
+      return 0;
+   });
+
+   // Filtering logic
+   const filteredIngredients = sortedIngredients.filter((ingredient) => {
       const matchesSearch = ingredient.name
          .toLowerCase()
          .includes(searchTerm.toLowerCase());
@@ -341,6 +361,9 @@ export function Pantry() {
          selectedCategory === "All" || ingredient.category === selectedCategory;
       return matchesSearch && matchesCategory;
    });
+
+   // Pagination logic
+   const paginatedIngredients = filteredIngredients.slice(0, itemsToShow);
 
    const categoryCounts = CATEGORIES.reduce(
       (acc, category) => {
@@ -356,6 +379,27 @@ export function Pantry() {
    const ingredientsWithExpiration = ingredients.filter(
       (ing) => ing.expiration_date,
    );
+
+   const getDefaultThreshold = (unit: string): number => {
+      switch (unit) {
+         case "kg":
+         case "l":
+            return 0.5;
+         case "g":
+         case "ml":
+            return 100;
+         case "cups":
+            return 0.5;
+         case "tbsp":
+         case "tsp":
+            return 2;
+         case "pieces":
+         case "cans":
+         case "bottles":
+         default:
+            return 1;
+      }
+   };
 
    if (loading) {
       return (
@@ -445,6 +489,31 @@ export function Pantry() {
             </div>
          </div>
 
+         {/* Sorting Controls */}
+         <div className="flex gap-2 items-center mb-4">
+            <label className="text-sm font-medium">Sort by:</label>
+            <select
+               value={sortKey}
+               onChange={(e) => setSortKey(e.target.value)}
+               className="px-2 py-1 text-sm rounded border border-secondary-300"
+            >
+               {SORT_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                     {opt.label}
+                  </option>
+               ))}
+            </select>
+            <button
+               type="button"
+               onClick={() =>
+                  setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+               }
+               className="px-2 py-1 text-sm rounded border border-secondary-300"
+            >
+               {sortOrder === "asc" ? "↑" : "↓"}
+            </button>
+         </div>
+
          {/* Add/Edit Form */}
          {showAddForm && (
             <Card>
@@ -456,29 +525,33 @@ export function Pantry() {
                   </CardTitle>
                </CardHeader>
                <CardContent>
-                  <form onSubmit={handleSubmit} className="space-y-4">
+                  <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div className="sm:col-span-2">
                            <div>
                               <label className="block mb-2 text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                                  Ingredient Name
                               </label>
-                              <AutocompleteInput
-                                 value={formData.name}
-                                 onChange={(value) =>
-                                    setFormData({ ...formData, name: value })
-                                 }
-                                 onSelect={(suggestion) => {
-                                    setFormData({
-                                       ...formData,
-                                       name: suggestion.name,
-                                       category:
-                                          suggestion.category ||
-                                          formData.category,
-                                    });
-                                 }}
-                                 userHistory={getAllIngredientNames()}
-                                 placeholder="Start typing ingredient name..."
+                              <Controller
+                                 name="name"
+                                 control={control}
+                                 render={({ field }) => (
+                                    <AutocompleteInput
+                                       value={field.value}
+                                       onChange={(value) =>
+                                          field.onChange(value)
+                                       }
+                                       onSelect={(suggestion) => {
+                                          field.onChange(suggestion.name);
+                                          setValue(
+                                             "category",
+                                             suggestion.category || field.value,
+                                          );
+                                       }}
+                                       userHistory={getAllIngredientNames()}
+                                       placeholder="Start typing ingredient name..."
+                                    />
+                                 )}
                               />
                            </div>
                         </div>
@@ -488,13 +561,7 @@ export function Pantry() {
                                  label="Quantity"
                                  type="number"
                                  step="0.1"
-                                 value={formData.quantity}
-                                 onChange={(e) =>
-                                    setFormData({
-                                       ...formData,
-                                       quantity: e.target.value,
-                                    })
-                                 }
+                                 {...register("quantity")}
                               />
                            </div>
                            <div className="w-20 sm:w-24">
@@ -502,13 +569,7 @@ export function Pantry() {
                                  Unit
                               </label>
                               <select
-                                 value={formData.unit}
-                                 onChange={(e) =>
-                                    setFormData({
-                                       ...formData,
-                                       unit: e.target.value,
-                                    })
-                                 }
+                                 {...register("unit")}
                                  className="px-2 w-full h-10 text-sm rounded-lg border border-secondary-300 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                               >
                                  {UNITS.map((unit) => (
@@ -520,42 +581,36 @@ export function Pantry() {
                            </div>
                         </div>
                         <div>
-                           <SmartCategorySelector
-                              ingredientName={formData.name}
-                              currentCategory={formData.category}
-                              onCategoryChange={(category) =>
-                                 setFormData({ ...formData, category })
-                              }
-                              userHistory={ingredients.map((ing) => ({
-                                 name: ing.name,
-                                 category: ing.category,
-                              }))}
+                           <Controller
+                              name="category"
+                              control={control}
+                              render={({ field }) => (
+                                 <SmartCategorySelector
+                                    ingredientName={field.value}
+                                    currentCategory={field.value}
+                                    onCategoryChange={(category) =>
+                                       field.onChange(category)
+                                    }
+                                    userHistory={ingredients.map((ing) => ({
+                                       name: ing.name,
+                                       category: ing.category,
+                                    }))}
+                                 />
+                              )}
                            />
                         </div>
                         <Input
                            label="Expiration Date (Optional)"
                            type="date"
-                           value={formData.expiration_date}
-                           onChange={(e) =>
-                              setFormData({
-                                 ...formData,
-                                 expiration_date: e.target.value,
-                              })
-                           }
+                           {...register("expiration_date")}
                         />
                         <div className="sm:col-span-2">
                            <Input
                               label="Low Stock Threshold (Optional)"
                               type="number"
                               step="0.1"
-                              value={formData.low_stock_threshold}
-                              onChange={(e) =>
-                                 setFormData({
-                                    ...formData,
-                                    low_stock_threshold: e.target.value,
-                                 })
-                              }
-                              placeholder={`Default: ${getDefaultThreshold(formData.unit)} ${formData.unit}`}
+                              {...register("low_stock_threshold")}
+                              placeholder={`Default: ${getDefaultThreshold(getValues("unit"))} ${getValues("unit")}`}
                            />
                            <p className="mt-1 text-xs text-secondary-600">
                               Alert when quantity falls below this amount. Leave
@@ -565,10 +620,7 @@ export function Pantry() {
                      </div>
                      <Input
                         label="Notes (Optional)"
-                        value={formData.notes}
-                        onChange={(e) =>
-                           setFormData({ ...formData, notes: e.target.value })
-                        }
+                        {...register("notes")}
                         placeholder="Any additional notes..."
                      />
                      <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
@@ -580,7 +632,11 @@ export function Pantry() {
                         <Button
                            type="button"
                            variant="outline"
-                           onClick={resetForm}
+                           onClick={() => {
+                              reset();
+                              setShowAddForm(false);
+                              setEditingIngredient(null);
+                           }}
                            className="text-sm sm:text-base"
                         >
                            Cancel
@@ -780,7 +836,7 @@ export function Pantry() {
          )}
 
          {/* Ingredients Grid */}
-         {filteredIngredients.length === 0 ? (
+         {paginatedIngredients.length === 0 ? (
             <Card>
                <CardContent className="py-8 text-center sm:py-12">
                   <Package className="mx-auto mb-4 w-10 h-10 sm:h-12 sm:w-12 text-secondary-400" />
@@ -804,7 +860,7 @@ export function Pantry() {
             </Card>
          ) : (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4">
-               {filteredIngredients.map((ingredient) => (
+               {paginatedIngredients.map((ingredient) => (
                   <Card
                      key={ingredient.id}
                      className={`relative ${
@@ -907,6 +963,18 @@ export function Pantry() {
                      </CardContent>
                   </Card>
                ))}
+            </div>
+         )}
+
+         {/* Load More Button */}
+         {paginatedIngredients.length < filteredIngredients.length && (
+            <div className="flex justify-center mt-4">
+               <Button
+                  onClick={() => setItemsToShow(itemsToShow + 12)}
+                  className="text-sm sm:text-base"
+               >
+                  Load More
+               </Button>
             </div>
          )}
       </div>

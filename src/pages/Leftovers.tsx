@@ -8,6 +8,7 @@ import {
    Search,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "../components/ui/Button";
 import {
    Card,
@@ -21,6 +22,7 @@ import { LeftoverCard } from "../components/ui/LeftoverCard";
 import { LeftoverForm } from "../components/ui/LeftoverForm";
 import { useAuth } from "../contexts/AuthContext";
 import { leftoverService } from "../lib/database";
+import { checkExpiringItems } from "../lib/notificationService";
 import type { Leftover } from "../types";
 
 export function Leftovers() {
@@ -53,6 +55,35 @@ export function Leftovers() {
          loadLeftovers();
       }
    }, [user, loadLeftovers]);
+
+   // Notification integration
+   useEffect(() => {
+      if (!user || loading || !leftovers.length) return;
+      checkExpiringItems({
+         ingredients: [], // Leftovers page only
+         leftovers,
+         onNotify: ({ item, notificationType, message }) => {
+            toast(message, {
+               description: `${item.type === "ingredient" ? "Ingredient" : "Leftover"}: ${item.name}`,
+               duration: 8000,
+               className:
+                  notificationType === "expired"
+                     ? "bg-red-50 text-red-800 border-red-200"
+                     : notificationType === "critical"
+                       ? "bg-orange-50 text-orange-800 border-orange-200"
+                       : "bg-yellow-50 text-yellow-800 border-yellow-200",
+               icon:
+                  notificationType === "expired" ? (
+                     <AlertTriangle className="w-5 h-5 text-red-600" />
+                  ) : notificationType === "critical" ? (
+                     <AlertTriangle className="w-5 h-5 text-orange-600" />
+                  ) : (
+                     <AlertTriangle className="w-5 h-5 text-yellow-600" />
+                  ),
+            });
+         },
+      });
+   }, [user, loading, leftovers]);
 
    const handleSubmit = async (
       data: Omit<Leftover, "id" | "created_at" | "updated_at">,
