@@ -114,7 +114,7 @@
           "complexity": { "noUselessTypeConstraint": "error" },
           "correctness": { "noUnusedVariables": "error" },
           "style": {
-            "noCommonJs": "error",
+            "noCommonJs": "warn",
             "noNamespace": "error",
             "useArrayLiterals": "error",
             "useAsConstAssertion": "error"

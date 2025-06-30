@@ -1,5 +1,5 @@
 import { ChefHat, X } from "lucide-react";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useId, useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { recipeService } from "../../lib/database";
 import type { Leftover, Recipe } from "../../types";
@@ -44,6 +44,7 @@ export function LeftoverForm({
     source_recipe_id: leftover?.source_recipe_id || "",
     notes: leftover?.notes || "",
   });
+  const unitSelectId = useId();
 
   const loadRecipes = useCallback(async () => {
     try {
@@ -94,7 +95,7 @@ export function LeftoverForm({
   );
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4" role="form">
       <div className="grid grid-cols-1 gap-4">
         {/* Recipe Selection */}
         <div>
@@ -200,10 +201,14 @@ export function LeftoverForm({
             />
           </div>
           <div className="w-24">
-            <label className="block mb-1 text-sm font-medium text-secondary-700">
+            <label
+              htmlFor={unitSelectId}
+              className="block mb-1 text-sm font-medium text-secondary-700"
+            >
               Unit
             </label>
             <select
+              id={unitSelectId}
               value={formData.unit}
               onChange={(e) =>
                 setFormData({ ...formData, unit: e.target.value })

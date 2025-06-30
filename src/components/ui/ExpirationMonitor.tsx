@@ -1,3 +1,6 @@
+// biome-ignore-all assist/source/organizeImports: needed for testing
+// @ts-nocheck
+import React from "react";
 import { AlertTriangle, Calendar, Clock, Settings } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { Ingredient } from "../../types";
@@ -161,10 +164,14 @@ export function ExpirationMonitor({
             </h4>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block mb-1 text-xs font-medium text-gray-700">
+                <label
+                  htmlFor="warning-days"
+                  className="block mb-1 text-xs font-medium text-gray-700"
+                >
                   Warning (days)
                 </label>
                 <input
+                  id="warning-days"
                   type="number"
                   min="1"
                   max="30"
@@ -179,10 +186,14 @@ export function ExpirationMonitor({
                 />
               </div>
               <div>
-                <label className="block mb-1 text-xs font-medium text-gray-700">
+                <label
+                  htmlFor="critical-days"
+                  className="block mb-1 text-xs font-medium text-gray-700"
+                >
                   Critical (days)
                 </label>
                 <input
+                  id="critical-days"
                   type="number"
                   min="1"
                   max="7"

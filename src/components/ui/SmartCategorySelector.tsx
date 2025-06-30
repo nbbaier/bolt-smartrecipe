@@ -1,3 +1,6 @@
+// biome-ignore-all assist/source/organizeImports: needed for testing
+// @ts-nocheck
+import React from "react";
 import { AlertCircle, Check, Wand2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "./Button";

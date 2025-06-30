@@ -3,6 +3,7 @@ import type { ShoppingListItem } from "../../types";
 import { Button } from "../ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card";
 import { Input } from "../ui/Input";
+import { useId } from "react";
 
 interface AddEditItemFormProps {
   visible: boolean;
@@ -37,6 +38,8 @@ export const AddEditItemForm: React.FC<AddEditItemFormProps> = ({
   categories,
   units,
 }) => {
+  const unitSelectId = useId();
+  const categorySelectId = useId();
   if (!visible) return null;
   return (
     <Card>
@@ -46,7 +49,7 @@ export const AddEditItemForm: React.FC<AddEditItemFormProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={onSubmit} className="space-y-4">
+        <form onSubmit={onSubmit} className="space-y-4" role="form">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <Input
@@ -74,10 +77,14 @@ export const AddEditItemForm: React.FC<AddEditItemFormProps> = ({
                 />
               </div>
               <div className="w-20 sm:w-24">
-                <label className="block mb-1 text-sm font-medium text-secondary-700">
+                <label
+                  htmlFor={unitSelectId}
+                  className="block mb-1 text-sm font-medium text-secondary-700"
+                >
                   Unit
                 </label>
                 <select
+                  id={unitSelectId}
                   value={formData.unit}
                   onChange={(e) =>
                     setFormData({ ...formData, unit: e.target.value })
@@ -93,10 +100,14 @@ export const AddEditItemForm: React.FC<AddEditItemFormProps> = ({
               </div>
             </div>
             <div>
-              <label className="block mb-1 text-sm font-medium text-secondary-700">
+              <label
+                htmlFor={categorySelectId}
+                className="block mb-1 text-sm font-medium text-secondary-700"
+              >
                 Category
               </label>
               <select
+                id={categorySelectId}
                 value={formData.category}
                 onChange={(e) =>
                   setFormData({
