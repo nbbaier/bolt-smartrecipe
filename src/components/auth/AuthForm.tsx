@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useAuth } from "../../contexts/AuthContext";
+import { handleApiError } from "../../lib/errorUtils";
 import { Button } from "../ui/button";
 import {
   Card,
@@ -31,8 +32,12 @@ const signUpSchema = signInSchema
 
 type SignUpFormData = z.infer<typeof signUpSchema>;
 
-function AuthFormRaw() {
-  const [isSignUp, setIsSignUp] = useState(false);
+interface AuthFormProps {
+  initialMode?: "signup" | "signin";
+}
+
+function AuthFormRaw({ initialMode }: AuthFormProps) {
+  const [isSignUp, setIsSignUp] = useState(initialMode === "signup");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { signIn, signUp, isSupabaseConnected } = useAuth();
@@ -58,16 +63,7 @@ function AuthFormRaw() {
         if (error) throw error;
       }
     } catch (err: unknown) {
-      if (
-        err &&
-        typeof err === "object" &&
-        "message" in err &&
-        typeof (err as { message?: string }).message === "string"
-      ) {
-        setError((err as { message: string }).message);
-      } else {
-        setError("An error occurred");
-      }
+      setError(handleApiError(err));
     } finally {
       setLoading(false);
     }
@@ -91,7 +87,7 @@ function AuthFormRaw() {
           </div>
           <div className="space-y-2">
             <CardTitle className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-emerald-700">
-              {isSignUp ? "Join SmartRecipe" : "Welcome Back"}
+              {isSignUp ? "Join Appetite" : "Welcome Back"}
             </CardTitle>
             <CardDescription className="text-base">
               {isSignUp
