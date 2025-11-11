@@ -24,6 +24,7 @@ import { useNotification } from "../contexts/NotificationContext";
 import { useSettings } from "../contexts/SettingsContext";
 import { leftoverService } from "../lib/database";
 import { checkExpiringItems } from "../lib/notificationService";
+import { getDaysUntilExpiration } from "../lib/utils";
 import type { Leftover } from "../types";
 
 export function Leftovers() {
@@ -122,18 +123,6 @@ export function Leftovers() {
   const startEdit = (leftover: Leftover) => {
     setEditingLeftover(leftover);
     setShowAddForm(true);
-  };
-
-  const getDaysUntilExpiration = (expirationDate: string | undefined) => {
-    if (!expirationDate) return null;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const expDate = new Date(expirationDate);
-    expDate.setHours(0, 0, 0, 0);
-
-    const diffTime = expDate.getTime() - today.getTime();
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
   const filteredLeftovers = leftovers.filter((leftover) =>

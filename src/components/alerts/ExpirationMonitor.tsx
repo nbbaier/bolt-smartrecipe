@@ -7,6 +7,10 @@ import type { Ingredient } from "../../types";
 import { useSettings } from "../../contexts/SettingsContext";
 import { Badge } from "../ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import {
+  formatExpirationText,
+  getDaysUntilExpiration,
+} from "../../lib/utils";
 
 interface ExpirationMonitorProps {
   ingredients: Ingredient[];
@@ -46,10 +50,9 @@ function ExpirationMonitorRaw({
     ingredients
       .filter((ingredient) => ingredient.expiration_date)
       .forEach((ingredient) => {
-        const expDate = new Date(ingredient.expiration_date!);
-        expDate.setHours(0, 0, 0, 0);
-        const diffTime = expDate.getTime() - today.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const diffDays = getDaysUntilExpiration(ingredient.expiration_date!);
+        if (diffDays === null) return;
+
         if (diffDays < 0) {
           newGroups.expired.push(ingredient);
         } else if (diffDays <= criticalDays) {
@@ -73,27 +76,6 @@ function ExpirationMonitorRaw({
   useEffect(() => {
     categorizeByExpiration();
   }, [categorizeByExpiration]);
-
-  const getDaysUntilExpiration = (expirationDate: string) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const expDate = new Date(expirationDate);
-    expDate.setHours(0, 0, 0, 0);
-    const diffTime = expDate.getTime() - today.getTime();
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  };
-
-  const formatExpirationText = (days: number) => {
-    if (days < 0) {
-      return `Expired ${Math.abs(days)} day${Math.abs(days) !== 1 ? "s" : ""} ago`;
-    } else if (days === 0) {
-      return "Expires today";
-    } else if (days === 1) {
-      return "Expires tomorrow";
-    } else {
-      return `Expires in ${days} days`;
-    }
-  };
 
   const totalExpiringItems =
     groups.expired.length + groups.critical.length + groups.warning.length;
