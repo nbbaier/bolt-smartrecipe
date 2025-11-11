@@ -13,9 +13,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
-import { ExpirationThresholdInput } from "../components/settings/ExpirationThresholdInput";
-import { InventoryThresholdInput } from "../components/settings/InventoryThresholdInput";
-import { NotificationToggle } from "../components/settings/NotificationToggle";
+import { SettingsInput } from "../components/settings/SettingsInput";
 import { Button } from "../components/ui/button";
 import {
   Card,
@@ -537,21 +535,31 @@ export function Settings() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <NotificationToggle
+                <SettingsInput
+                  label="Enable Notifications"
+                  type="checkbox"
                   value={!!preferencesForm.notification_enabled}
                   onChange={(val) =>
                     handlePreferencesChange("notification_enabled", val)
                   }
                   loading={saving}
                 />
-                <ExpirationThresholdInput
+                <SettingsInput
+                  label="Expiration Alert Threshold (days)"
+                  type="number"
+                  min={1}
+                  max={30}
                   value={preferencesForm.expiration_threshold_days || 3}
                   onChange={(val) =>
                     handlePreferencesChange("expiration_threshold_days", val)
                   }
                   loading={saving}
                 />
-                <InventoryThresholdInput
+                <SettingsInput
+                  label="Low Inventory Alert Threshold"
+                  type="number"
+                  min={1}
+                  max={20}
                   value={preferencesForm.inventory_threshold || 1}
                   onChange={(val) =>
                     handlePreferencesChange("inventory_threshold", val)

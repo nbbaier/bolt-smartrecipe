@@ -10,6 +10,10 @@ import React from "react";
 import type { Leftover } from "../../types";
 import { Badge } from "../ui/badge";
 import { Card, CardContent } from "../ui/card";
+import {
+  formatExpirationText,
+  getDaysUntilExpiration,
+} from "../../lib/utils";
 
 interface LeftoverCardProps {
   leftover: Leftover;
@@ -24,41 +28,19 @@ function LeftoverCardRaw({
   onDelete,
   className,
 }: LeftoverCardProps) {
-  const getDaysUntilExpiration = () => {
-    if (!leftover.expiration_date) return null;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const expDate = new Date(leftover.expiration_date);
-    expDate.setHours(0, 0, 0, 0);
-
-    const diffTime = expDate.getTime() - today.getTime();
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  };
+  const days = getDaysUntilExpiration(leftover.expiration_date);
 
   const isExpired = () => {
-    const days = getDaysUntilExpiration();
     return days !== null && days < 0;
   };
 
   const isExpiringSoon = () => {
-    const days = getDaysUntilExpiration();
     return days !== null && days >= 0 && days <= 2;
   };
 
   const getExpirationText = () => {
-    const days = getDaysUntilExpiration();
     if (days === null) return null;
-
-    if (days < 0) {
-      return `Expired ${Math.abs(days)} day${Math.abs(days) !== 1 ? "s" : ""} ago`;
-    } else if (days === 0) {
-      return "Expires today";
-    } else if (days === 1) {
-      return "Expires tomorrow";
-    } else {
-      return `Expires in ${days} days`;
-    }
+    return formatExpirationText(days);
   };
 
   const getExpirationColor = () => {

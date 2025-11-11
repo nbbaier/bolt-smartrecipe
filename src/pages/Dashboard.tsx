@@ -27,6 +27,10 @@ import {
   leftoverService,
   recipeService,
 } from "../lib/database";
+import {
+  formatExpirationText,
+  getDaysUntilExpiration,
+} from "../lib/utils";
 import type { Ingredient, Leftover, Recipe } from "../types";
 
 export function Dashboard() {
@@ -98,14 +102,6 @@ export function Dashboard() {
       loadDashboardData();
     }
   }, [user, loadDashboardData]);
-
-  const getDaysUntilExpiration = (expirationDate: string) => {
-    const expDate = new Date(expirationDate);
-    const today = new Date();
-    const diffTime = expDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
-  };
 
   if (loading) {
     return (
